@@ -17,17 +17,17 @@ export function BackgroundEffects() {
 
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none">
-      {/* Animated gradient orbs */}
+      {/* Animated gradient orbs - now using white/grey */}
       <motion.div
         className="absolute w-96 h-96 rounded-full"
         style={{
-          background: "radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%)",
           left: mousePosition.x - 192,
           top: mousePosition.y - 192,
         }}
         animate={{
           scale: [1, 1.2, 1],
-          opacity: [0.3, 0.6, 0.3],
+          opacity: [0.1, 0.3, 0.1],
         }}
         transition={{
           duration: 4,
@@ -36,15 +36,15 @@ export function BackgroundEffects() {
         }}
       />
       
-      {/* Static gradient orbs */}
+      {/* Static gradient orbs - dark transparent theme */}
       <motion.div
         className="absolute top-20 left-1/4 w-72 h-72 rounded-full"
         style={{
-          background: "radial-gradient(circle, rgba(147, 51, 234, 0.2) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%)",
         }}
         animate={{
           scale: [1, 1.3, 1],
-          opacity: [0.2, 0.4, 0.2],
+          opacity: [0.08, 0.2, 0.08],
         }}
         transition={{
           duration: 6,
@@ -57,11 +57,11 @@ export function BackgroundEffects() {
       <motion.div
         className="absolute bottom-20 right-1/4 w-80 h-80 rounded-full"
         style={{
-          background: "radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, transparent 70%)",
         }}
         animate={{
           scale: [1, 1.1, 1],
-          opacity: [0.2, 0.5, 0.2],
+          opacity: [0.06, 0.15, 0.06],
         }}
         transition={{
           duration: 5,
@@ -95,7 +95,7 @@ export function BackgroundEffects() {
 
       {/* Grid pattern overlay */}
       <div 
-        className="absolute inset-0 opacity-10"
+        className="absolute inset-0 opacity-5"
         style={{
           backgroundImage: `
             linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
