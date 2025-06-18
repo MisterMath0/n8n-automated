@@ -6,14 +6,14 @@ import { ReactFlowDemo } from "@/components/animations/ReactFlowDemo";
 
 export function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center px-4 pt-24">
+    <section className="relative min-h-screen flex items-center justify-center px-4 pt-20">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
         {/* Left Content */}
         <motion.div
           initial={{ opacity: 0, x: -100 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 1, ease: "easeOut" }}
-          className="space-y-8"
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="space-y-6"
         >
           {/* Badge */}
           <motion.div
@@ -24,7 +24,7 @@ export function HeroSection() {
           >
             <Sparkles className="w-4 h-4 text-purple-400" />
             <span className="text-purple-300 text-sm font-medium">
-              The AI that actually understands N8N
+              Generate Perfect N8N Workflows in Seconds
             </span>
           </motion.div>
 
@@ -34,7 +34,7 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5, duration: 0.8 }}
-              className="text-5xl lg:text-7xl font-bold leading-tight"
+              className="text-4xl lg:text-6xl font-bold leading-tight"
             >
               <span className="bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent">
                 Generate N8N
@@ -51,7 +51,7 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7, duration: 0.8 }}
-              className="text-xl text-gray-300 leading-relaxed max-w-2xl"
+              className="text-lg text-gray-300 leading-relaxed max-w-2xl"
             >
               Transform your ideas into working N8N workflows with AI. See visual previews, 
               fix connections, and export perfect JSON - no more buggy extensions or broken outputs.
@@ -71,7 +71,7 @@ export function HeroSection() {
                 boxShadow: "0 20px 40px rgba(59, 130, 246, 0.3)" 
               }}
               whileTap={{ scale: 0.95 }}
-              className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-semibold text-lg shadow-2xl overflow-hidden"
+              className="group relative px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold text-base shadow-2xl overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <div className="relative flex items-center justify-center gap-3">
@@ -84,7 +84,7 @@ export function HeroSection() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="px-8 py-4 border border-white/20 text-white rounded-2xl font-semibold text-lg backdrop-blur-sm hover:bg-white/5 transition-all duration-300"
+              className="px-6 py-3 border border-white/20 text-white rounded-xl font-semibold text-base backdrop-blur-sm hover:bg-white/5 transition-all duration-300"
             >
               Watch Demo
             </motion.button>
@@ -98,16 +98,16 @@ export function HeroSection() {
             className="flex items-center gap-8 pt-8"
           >
             <div className="text-center">
-              <div className="text-2xl font-bold text-white">10k+</div>
-              <div className="text-sm text-gray-400">Frustrated n8nChat users</div>
+              <div className="text-xl font-bold text-white">5 min</div>
+              <div className="text-xs text-gray-400">Average setup time</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-white">3.2⭐</div>
-              <div className="text-sm text-gray-400">Current tools rating</div>
+              <div className="text-xl font-bold text-white">4x</div>
+              <div className="text-xs text-gray-400">Faster than manual</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-white">€55M</div>
-              <div className="text-sm text-gray-400">N8N funding proves demand</div>
+              <div className="text-xl font-bold text-white">100%</div>
+              <div className="text-xs text-gray-400">Working outputs</div>
             </div>
           </motion.div>
         </motion.div>

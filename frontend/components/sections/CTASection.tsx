@@ -5,7 +5,7 @@ import { ArrowRight, Sparkles, Clock, Users } from "lucide-react";
 
 export function CTASection() {
   return (
-    <section className="py-32 px-4">
+    <section className="py-20 px-4">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
@@ -38,7 +38,7 @@ export function CTASection() {
                 >
                   <Sparkles className="w-5 h-5 text-blue-400" />
                   <span className="text-blue-300 font-medium">
-                    Join the AI Workflow Revolution
+                    Start Building Faster Workflows
                   </span>
                 </motion.div>
 
@@ -48,14 +48,14 @@ export function CTASection() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.4 }}
-                  className="text-5xl lg:text-7xl font-bold mb-8 leading-tight"
+                  className="text-4xl lg:text-6xl font-bold mb-6 leading-tight"
                 >
                   <span className="bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent">
-                    Stop Fighting
+                    Transform Your
                   </span>
                   <br />
                   <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                    Buggy Tools
+                    Workflow Process
                   </span>
                 </motion.h2>
 
@@ -64,10 +64,10 @@ export function CTASection() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.6 }}
-                  className="text-2xl text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed"
+                  className="text-xl text-gray-300 mb-10 max-w-4xl mx-auto leading-relaxed"
                 >
-                  Join thousands of developers and agencies who are tired of n8nChat's 3.2⭐ rating 
-                  and broken outputs. Experience AI workflow generation that actually works.
+                  Transform your workflow building process. Generate professional N8N automations 
+                  in seconds with visual previews and perfect JSON exports.
                 </motion.p>
 
                 {/* Stats */}
@@ -81,24 +81,24 @@ export function CTASection() {
                   <div className="flex items-center justify-center gap-3">
                     <Clock className="w-8 h-8 text-green-400" />
                     <div>
-                      <div className="text-2xl font-bold text-white">4+ Hours</div>
-                      <div className="text-gray-400">Saved per workflow</div>
+                      <div className="text-2xl font-bold text-white">5 Minutes</div>
+                      <div className="text-gray-400">To get started</div>
                     </div>
                   </div>
                   
                   <div className="flex items-center justify-center gap-3">
                     <Users className="w-8 h-8 text-blue-400" />
                     <div>
-                      <div className="text-2xl font-bold text-white">10,000+</div>
-                      <div className="text-gray-400">Frustrated n8nChat users</div>
+                      <div className="text-2xl font-bold text-white">1000+</div>
+                      <div className="text-gray-400">Workflows generated</div>
                     </div>
                   </div>
                   
                   <div className="flex items-center justify-center gap-3">
                     <Sparkles className="w-8 h-8 text-purple-400" />
                     <div>
-                      <div className="text-2xl font-bold text-white">€55M</div>
-                      <div className="text-gray-400">N8N market validation</div>
+                      <div className="text-2xl font-bold text-white">30 Sec</div>
+                      <div className="text-gray-400">Average generation time</div>
                     </div>
                   </div>
                 </motion.div>
@@ -167,8 +167,8 @@ export function CTASection() {
                   ))}
                 </div>
                 <blockquote className="text-xl text-gray-300 italic mb-6">
-                  "Finally, an AI workflow generator that actually works! After being frustrated 
-                  with n8nChat's bugs for months, N8N.AI saved me 20+ hours in the first week."
+                  "N8N.AI saved me 20+ hours in the first week. The visual preview feature 
+                  is exactly what I needed to validate workflows before importing."
                 </blockquote>
                 <div className="text-gray-400">
                   <div className="font-semibold text-white">Sarah Chen</div>

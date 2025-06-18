@@ -11,13 +11,15 @@ import ReactFlow, {
   Controls,
   Background,
   BackgroundVariant,
+  Handle,
+  Position,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { motion } from "framer-motion";
-import { Mail, MessageSquare, Globe, Code, Zap } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Mail, MessageSquare, Globe, Code, Zap, Database, Filter } from "lucide-react";
 
 // Custom Node Component
-function CustomNode({ data }: { data: any }) {
+function CustomNode({ data, selected }: { data: any; selected?: boolean }) {
   const getIcon = () => {
     switch (data.type) {
       case "gmail":
@@ -28,6 +30,10 @@ function CustomNode({ data }: { data: any }) {
         return <Globe className="w-4 h-4" />;
       case "code":
         return <Code className="w-4 h-4" />;
+      case "database":
+        return <Database className="w-4 h-4" />;
+      case "filter":
+        return <Filter className="w-4 h-4" />;
       default:
         return <Zap className="w-4 h-4" />;
     }
@@ -43,8 +49,12 @@ function CustomNode({ data }: { data: any }) {
         return "from-green-500 to-teal-500";
       case "code":
         return "from-yellow-500 to-orange-500";
-      default:
+      case "database":
         return "from-blue-500 to-cyan-500";
+      case "filter":
+        return "from-pink-500 to-rose-500";
+      default:
+        return "from-gray-500 to-gray-600";
     }
   };
 
@@ -56,16 +66,30 @@ function CustomNode({ data }: { data: any }) {
       whileHover={{ scale: 1.05 }}
       className="relative group"
     >
+      <Handle 
+        type="target" 
+        position={Position.Top} 
+        className="w-3 h-3 !bg-blue-500 !border-2 !border-white"
+      />
+      
       <div className={`absolute -inset-1 bg-gradient-to-r ${getColor()} rounded-lg blur opacity-60 group-hover:opacity-100 transition duration-300`}></div>
-      <div className="relative px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg shadow-lg min-w-[120px]">
-        <div className="flex items-center gap-2 text-white">
+      <div className={`relative px-3 py-2 bg-gray-900 border-2 rounded-lg shadow-lg min-w-[100px] ${
+        selected ? 'border-blue-400' : 'border-gray-700'
+      }`}>
+        <div className="flex items-center gap-2 text-white text-sm">
           {getIcon()}
-          <span className="font-medium text-sm">{data.label}</span>
+          <span className="font-medium">{data.label}</span>
         </div>
         {data.subtitle && (
           <div className="text-xs text-gray-400 mt-1">{data.subtitle}</div>
         )}
       </div>
+      
+      <Handle 
+        type="source" 
+        position={Position.Bottom} 
+        className="w-3 h-3 !bg-green-500 !border-2 !border-white"
+      />
     </motion.div>
   );
 }
@@ -74,82 +98,230 @@ const nodeTypes = {
   custom: CustomNode,
 };
 
-const initialNodes: Node[] = [
+const demoWorkflows = [
   {
-    id: "1",
-    type: "custom",
-    position: { x: 50, y: 50 },
-    data: { 
-      label: "Gmail Trigger", 
-      type: "gmail",
-      subtitle: "New email received"
-    },
+    nodes: [
+      {
+        id: "1",
+        type: "custom",
+        position: { x: 50, y: 50 },
+        data: { 
+          label: "Gmail", 
+          type: "gmail",
+          subtitle: "New email"
+        },
+      },
+      {
+        id: "2",
+        type: "custom",
+        position: { x: 50, y: 160 },
+        data: { 
+          label: "Filter", 
+          type: "filter",
+          subtitle: "Check subject"
+        },
+      },
+      {
+        id: "3",
+        type: "custom",
+        position: { x: 250, y: 105 },
+        data: { 
+          label: "Slack", 
+          type: "slack",
+          subtitle: "Send message"
+        },
+      },
+    ],
+    edges: [
+      {
+        id: "e1-2",
+        source: "1",
+        target: "2",
+        type: "smoothstep",
+        animated: true,
+        style: { stroke: "#3b82f6", strokeWidth: 2 },
+      },
+      {
+        id: "e2-3",
+        source: "2",
+        target: "3",
+        type: "smoothstep",
+        animated: true,
+        style: { stroke: "#10b981", strokeWidth: 2 },
+      },
+    ],
+    description: "Gmail → Filter → Slack"
   },
   {
-    id: "2",
-    type: "custom",
-    position: { x: 50, y: 200 },
-    data: { 
-      label: "Process Data", 
-      type: "code",
-      subtitle: "Extract key info"
-    },
-  },
-  {
-    id: "3",
-    type: "custom",
-    position: { x: 300, y: 125 },
-    data: { 
-      label: "Send to Slack", 
-      type: "slack",
-      subtitle: "Notify team"
-    },
-  },
+    nodes: [
+      {
+        id: "1",
+        type: "custom",
+        position: { x: 30, y: 30 },
+        data: { 
+          label: "Webhook", 
+          type: "webhook",
+          subtitle: "API trigger"
+        },
+      },
+      {
+        id: "2",
+        type: "custom",
+        position: { x: 30, y: 130 },
+        data: { 
+          label: "Code", 
+          type: "code",
+          subtitle: "Process data"
+        },
+      },
+      {
+        id: "3",
+        type: "custom",
+        position: { x: 180, y: 80 },
+        data: { 
+          label: "Database", 
+          type: "database",
+          subtitle: "Save record"
+        },
+      },
+      {
+        id: "4",
+        type: "custom",
+        position: { x: 320, y: 80 },
+        data: { 
+          label: "Slack", 
+          type: "slack",
+          subtitle: "Notify team"
+        },
+      },
+    ],
+    edges: [
+      {
+        id: "e1-2",
+        source: "1",
+        target: "2",
+        type: "smoothstep",
+        animated: true,
+        style: { stroke: "#8b5cf6", strokeWidth: 2 },
+      },
+      {
+        id: "e2-3",
+        source: "2",
+        target: "3",
+        type: "smoothstep",
+        animated: true,
+        style: { stroke: "#f59e0b", strokeWidth: 2 },
+      },
+      {
+        id: "e3-4",
+        source: "3",
+        target: "4",
+        type: "smoothstep",
+        animated: true,
+        style: { stroke: "#06b6d4", strokeWidth: 2 },
+      },
+    ],
+    description: "API → Process → Save → Notify"
+  }
 ];
 
-const initialEdges: Edge[] = [
-  {
-    id: "e1-2",
-    source: "1",
-    target: "2",
-    type: "smoothstep",
-    animated: true,
-    style: { stroke: "#3b82f6", strokeWidth: 2 },
-  },
-  {
-    id: "e2-3",
-    source: "2",
-    target: "3",
-    type: "smoothstep",
-    animated: true,
-    style: { stroke: "#8b5cf6", strokeWidth: 2 },
-  },
+const demoMessages = [
+  "Send Slack notification when I get important emails",
+  "Process webhook data and save to database",
+  "Create automated customer onboarding flow"
 ];
 
 export function ReactFlowDemo() {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [currentWorkflow, setCurrentWorkflow] = useState(0);
+  const [currentMessage, setCurrentMessage] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showWorkflow, setShowWorkflow] = useState(true);
+  const [nodes, setNodes, onNodesChange] = useNodesState(demoWorkflows[0].nodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(demoWorkflows[0].edges);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
     [setEdges]
   );
 
-  // Animation sequence
+  // Cycle through demo workflows
   useEffect(() => {
     const interval = setInterval(() => {
-      setIsAnimating(true);
-      
-      // Reset after animation
-      setTimeout(() => setIsAnimating(false), 2000);
-    }, 5000);
-
+      setCurrentWorkflow((prev) => (prev + 1) % demoWorkflows.length);
+    }, 8000);
     return () => clearInterval(interval);
   }, []);
 
+  // Update nodes and edges when workflow changes
+  useEffect(() => {
+    const workflow = demoWorkflows[currentWorkflow];
+    setNodes(workflow.nodes);
+    setEdges(workflow.edges);
+  }, [currentWorkflow, setNodes, setEdges]);
+
+  // Simulate AI generation animation
+  useEffect(() => {
+    const messageInterval = setInterval(() => {
+      const messageIndex = Math.floor(Date.now() / 6000) % demoMessages.length;
+      const message = demoMessages[messageIndex];
+      
+      setIsGenerating(true);
+      setShowWorkflow(false);
+      setCurrentMessage("");
+      
+      // Type out message
+      let i = 0;
+      const typeInterval = setInterval(() => {
+        setCurrentMessage(message.slice(0, i));
+        i++;
+        if (i > message.length) {
+          clearInterval(typeInterval);
+          // Show workflow after typing
+          setTimeout(() => {
+            setIsGenerating(false);
+            setShowWorkflow(true);
+          }, 1000);
+        }
+      }, 50);
+    }, 6000);
+
+    return () => clearInterval(messageInterval);
+  }, []);
+
   return (
-    <div className="w-full h-96 rounded-xl overflow-hidden bg-gray-950">
+    <div className="w-full h-[500px] rounded-2xl overflow-hidden bg-gray-950 relative border border-gray-800/50">
+      {/* Input simulation overlay */}
+      <AnimatePresence>
+        {!showWorkflow && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-20 bg-gray-950/90 backdrop-blur-sm flex items-center justify-center"
+          >
+            <div className="max-w-md w-full mx-4">
+              <div className="bg-gray-800/80 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
+                <div className="text-gray-400 text-sm mb-2">Describe your workflow:</div>
+                <div className="bg-gray-900 rounded border border-gray-600 p-3 min-h-[50px] flex items-center">
+                  <span className="text-white">{currentMessage}</span>
+                  <span className="w-0.5 h-5 bg-blue-400 ml-1 animate-pulse"></span>
+                </div>
+                {isGenerating && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-3 flex items-center gap-2 text-blue-400 text-sm"
+                  >
+                    <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                    Generating workflow...
+                  </motion.div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -160,6 +332,7 @@ export function ReactFlowDemo() {
         fitView
         attributionPosition="bottom-left"
         proOptions={{ hideAttribution: true }}
+        defaultViewport={{ x: 0, y: 0, zoom: 1.2 }}
       >
         <Background 
           variant={BackgroundVariant.Dots} 
@@ -170,38 +343,62 @@ export function ReactFlowDemo() {
         <Controls 
           className="bg-gray-800 border-gray-700"
           showInteractive={false}
+          showFitView={false}
         />
         
-        {/* Floating text overlay */}
-        <div className="absolute top-4 left-4 z-10">
+        {/* Workflow description */}
+        <div className="absolute top-3 left-3 z-10">
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            key={currentWorkflow}
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/10"
           >
             <div className="text-white text-sm font-medium">
-              AI Generated Workflow
+              AI Generated
             </div>
             <div className="text-gray-400 text-xs">
-              Gmail → Process → Slack
+              {demoWorkflows[currentWorkflow].description}
             </div>
           </motion.div>
         </div>
 
-        {/* Animation indicator */}
-        {isAnimating && (
+        {/* Status indicator */}
+        <div className="absolute top-3 right-3 z-10">
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="absolute top-4 right-4 z-10 bg-green-500/20 border border-green-500/30 rounded-lg px-3 py-2"
+            animate={{ 
+              scale: [1, 1.1, 1],
+              opacity: [0.7, 1, 0.7]
+            }}
+            transition={{ 
+              duration: 2, 
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="bg-green-500/20 border border-green-500/30 rounded-lg px-3 py-1"
           >
-            <div className="flex items-center gap-2 text-green-300 text-sm">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              Executing...
+            <div className="flex items-center gap-2 text-green-300 text-xs">
+              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              Ready to Export
             </div>
           </motion.div>
-        )}
+        </div>
+
+        {/* Workflow indicators */}
+        <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 z-10">
+          <div className="flex gap-2">
+            {demoWorkflows.map((_, index) => (
+              <div
+                key={index}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  index === currentWorkflow 
+                    ? 'bg-blue-400 w-6' 
+                    : 'bg-gray-600'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
       </ReactFlow>
     </div>
   );

@@ -64,7 +64,7 @@ const plans = [
 
 export function PricingSection() {
   return (
-    <section id="pricing" className="py-32 px-4">
+    <section id="pricing" className="py-20 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -83,23 +83,23 @@ export function PricingSection() {
           >
             <Crown className="w-4 h-4 text-green-400" />
             <span className="text-green-300 text-sm font-medium">
-              Simple, Fair Pricing
+              Transparent Pricing
             </span>
           </motion.div>
 
-          <h2 className="text-4xl lg:text-6xl font-bold mb-6">
+          <h2 className="text-3xl lg:text-5xl font-bold mb-6">
             <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-              Pricing That Makes
+              Start Saving
             </span>
             <br />
             <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
-              Perfect Sense
+              Time Today
             </span>
           </h2>
 
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            Pay for value, not frustration. Our Professional plan costs less than 
-            one hour of developer time but saves you dozens of hours every month.
+          <p className="text-lg text-gray-300 max-w-3xl mx-auto leading-relaxed">
+            Choose the plan that fits your workflow automation needs. All plans include 
+            visual previews, smart validation, and perfect JSON exports.
           </p>
         </motion.div>
 
@@ -223,7 +223,7 @@ export function PricingSection() {
 
               <div className="mt-8 text-center">
                 <p className="text-gray-300 text-lg mb-6">
-                  Professional plan pays for itself with just <span className="text-green-400 font-semibold">one workflow</span> per month
+                  Professional plan pays for itself with just <span className="text-green-400 font-semibold">one workflow</span> saved
                 </p>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -248,8 +248,8 @@ export function PricingSection() {
           <h3 className="text-2xl font-bold text-white mb-8">Frequently Asked Questions</h3>
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             <div className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-left">
-              <h4 className="font-semibold text-white mb-3">How does this compare to n8nChat?</h4>
-              <p className="text-gray-300 text-sm">Unlike n8nChat (3.2⭐ rating), we provide visual previews, validation, and actually working outputs. No more "doesn't work" reviews.</p>
+              <h4 className="font-semibold text-white mb-3">How accurate are the generated workflows?</h4>
+              <p className="text-gray-300 text-sm">Our AI generates working N8N workflows with smart validation and auto-fixing. Visual previews let you verify before exporting.</p>
             </div>
             <div className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-left">
               <h4 className="font-semibold text-white mb-3">Do I need API keys?</h4>

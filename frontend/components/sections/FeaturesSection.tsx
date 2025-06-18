@@ -44,7 +44,7 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="py-32 px-4">
+    <section id="features" className="py-20 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -63,23 +63,23 @@ export function FeaturesSection() {
           >
             <Zap className="w-4 h-4 text-blue-400" />
             <span className="text-blue-300 text-sm font-medium">
-              Why Choose N8N.AI
+              Advanced Features
             </span>
           </motion.div>
 
-          <h2 className="text-4xl lg:text-6xl font-bold mb-6">
+          <h2 className="text-3xl lg:text-5xl font-bold mb-6">
             <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-              Finally, AI That
+              Build Workflows
             </span>
             <br />
             <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-              Actually Works
+              10x Faster
             </span>
           </h2>
 
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            While n8nChat frustrates 10,000+ users with bugs and broken outputs, 
-            we built the solution you've been waiting for.
+          <p className="text-lg text-gray-300 max-w-3xl mx-auto leading-relaxed">
+            Stop wasting hours on manual workflow building. Generate, preview, and export 
+            professional N8N automations in seconds.
           </p>
         </motion.div>
 
@@ -99,7 +99,7 @@ export function FeaturesSection() {
               <div className={`absolute -inset-1 bg-gradient-to-r ${feature.color} rounded-2xl blur opacity-0 group-hover:opacity-30 transition duration-500`}></div>
               
               {/* Card */}
-              <div className="relative bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 h-full hover:border-gray-600/50 transition-all duration-300">
+              <div className="relative glass-card rounded-2xl p-8 h-full hover:border-gray-600/50 transition-all duration-300">
                 {/* Icon */}
                 <div className="relative mb-6">
                   <div className={`w-14 h-14 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center`}>
@@ -137,13 +137,13 @@ export function FeaturesSection() {
         >
           <div className="relative inline-block">
             <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur-xl"></div>
-            <div className="relative bg-gray-900/80 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8">
+            <div className="relative glass-dark rounded-2xl p-8">
               <h3 className="text-2xl font-bold text-white mb-4">
-                Ready to Build Workflows That Actually Work?
+              Ready to Save Hours Every Week?
               </h3>
               <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
-                Join the revolution. Stop fighting with buggy tools and start building 
-                professional N8N workflows in seconds.
+              Join developers and agencies who've streamlined their workflow creation process. 
+              Start building faster, more reliable N8N automations today.
               </p>
               <motion.button
                 whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(59, 130, 246, 0.3)" }}

@@ -121,20 +121,20 @@ export function Footer() {
         >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
-              <div className="text-2xl font-bold text-blue-400 mb-1">€55M</div>
-              <div className="text-sm text-gray-500">N8N Funding</div>
+              <div className="text-2xl font-bold text-blue-400 mb-1">480x</div>
+              <div className="text-sm text-gray-500">Faster Than Manual</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-red-400 mb-1">3.2⭐</div>
-              <div className="text-sm text-gray-500">n8nChat Rating</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-green-400 mb-1">10k+</div>
-              <div className="text-sm text-gray-500">Frustrated Users</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-purple-400 mb-1">100%</div>
+              <div className="text-2xl font-bold text-green-400 mb-1">100%</div>
               <div className="text-sm text-gray-500">Working Outputs</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-purple-400 mb-1">30 sec</div>
+              <div className="text-sm text-gray-500">Average Generation</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-yellow-400 mb-1">€400+</div>
+              <div className="text-sm text-gray-500">Saved Per Workflow</div>
             </div>
           </div>
         </motion.div>
@@ -148,7 +148,7 @@ export function Footer() {
           className="border-t border-gray-800/50 pt-8 flex flex-col md:flex-row justify-between items-center gap-4"
         >
           <div className="text-gray-500 text-sm">
-            © 2025 N8N.AI. Built to solve the problems n8nChat couldn't.
+            © 2025 N8N.AI. Streamlining workflow automation for developers worldwide.
           </div>
           
           <div className="flex items-center gap-6 text-sm text-gray-500">
@@ -173,7 +173,7 @@ export function Footer() {
           className="text-center mt-8"
         >
           <p className="text-xs text-gray-600">
-            Made with ⚡ for developers tired of tools that don't work
+            Made with ⚡ to accelerate N8N workflow development
           </p>
         </motion.div>
       </div>

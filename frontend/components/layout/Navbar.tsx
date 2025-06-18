@@ -24,7 +24,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto">
         <div className="relative">
           {/* Glass morphism container */}
-          <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl px-6 py-3 shadow-2xl">
+          <div className="glass-dark rounded-2xl px-6 py-3 shadow-2xl">
             <div className="flex items-center justify-between">
               {/* Logo */}
               <motion.div
@@ -93,7 +93,7 @@ export function Navbar() {
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
               className="absolute top-full left-0 right-0 mt-2 md:hidden"
             >
-              <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl p-6 shadow-2xl">
+              <div className="glass-dark rounded-2xl p-6 shadow-2xl">
                 <div className="flex flex-col gap-4">
                   {navItems.map((item, index) => (
                     <motion.a
