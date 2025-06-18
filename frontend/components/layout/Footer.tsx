@@ -52,10 +52,10 @@ export function Footer() {
           >
             <div className="flex items-center gap-3 mb-6">
               <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-br from-white/30 to-white/10 rounded-xl flex items-center justify-center border border-white/20">
                   <Zap className="w-6 h-6 text-white" />
                 </div>
-                <div className="absolute -inset-1 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl blur opacity-30"></div>
+                <div className="absolute -inset-1 bg-gradient-to-br from-white/20 to-white/10 rounded-xl blur opacity-30"></div>
               </div>
               <span className="text-2xl font-bold text-white">N8N.AI</span>
             </div>
@@ -121,19 +121,19 @@ export function Footer() {
         >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
-              <div className="text-2xl font-bold text-blue-400 mb-1">480x</div>
+              <div className="text-2xl font-bold text-white mb-1">480x</div>
               <div className="text-sm text-gray-500">Faster Than Manual</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-green-400 mb-1">100%</div>
+              <div className="text-2xl font-bold text-gray-300 mb-1">100%</div>
               <div className="text-sm text-gray-500">Working Outputs</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-purple-400 mb-1">30 sec</div>
+              <div className="text-2xl font-bold text-gray-100 mb-1">30 sec</div>
               <div className="text-sm text-gray-500">Average Generation</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-yellow-400 mb-1">€400+</div>
+              <div className="text-2xl font-bold text-white/80 mb-1">€400+</div>
               <div className="text-sm text-gray-500">Saved Per Workflow</div>
             </div>
           </div>
