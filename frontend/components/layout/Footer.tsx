@@ -1,0 +1,182 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { Zap, Github, Twitter, Mail, ExternalLink } from "lucide-react";
+
+const footerLinks = {
+  product: [
+    { name: "Features", href: "#features" },
+    { name: "Pricing", href: "#pricing" },
+    { name: "Demo", href: "#demo" },
+    { name: "Changelog", href: "/changelog" },
+  ],
+  resources: [
+    { name: "Documentation", href: "/docs" },
+    { name: "API Reference", href: "/api" },
+    { name: "N8N Templates", href: "/templates" },
+    { name: "Blog", href: "/blog" },
+  ],
+  company: [
+    { name: "About", href: "/about" },
+    { name: "Contact", href: "/contact" },
+    { name: "Privacy", href: "/privacy" },
+    { name: "Terms", href: "/terms" },
+  ],
+  competitors: [
+    { name: "vs n8nChat", href: "/compare/n8nchat" },
+    { name: "vs Retorno.io", href: "/compare/retorno" },
+    { name: "vs Manual Building", href: "/compare/manual" },
+    { name: "Migration Guide", href: "/migrate" },
+  ]
+};
+
+const socialLinks = [
+  { name: "GitHub", href: "https://github.com", icon: Github },
+  { name: "Twitter", href: "https://twitter.com", icon: Twitter },
+  { name: "Email", href: "mailto:hello@n8n-ai.com", icon: Mail },
+];
+
+export function Footer() {
+  return (
+    <footer className="relative border-t border-gray-800/50 bg-black/40 backdrop-blur-sm">
+      <div className="max-w-7xl mx-auto px-4 py-16">
+        {/* Main Footer Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-12 mb-12">
+          {/* Brand Column */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="lg:col-span-2"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="relative">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                  <Zap className="w-6 h-6 text-white" />
+                </div>
+                <div className="absolute -inset-1 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl blur opacity-30"></div>
+              </div>
+              <span className="text-2xl font-bold text-white">N8N.AI</span>
+            </div>
+            
+            <p className="text-gray-300 mb-6 leading-relaxed">
+              The AI-powered N8N workflow generator that actually works. 
+              Built for developers frustrated with buggy tools and broken outputs.
+            </p>
+
+            <div className="flex items-center gap-4">
+              {socialLinks.map((link) => (
+                <motion.a
+                  key={link.name}
+                  href={link.href}
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-10 h-10 bg-gray-800/50 hover:bg-gray-700/50 border border-gray-700/50 hover:border-gray-600/50 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition-all duration-300"
+                >
+                  <link.icon className="w-5 h-5" />
+                </motion.a>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Links Columns */}
+          {Object.entries(footerLinks).map(([category, links], index) => (
+            <motion.div
+              key={category}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
+            >
+              <h3 className="font-semibold text-white mb-4 capitalize">
+                {category === "competitors" ? "Comparisons" : category}
+              </h3>
+              <ul className="space-y-3">
+                {links.map((link) => (
+                  <li key={link.name}>
+                    <a
+                      href={link.href}
+                      className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center gap-2 group"
+                    >
+                      {link.name}
+                      {link.href.startsWith("http") && (
+                        <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      )}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Stats Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="border-t border-gray-800/50 pt-8 mb-8"
+        >
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+              <div className="text-2xl font-bold text-blue-400 mb-1">€55M</div>
+              <div className="text-sm text-gray-500">N8N Funding</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-red-400 mb-1">3.2⭐</div>
+              <div className="text-sm text-gray-500">n8nChat Rating</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-green-400 mb-1">10k+</div>
+              <div className="text-sm text-gray-500">Frustrated Users</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-purple-400 mb-1">100%</div>
+              <div className="text-sm text-gray-500">Working Outputs</div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Bottom Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.7 }}
+          className="border-t border-gray-800/50 pt-8 flex flex-col md:flex-row justify-between items-center gap-4"
+        >
+          <div className="text-gray-500 text-sm">
+            © 2025 N8N.AI. Built to solve the problems n8nChat couldn't.
+          </div>
+          
+          <div className="flex items-center gap-6 text-sm text-gray-500">
+            <a href="/status" className="hover:text-gray-300 transition-colors">
+              Status
+            </a>
+            <a href="/security" className="hover:text-gray-300 transition-colors">
+              Security
+            </a>
+            <a href="/cookies" className="hover:text-gray-300 transition-colors">
+              Cookies
+            </a>
+          </div>
+        </motion.div>
+
+        {/* Easter Egg */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 2, delay: 1.5 }}
+          className="text-center mt-8"
+        >
+          <p className="text-xs text-gray-600">
+            Made with ⚡ for developers tired of tools that don't work
+          </p>
+        </motion.div>
+      </div>
+    </footer>
+  );
+}

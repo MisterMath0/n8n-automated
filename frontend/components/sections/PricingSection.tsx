@@ -1,0 +1,271 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { Check, Zap, Crown, Rocket } from "lucide-react";
+
+const plans = [
+  {
+    name: "Starter",
+    price: "Free",
+    description: "Perfect for trying out N8N.AI",
+    features: [
+      "5 workflows per month",
+      "Basic visual preview", 
+      "Standard validation",
+      "Community support",
+      "Export to JSON"
+    ],
+    cta: "Get Started",
+    popular: false,
+    icon: Zap,
+    color: "from-gray-500 to-gray-600",
+    ctaColor: "from-gray-600 to-gray-700"
+  },
+  {
+    name: "Professional", 
+    price: "€29",
+    period: "/month",
+    description: "For agencies & power users",
+    features: [
+      "Unlimited workflows",
+      "Advanced visual preview",
+      "Smart auto-fixing",
+      "Priority support", 
+      "N8N instance integration",
+      "Custom node templates",
+      "Workflow analytics"
+    ],
+    cta: "Start Free Trial",
+    popular: true,
+    icon: Crown,
+    color: "from-blue-500 to-purple-600",
+    ctaColor: "from-blue-600 to-purple-700"
+  },
+  {
+    name: "Enterprise",
+    price: "Custom",
+    description: "For teams & organizations",
+    features: [
+      "Everything in Professional",
+      "Team collaboration",
+      "SSO authentication",
+      "Custom integrations",
+      "Dedicated support",
+      "SLA guarantees",
+      "White-label options"
+    ],
+    cta: "Contact Sales",
+    popular: false,
+    icon: Rocket,
+    color: "from-purple-500 to-pink-600", 
+    ctaColor: "from-purple-600 to-pink-700"
+  }
+];
+
+export function PricingSection() {
+  return (
+    <section id="pricing" className="py-32 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="text-center mb-20"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-green-500/30 bg-green-500/10 backdrop-blur-sm mb-6"
+          >
+            <Crown className="w-4 h-4 text-green-400" />
+            <span className="text-green-300 text-sm font-medium">
+              Simple, Fair Pricing
+            </span>
+          </motion.div>
+
+          <h2 className="text-4xl lg:text-6xl font-bold mb-6">
+            <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              Pricing That Makes
+            </span>
+            <br />
+            <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+              Perfect Sense
+            </span>
+          </h2>
+
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+            Pay for value, not frustration. Our Professional plan costs less than 
+            one hour of developer time but saves you dozens of hours every month.
+          </p>
+        </motion.div>
+
+        {/* Pricing Cards */}
+        <div className="grid lg:grid-cols-3 gap-8 mb-16">
+          {plans.map((plan, index) => (
+            <motion.div
+              key={plan.name}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.2 }}
+              className={`relative group ${plan.popular ? 'lg:scale-105' : ''}`}
+            >
+              {/* Popular badge */}
+              {plan.popular && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.2 + 0.3 }}
+                  className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10"
+                >
+                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                    Most Popular
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Glow effect */}
+              <div className={`absolute -inset-1 bg-gradient-to-r ${plan.color} rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-500`}></div>
+              
+              {/* Card */}
+              <div className={`relative bg-gray-900/80 backdrop-blur-sm border rounded-3xl p-8 h-full transition-all duration-300 ${
+                plan.popular 
+                  ? 'border-blue-500/50 shadow-2xl shadow-blue-500/10' 
+                  : 'border-gray-700/50 hover:border-gray-600/50'
+              }`}>
+                {/* Icon */}
+                <div className="mb-6">
+                  <div className={`w-16 h-16 bg-gradient-to-r ${plan.color} rounded-2xl flex items-center justify-center`}>
+                    <plan.icon className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+
+                {/* Plan name */}
+                <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                <p className="text-gray-400 mb-6">{plan.description}</p>
+
+                {/* Price */}
+                <div className="mb-8">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-bold text-white">{plan.price}</span>
+                    {plan.period && (
+                      <span className="text-gray-400">{plan.period}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Features */}
+                <div className="space-y-4 mb-8">
+                  {plan.features.map((feature, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <Check className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-300">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTA Button */}
+                <motion.button
+                  whileHover={{ scale: 1.02, boxShadow: "0 10px 30px rgba(0,0,0,0.3)" }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`w-full py-4 bg-gradient-to-r ${plan.ctaColor} text-white rounded-xl font-semibold text-lg shadow-lg transition-all duration-300`}
+                >
+                  {plan.cta}
+                </motion.button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* ROI Calculator */}
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.8 }}
+          className="max-w-4xl mx-auto"
+        >
+          <div className="relative">
+            {/* Glow effect */}
+            <div className="absolute -inset-4 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-3xl blur-xl"></div>
+            
+            {/* Card */}
+            <div className="relative bg-gray-900/80 backdrop-blur-sm border border-gray-700/50 rounded-3xl p-12">
+              <div className="text-center mb-8">
+                <h3 className="text-3xl font-bold text-white mb-4">ROI Calculator</h3>
+                <p className="text-gray-300 text-lg">See how much N8N.AI saves you</p>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-8 text-center">
+                <div>
+                  <div className="text-4xl font-bold text-blue-400 mb-2">4+ hours</div>
+                  <div className="text-gray-300">Saved per workflow</div>
+                  <div className="text-sm text-gray-500 mt-2">vs manual building</div>
+                </div>
+                
+                <div>
+                  <div className="text-4xl font-bold text-green-400 mb-2">€100/hr</div>
+                  <div className="text-gray-300">Typical agency rate</div>
+                  <div className="text-sm text-gray-500 mt-2">automation consultant</div>
+                </div>
+                
+                <div>
+                  <div className="text-4xl font-bold text-purple-400 mb-2">€400+</div>
+                  <div className="text-gray-300">Saved per workflow</div>
+                  <div className="text-sm text-gray-500 mt-2">ROI: 1,379%</div>
+                </div>
+              </div>
+
+              <div className="mt-8 text-center">
+                <p className="text-gray-300 text-lg mb-6">
+                  Professional plan pays for itself with just <span className="text-green-400 font-semibold">one workflow</span> per month
+                </p>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-8 py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl font-semibold text-lg shadow-lg"
+                >
+                  Start Saving Time Today
+                </motion.button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* FAQ */}
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 1 }}
+          className="mt-20 text-center"
+        >
+          <h3 className="text-2xl font-bold text-white mb-8">Frequently Asked Questions</h3>
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <div className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-left">
+              <h4 className="font-semibold text-white mb-3">How does this compare to n8nChat?</h4>
+              <p className="text-gray-300 text-sm">Unlike n8nChat (3.2⭐ rating), we provide visual previews, validation, and actually working outputs. No more "doesn't work" reviews.</p>
+            </div>
+            <div className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-left">
+              <h4 className="font-semibold text-white mb-3">Do I need API keys?</h4>
+              <p className="text-gray-300 text-sm">No! Built-in AI means you can start generating workflows immediately without complex setup.</p>
+            </div>
+            <div className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-left">
+              <h4 className="font-semibold text-white mb-3">Can I export to my N8N instance?</h4>
+              <p className="text-gray-300 text-sm">Yes! Perfect JSON exports that import cleanly. Professional plan includes direct instance integration.</p>
+            </div>
+            <div className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-left">
+              <h4 className="font-semibold text-white mb-3">What's the refund policy?</h4>
+              <p className="text-gray-300 text-sm">30-day money-back guarantee. If it doesn't save you time, get your money back.</p>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}

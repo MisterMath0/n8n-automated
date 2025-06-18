@@ -1,0 +1,161 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { Eye, Zap, Shield, Rocket, Code, Globe } from "lucide-react";
+
+const features = [
+  {
+    icon: Eye,
+    title: "Visual Preview",
+    description: "See workflows before importing with ReactFlow integration. No more blind JSON imports.",
+    color: "from-blue-500 to-cyan-500",
+  },
+  {
+    icon: Shield,
+    title: "Smart Validation",
+    description: "Checks if nodes actually exist in N8N. Auto-fixes broken connections and missing parameters.",
+    color: "from-green-500 to-teal-500",
+  },
+  {
+    icon: Zap,
+    title: "No API Keys",
+    description: "Built-in AI, no user setup required. Start generating workflows immediately.",
+    color: "from-purple-500 to-pink-500",
+  },
+  {
+    icon: Globe,
+    title: "Cross-Platform",
+    description: "Web app that works everywhere. No Chrome-only browser extension limitations.",
+    color: "from-orange-500 to-red-500",
+  },
+  {
+    icon: Code,
+    title: "Perfect JSON",
+    description: "Generates working N8N JSON that imports cleanly. No manual fixing required.",
+    color: "from-indigo-500 to-purple-500",
+  },
+  {
+    icon: Rocket,
+    title: "Lightning Fast",
+    description: "Generate complex workflows in seconds. 10x faster than manual building.",
+    color: "from-yellow-500 to-orange-500",
+  },
+];
+
+export function FeaturesSection() {
+  return (
+    <section id="features" className="py-32 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="text-center mb-20"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-blue-500/30 bg-blue-500/10 backdrop-blur-sm mb-6"
+          >
+            <Zap className="w-4 h-4 text-blue-400" />
+            <span className="text-blue-300 text-sm font-medium">
+              Why Choose N8N.AI
+            </span>
+          </motion.div>
+
+          <h2 className="text-4xl lg:text-6xl font-bold mb-6">
+            <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              Finally, AI That
+            </span>
+            <br />
+            <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+              Actually Works
+            </span>
+          </h2>
+
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+            While n8nChat frustrates 10,000+ users with bugs and broken outputs, 
+            we built the solution you've been waiting for.
+          </p>
+        </motion.div>
+
+        {/* Features Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {features.map((feature, index) => (
+            <motion.div
+              key={feature.title}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1, duration: 0.6 }}
+              whileHover={{ y: -10, scale: 1.02 }}
+              className="group relative"
+            >
+              {/* Glow effect */}
+              <div className={`absolute -inset-1 bg-gradient-to-r ${feature.color} rounded-2xl blur opacity-0 group-hover:opacity-30 transition duration-500`}></div>
+              
+              {/* Card */}
+              <div className="relative bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 h-full hover:border-gray-600/50 transition-all duration-300">
+                {/* Icon */}
+                <div className="relative mb-6">
+                  <div className={`w-14 h-14 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center`}>
+                    <feature.icon className="w-7 h-7 text-white" />
+                  </div>
+                  <div className={`absolute -inset-2 bg-gradient-to-r ${feature.color} rounded-xl blur-lg opacity-0 group-hover:opacity-40 transition duration-300`}></div>
+                </div>
+
+                {/* Content */}
+                <h3 className="text-xl font-semibold text-white mb-4 group-hover:text-gray-100 transition-colors">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">
+                  {feature.description}
+                </p>
+
+                {/* Hover indicator */}
+                <motion.div
+                  initial={{ scale: 0 }}
+                  whileHover={{ scale: 1 }}
+                  className="absolute top-4 right-4 w-3 h-3 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full"
+                />
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Bottom CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.8 }}
+          className="text-center mt-20"
+        >
+          <div className="relative inline-block">
+            <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur-xl"></div>
+            <div className="relative bg-gray-900/80 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8">
+              <h3 className="text-2xl font-bold text-white mb-4">
+                Ready to Build Workflows That Actually Work?
+              </h3>
+              <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
+                Join the revolution. Stop fighting with buggy tools and start building 
+                professional N8N workflows in seconds.
+              </p>
+              <motion.button
+                whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(59, 130, 246, 0.3)" }}
+                whileTap={{ scale: 0.95 }}
+                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold text-lg shadow-2xl hover:shadow-blue-500/25 transition-all duration-300"
+              >
+                Start Building Now
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
