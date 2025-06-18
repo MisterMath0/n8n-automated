@@ -42,19 +42,19 @@ function CustomNode({ data, selected }: { data: any; selected?: boolean }) {
   const getColor = () => {
     switch (data.type) {
       case "gmail":
-        return "from-red-500 to-pink-500";
+        return "from-white/30 to-white/20";
       case "slack":
-        return "from-purple-500 to-indigo-500";
+        return "from-white/35 to-white/25";
       case "webhook":
-        return "from-green-500 to-teal-500";
+        return "from-white/25 to-white/15";
       case "code":
-        return "from-yellow-500 to-orange-500";
+        return "from-white/40 to-white/30";
       case "database":
-        return "from-blue-500 to-cyan-500";
+        return "from-white/30 to-white/20";
       case "filter":
-        return "from-pink-500 to-rose-500";
+        return "from-white/35 to-white/25";
       default:
-        return "from-gray-500 to-gray-600";
+        return "from-white/20 to-white/10";
     }
   };
 
@@ -69,12 +69,12 @@ function CustomNode({ data, selected }: { data: any; selected?: boolean }) {
       <Handle 
         type="target" 
         position={Position.Top} 
-        className="w-3 h-3 !bg-blue-500 !border-2 !border-white"
+        className="w-3 h-3 !bg-white/70 !border-2 !border-white"
       />
       
       <div className={`absolute -inset-1 bg-gradient-to-r ${getColor()} rounded-lg blur opacity-60 group-hover:opacity-100 transition duration-300`}></div>
-      <div className={`relative px-3 py-2 bg-gray-900 border-2 rounded-lg shadow-lg min-w-[100px] ${
-        selected ? 'border-blue-400' : 'border-gray-700'
+      <div className={`relative px-3 py-2 bg-black/80 border-2 rounded-lg shadow-lg min-w-[100px] ${
+        selected ? 'border-white/60' : 'border-white/30'
       }`}>
         <div className="flex items-center gap-2 text-white text-sm">
           {getIcon()}
@@ -88,7 +88,7 @@ function CustomNode({ data, selected }: { data: any; selected?: boolean }) {
       <Handle 
         type="source" 
         position={Position.Bottom} 
-        className="w-3 h-3 !bg-green-500 !border-2 !border-white"
+        className="w-3 h-3 !bg-white/70 !border-2 !border-white"
       />
     </motion.div>
   );
@@ -139,7 +139,7 @@ const demoWorkflows = [
         target: "2",
         type: "smoothstep",
         animated: true,
-        style: { stroke: "#3b82f6", strokeWidth: 2 },
+        style: { stroke: "#ffffff80", strokeWidth: 2 },
       },
       {
         id: "e2-3",
@@ -147,7 +147,7 @@ const demoWorkflows = [
         target: "3",
         type: "smoothstep",
         animated: true,
-        style: { stroke: "#10b981", strokeWidth: 2 },
+        style: { stroke: "#ffffff60", strokeWidth: 2 },
       },
     ],
     description: "Gmail → Filter → Slack"
@@ -202,7 +202,7 @@ const demoWorkflows = [
         target: "2",
         type: "smoothstep",
         animated: true,
-        style: { stroke: "#8b5cf6", strokeWidth: 2 },
+        style: { stroke: "#ffffff70", strokeWidth: 2 },
       },
       {
         id: "e2-3",
@@ -210,7 +210,7 @@ const demoWorkflows = [
         target: "3",
         type: "smoothstep",
         animated: true,
-        style: { stroke: "#f59e0b", strokeWidth: 2 },
+        style: { stroke: "#ffffff60", strokeWidth: 2 },
       },
       {
         id: "e3-4",
@@ -218,7 +218,7 @@ const demoWorkflows = [
         target: "4",
         type: "smoothstep",
         animated: true,
-        style: { stroke: "#06b6d4", strokeWidth: 2 },
+        style: { stroke: "#ffffff50", strokeWidth: 2 },
       },
     ],
     description: "API → Process → Save → Notify"
@@ -289,7 +289,7 @@ export function ReactFlowDemo() {
   }, []);
 
   return (
-    <div className="w-full h-[500px] rounded-2xl overflow-hidden bg-gray-950 relative border border-gray-800/50">
+    <div className="w-full h-[500px] rounded-2xl overflow-hidden bg-black relative border border-white/20">
       {/* Input simulation overlay */}
       <AnimatePresence>
         {!showWorkflow && (
@@ -297,22 +297,22 @@ export function ReactFlowDemo() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-20 bg-gray-950/90 backdrop-blur-sm flex items-center justify-center"
+            className="absolute inset-0 z-20 bg-black/90 backdrop-blur-sm flex items-center justify-center"
           >
             <div className="max-w-md w-full mx-4">
-              <div className="bg-gray-800/80 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
+              <div className="bg-black/80 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                 <div className="text-gray-400 text-sm mb-2">Describe your workflow:</div>
-                <div className="bg-gray-900 rounded border border-gray-600 p-3 min-h-[50px] flex items-center">
+                <div className="bg-black/60 rounded border border-white/20 p-3 min-h-[50px] flex items-center">
                   <span className="text-white">{currentMessage}</span>
-                  <span className="w-0.5 h-5 bg-blue-400 ml-1 animate-pulse"></span>
+                  <span className="w-0.5 h-5 bg-white/70 ml-1 animate-pulse"></span>
                 </div>
                 {isGenerating && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mt-3 flex items-center gap-2 text-blue-400 text-sm"
+                    className="mt-3 flex items-center gap-2 text-white/70 text-sm"
                   >
-                    <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-4 h-4 border-2 border-white/70 border-t-transparent rounded-full animate-spin"></div>
                     Generating workflow...
                   </motion.div>
                 )}
@@ -332,16 +332,17 @@ export function ReactFlowDemo() {
         fitView
         attributionPosition="bottom-left"
         proOptions={{ hideAttribution: true }}
-        defaultViewport={{ x: 0, y: 0, zoom: 1.2 }}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+        style={{ backgroundColor: 'transparent' }}
       >
         <Background 
           variant={BackgroundVariant.Dots} 
           gap={20} 
           size={1}
-          color="#374151"
+          color="#ffffff20"
         />
         <Controls 
-          className="bg-gray-800 border-gray-700"
+          className="bg-black/80 border-white/20"
           showInteractive={false}
           showFitView={false}
         />
@@ -375,10 +376,10 @@ export function ReactFlowDemo() {
               repeat: Infinity,
               ease: "easeInOut"
             }}
-            className="bg-green-500/20 border border-green-500/30 rounded-lg px-3 py-1"
+            className="bg-white/10 border border-white/20 rounded-lg px-3 py-1"
           >
-            <div className="flex items-center gap-2 text-green-300 text-xs">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+            <div className="flex items-center gap-2 text-white/70 text-xs">
+              <div className="w-2 h-2 bg-white/70 rounded-full"></div>
               Ready to Export
             </div>
           </motion.div>
@@ -392,8 +393,8 @@ export function ReactFlowDemo() {
                 key={index}
                 className={`w-2 h-2 rounded-full transition-all duration-300 ${
                   index === currentWorkflow 
-                    ? 'bg-blue-400 w-6' 
-                    : 'bg-gray-600'
+                    ? 'bg-white/70 w-6' 
+                    : 'bg-white/30'
                 }`}
               />
             ))}
