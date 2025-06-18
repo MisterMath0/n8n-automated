@@ -2,8 +2,7 @@
 
 import { HeroSection } from "@/components/sections/HeroSection";
 import { FeaturesSection } from "@/components/sections/FeaturesSection";
-import { DemoSection } from "@/components/sections/DemoSection";
-import { PricingSection } from "@/components/sections/PricingSection";
+import { ProblemSolutionSection } from "@/components/sections/ProblemSolutionSection";
 import { CTASection } from "@/components/sections/CTASection";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -17,8 +16,7 @@ export default function Home() {
       <main className="relative z-10">
         <HeroSection />
         <FeaturesSection />
-        <DemoSection />
-        <PricingSection />
+        <ProblemSolutionSection />
         <CTASection />
       </main>
       <Footer />

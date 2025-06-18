@@ -1,10 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Clock, Users } from "lucide-react";
-import Link from 'next/link';
+import { ArrowRight, Sparkles, Clock, Users, Shield, TrendingUp, AlertTriangle } from "lucide-react";
+import { EmailCollector } from "@/components/ui/EmailCollector";
+import { useState } from "react";
 
 export function CTASection() {
+  const [showEmailCollector, setShowEmailCollector] = useState(false);
+
   return (
     <section className="py-20 px-4">
       <div className="max-w-7xl mx-auto">
@@ -18,14 +21,14 @@ export function CTASection() {
           {/* Main CTA Card */}
           <div className="relative">
             {/* Animated background */}
-            <div className="absolute -inset-8 bg-gradient-to-r from-white/10 via-white/5 to-white/10 rounded-3xl blur-2xl"></div>
+            <div className="absolute -inset-8 bg-gradient-to-r from-red-500/10 via-orange-500/5 to-red-500/10 rounded-3xl blur-2xl"></div>
             
             {/* Card */}
-            <div className="relative bg-gradient-to-br from-black/90 to-black/90 backdrop-blur-sm border border-gray-700/50 rounded-3xl p-16 text-center overflow-hidden">
+            <div className="relative bg-gradient-to-br from-black/90 to-black/90 backdrop-blur-sm border border-red-500/30 rounded-3xl p-16 text-center overflow-hidden">
               {/* Floating elements */}
-              <div className="absolute top-8 left-8 w-24 h-24 bg-white/5 rounded-full blur-xl"></div>
-              <div className="absolute bottom-8 right-8 w-32 h-32 bg-white/3 rounded-full blur-xl"></div>
-              <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-white/4 rounded-full blur-lg"></div>
+              <div className="absolute top-8 left-8 w-24 h-24 bg-red-500/10 rounded-full blur-xl"></div>
+              <div className="absolute bottom-8 right-8 w-32 h-32 bg-orange-500/5 rounded-full blur-xl"></div>
+              <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-red-500/8 rounded-full blur-lg"></div>
 
               {/* Content */}
               <div className="relative z-10">
@@ -35,11 +38,11 @@ export function CTASection() {
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.2 }}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-white/20 bg-white/5 backdrop-blur-sm mb-8"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-red-400/30 bg-red-500/10 backdrop-blur-sm mb-6"
                 >
-                  <Sparkles className="w-5 h-5 text-white/70" />
-                  <span className="text-white/70 font-medium">
-                    Start Building Faster Workflows
+                  <AlertTriangle className="w-4 h-4 text-red-400" />
+                  <span className="text-red-400 text-sm font-medium">
+                    Limited Beta Spots Remaining
                   </span>
                 </motion.div>
 
@@ -49,15 +52,17 @@ export function CTASection() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.4 }}
-                  className="text-4xl lg:text-6xl font-bold mb-6 leading-tight"
+                  className="text-3xl lg:text-4xl font-bold mb-6 leading-tight"
                 >
-                  <span className="bg-gradient-to-r from-white via-gray-100 to-gray-200 bg-clip-text text-transparent">
-                    Transform Your
+                  <span className="text-red-400">
+                    Don't Let Your
                   </span>
                   <br />
-                  <span className="bg-gradient-to-r from-gray-300 via-white to-gray-100 bg-clip-text text-transparent">
-                    Workflow Process
+                  <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                    Competitors
                   </span>
+                  <br />
+                  <span className="text-white">Get The Advantage</span>
                 </motion.h2>
 
                 <motion.p
@@ -65,89 +70,81 @@ export function CTASection() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.6 }}
-                  className="text-xl text-gray-300 mb-10 max-w-4xl mx-auto leading-relaxed"
+                  className="text-base text-gray-300 mb-10 max-w-4xl mx-auto leading-relaxed"
                 >
-                  Transform your workflow building process. Generate professional N8N automations 
-                  in seconds with visual previews and perfect JSON exports.
+                  The automation market is moving fast. While you're stuck building workflows manually, 
+                  <span className="text-white font-semibold"> early beta users are already winning bigger projects</span> with faster delivery.
                 </motion.p>
 
-                {/* Stats */}
+                {/* Beta Benefits */}
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.8 }}
-                  className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12"
+                  className="grid md:grid-cols-4 gap-6 mb-12"
                 >
-                  <div className="flex items-center justify-center gap-3">
-                    <Clock className="w-8 h-8 text-white/70" />
-                    <div>
-                      <div className="text-2xl font-bold text-white">5 Minutes</div>
-                      <div className="text-gray-400">To get started</div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-center gap-3">
-                    <Users className="w-8 h-8 text-white/70" />
-                    <div>
-                      <div className="text-2xl font-bold text-white">1000+</div>
-                      <div className="text-gray-400">Workflows generated</div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-center gap-3">
-                    <Sparkles className="w-8 h-8 text-white/70" />
-                    <div>
-                      <div className="text-2xl font-bold text-white">30 Sec</div>
-                      <div className="text-gray-400">Average generation time</div>
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* CTA Buttons */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 1 }}
-                  className="flex flex-col sm:flex-row gap-6 justify-center items-center"
-                >
-                  <Link href="/signup">
-                    <motion.button
-                      whileHover={{ 
-                        scale: 1.05, 
-                        boxShadow: "0 25px 50px rgba(255, 255, 255, 0.1)" 
-                      }}
-                      whileTap={{ scale: 0.95 }}
-                      className="group relative px-12 py-6 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-2xl font-bold text-xl shadow-2xl overflow-hidden border border-white/20 backdrop-blur-sm"
+                  {[
+                    { icon: Users, text: "Only 500 spots", detail: "Exclusive access" },
+                    { icon: Shield, text: "No payment required", detail: "Completely free" },
+                    { icon: TrendingUp, text: "Lifetime discount", detail: "For beta users" },
+                    { icon: Sparkles, text: "Priority support", detail: "Direct feedback" }
+                  ].map((benefit, index) => (
+                    <motion.div
+                      key={benefit.text}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.8 + index * 0.1 }}
+                      className="text-center p-4 glass-card rounded-xl border border-white/10"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      <div className="relative flex items-center justify-center gap-4">
-                        <span>Start Building Now</span>
-                        <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
-                      </div>
-                    </motion.button>
-                  </Link>
-
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="px-12 py-6 border-2 border-white/20 text-white rounded-2xl font-bold text-xl backdrop-blur-sm hover:bg-white/5 transition-all duration-300"
-                  >
-                    Watch Demo First
-                  </motion.button>
+                      <benefit.icon className="w-8 h-8 text-green-400 mx-auto mb-3" />
+                      <div className="text-white font-semibold text-sm mb-1">{benefit.text}</div>
+                      <div className="text-gray-400 text-xs">{benefit.detail}</div>
+                    </motion.div>
+                  ))}
                 </motion.div>
 
-                {/* Social proof */}
+                {/* CTA Button */}
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 1.2 }}
-                  className="mt-12 text-gray-400"
+                  className="mb-8"
+                >
+                  <motion.button
+                    onClick={() => setShowEmailCollector(true)}
+                    whileHover={{ 
+                      scale: 1.05, 
+                      boxShadow: "0 20px 40px rgba(34, 197, 94, 0.4)" 
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    className="group relative px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold text-base shadow-2xl overflow-hidden border border-green-400/30"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative flex items-center justify-center gap-3">
+                      <Sparkles className="w-6 h-6" />
+                      Secure My Beta Access (FREE)
+                      <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </motion.button>
+                  
+                  <p className="text-gray-400 text-sm mt-4">
+                    Beta spots are filling fast. Secure yours before your competition does.
+                  </p>
+                </motion.div>
+
+                {/* Urgency Counter */}
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 1.4 }}
+                  className="text-gray-400"
                 >
                   <p className="text-lg">
-                    Free to start • No credit card required • 30-day money-back guarantee
+                    ✅ No payment required • ✅ Cancel anytime • ✅ Full support included
                   </p>
                 </motion.div>
               </div>
@@ -159,29 +156,35 @@ export function CTASection() {
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 1.4 }}
+            transition={{ delay: 1.6 }}
             className="mt-16 max-w-4xl mx-auto"
           >
-            <div className="bg-black/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8">
+            <div className="bg-black/60 backdrop-blur-sm border border-green-500/30 rounded-2xl p-8">
               <div className="text-center">
                 <div className="flex justify-center mb-4">
                   {[...Array(5)].map((_, i) => (
-                    <span key={i} className="text-yellow-400 text-2xl">⭐</span>
+                    <span key={i} className="text-green-400 text-2xl">⭐</span>
                   ))}
                 </div>
                 <blockquote className="text-xl text-gray-300 italic mb-6">
-                  "N8N.AI saved me 20+ hours in the first week. The visual preview feature 
-                  is exactly what I needed to validate workflows before importing."
+                  "I just saved 3.5 hours on a client project. That's an extra $350 in my pocket 
+                  for the same deliverable. This tool is pure gold."
                 </blockquote>
                 <div className="text-gray-400">
                   <div className="font-semibold text-white">Sarah Chen</div>
-                  <div>Automation Consultant, TechFlow Agency</div>
+                  <div>Automation Consultant • Beta User</div>
                 </div>
               </div>
             </div>
           </motion.div>
         </motion.div>
       </div>
+
+      {/* Email Collector Modal */}
+      <EmailCollector 
+        isOpen={showEmailCollector}
+        onClose={() => setShowEmailCollector(false)}
+      />
     </section>
   );
 }

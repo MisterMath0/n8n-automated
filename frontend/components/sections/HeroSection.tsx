@@ -1,11 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, Sparkles, DollarSign, Clock, CheckCircle, TrendingUp } from "lucide-react";
 import { ReactFlowDemo } from "@/components/animations/ReactFlowDemo";
+import { EmailCollector } from "@/components/ui/EmailCollector";
 import Link from 'next/link';
+import { useState } from "react";
 
 export function HeroSection() {
+  const [showEmailCollector, setShowEmailCollector] = useState(false);
+
   return (
     <section className="relative min-h-screen flex items-center justify-center px-4 pt-20">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
@@ -21,41 +25,51 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 bg-white/5 backdrop-blur-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-red-400/30 bg-red-500/10 backdrop-blur-sm"
           >
-            <Sparkles className="w-4 h-4 text-white/70" />
-            <span className="text-white/70 text-sm font-medium">
-              Generate Perfect N8N Workflows in Seconds
+            <DollarSign className="w-4 h-4 text-red-400" />
+            <span className="text-red-400 text-sm font-medium">
+              LIMITED BETA ACCESS
             </span>
           </motion.div>
 
-          {/* Main Headline */}
+          {/* Main Headline - Emotional Hook */}
           <div className="space-y-4">
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5, duration: 0.8 }}
-              className="text-4xl lg:text-6xl font-bold leading-tight"
+              className="text-3xl lg:text-4xl font-bold leading-tight"
             >
+              <span className="text-red-400">
+                Stop Losing
+              </span>
+              <br />
               <span className="bg-gradient-to-r from-white via-gray-100 to-gray-200 bg-clip-text text-transparent">
-                Generate N8N
+                $2,000+ Per Week
               </span>
               <br />
-              <span className="bg-gradient-to-r from-gray-300 via-white to-gray-100 bg-clip-text text-transparent">
-                Workflows
-              </span>
-              <br />
-              <span className="text-white">in Seconds</span>
+              <span className="text-white">On Manual Work</span>
             </motion.h1>
 
             <motion.p
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7, duration: 0.8 }}
-              className="text-lg text-gray-300 leading-relaxed max-w-2xl"
+              className="text-base text-gray-300 leading-relaxed max-w-2xl"
             >
-              Transform your ideas into working N8N workflows with AI. See visual previews, 
-              fix connections, and export perfect JSON - no more buggy extensions or broken outputs.
+              Turn 4-hour automation projects into <span className="text-white font-semibold">30-second wins</span>. 
+              Get perfect n8n workflows that work the first time, every time.
+            </motion.p>
+
+            <motion.p
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8, duration: 0.8 }}
+              className="text-sm text-gray-400 leading-relaxed max-w-2xl"
+            >
+              While your competitors waste days on manual setup, smart automation professionals 
+              are using AI to deliver projects <span className="text-white">10x faster</span> and pocket the difference.
             </motion.p>
           </div>
 
@@ -66,51 +80,59 @@ export function HeroSection() {
             transition={{ delay: 0.9 }}
             className="flex flex-col sm:flex-row gap-4"
           >
-            <Link href="/signup">
-              <motion.button
-                whileHover={{ 
-                  scale: 1.05, 
-                  boxShadow: "0 20px 40px rgba(255, 255, 255, 0.1)" 
-                }}
-                whileTap={{ scale: 0.95 }}
-                className="group relative px-6 py-3 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-xl font-semibold text-base shadow-2xl overflow-hidden border border-white/20 backdrop-blur-sm"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="relative flex items-center justify-center gap-3">
-                  <Zap className="w-5 h-5" />
-                  Generate Your First Workflow
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </motion.button>
-            </Link>
+            <motion.button
+              onClick={() => setShowEmailCollector(true)}
+              whileHover={{ 
+                scale: 1.05, 
+                boxShadow: "0 20px 40px rgba(34, 197, 94, 0.3)" 
+              }}
+              whileTap={{ scale: 0.95 }}
+              className="group relative px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold text-base shadow-2xl overflow-hidden border border-green-400/30"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative flex items-center justify-center gap-3">
+                <Sparkles className="w-5 h-5" />
+                Join The Beta (FREE)
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </motion.button>
 
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="px-6 py-3 border border-white/20 text-white rounded-xl font-semibold text-base backdrop-blur-sm hover:bg-white/5 transition-all duration-300"
             >
-              Watch Demo
+              See 30-Second Demo
             </motion.button>
           </motion.div>
 
-          {/* Stats */}
+          {/* Social Proof Stats */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.1 }}
             className="flex items-center gap-8 pt-8"
           >
-            <div className="text-center">
-              <div className="text-xl font-bold text-white">5 min</div>
-              <div className="text-xs text-gray-400">Average setup time</div>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-400" />
+              <div>
+                <div className="text-xl font-bold text-white">480x</div>
+                <div className="text-xs text-gray-400">Faster delivery</div>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-xl font-bold text-white">4x</div>
-              <div className="text-xs text-gray-400">Faster than manual</div>
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-green-400" />
+              <div>
+                <div className="text-xl font-bold text-white">$400+</div>
+                <div className="text-xs text-gray-400">Saved per workflow</div>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-xl font-bold text-white">100%</div>
-              <div className="text-xs text-gray-400">Working outputs</div>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-green-400" />
+              <div>
+                <div className="text-xl font-bold text-white">100%</div>
+                <div className="text-xs text-gray-400">Working outputs</div>
+              </div>
             </div>
           </motion.div>
         </motion.div>
@@ -133,6 +155,12 @@ export function HeroSection() {
           </div>
         </motion.div>
       </div>
+
+      {/* Email Collector Modal */}
+      <EmailCollector 
+        isOpen={showEmailCollector}
+        onClose={() => setShowEmailCollector(false)}
+      />
 
       {/* Scroll indicator */}
       <motion.div

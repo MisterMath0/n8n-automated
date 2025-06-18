@@ -11,8 +11,8 @@ export function Navbar() {
   const navItems = [
     { name: "Features", href: "#features" },
     { name: "Demo", href: "#demo" },
-    { name: "Pricing", href: "#pricing" },
-    { name: "Docs", href: "#docs" },
+    { name: "Beta Access", href: "#beta" },
+    { name: "Contact", href: "#contact" },
   ];
 
   return (
@@ -68,11 +68,11 @@ export function Navbar() {
               >
                 <Link href="/signup">
                   <motion.button
-                    whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(255, 255, 255, 0.2)" }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-6 py-2 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-lg font-medium shadow-lg hover:shadow-white/10 transition-all duration-300 border border-white/20 backdrop-blur-sm"
+                  whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(34, 197, 94, 0.3)" }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-medium shadow-lg hover:shadow-green-500/25 transition-all duration-300 border border-green-400/30"
                   >
-                    Get Started
+                  Join Beta FREE
                   </motion.button>
                 </Link>
               </motion.div>
@@ -118,9 +118,9 @@ export function Navbar() {
                       transition={{ delay: 0.4 }}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="mt-4 px-6 py-3 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-lg font-medium shadow-lg border border-white/20 backdrop-blur-sm text-center"
+                      className="mt-4 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-medium shadow-lg border border-green-400/30 text-center"
                     >
-                      Get Started
+                      Join Beta FREE
                     </motion.button>
                   </Link>
                 </div>

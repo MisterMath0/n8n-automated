@@ -2,48 +2,57 @@
 
 import { motion } from "framer-motion";
 import { Eye, Zap, Shield, Rocket, Code, Globe } from "lucide-react";
+import { EmailCollector } from "@/components/ui/EmailCollector";
 import Link from 'next/link';
+import { useState } from "react";
 
 const features = [
   {
-    icon: Eye,
-    title: "Visual Preview",
-    description: "See workflows before importing with ReactFlow integration. No more blind JSON imports.",
-    color: "from-white/30 to-white/10",
+    icon: Zap,
+    title: "30-Second Generation",
+    description: "Turn any automation idea into a working workflow faster than you can describe it. No more 4-hour build sessions eating into your profits.",
+    color: "from-green-500/30 to-green-500/10",
+    highlight: "480x faster"
   },
   {
     icon: Shield,
-    title: "Smart Validation",
-    description: "Checks if nodes actually exist in N8N. Auto-fixes broken connections and missing parameters.",
-    color: "from-white/25 to-white/5",
+    title: "Guaranteed Working Outputs",
+    description: "Every workflow imports perfectly into n8n. No broken connections, no missing nodes, no frustrated clients.",
+    color: "from-blue-500/25 to-blue-500/5",
+    highlight: "100% success rate"
   },
   {
-    icon: Zap,
-    title: "No API Keys",
-    description: "Built-in AI, no user setup required. Start generating workflows immediately.",
-    color: "from-white/35 to-white/15",
-  },
-  {
-    icon: Globe,
-    title: "Cross-Platform",
-    description: "Web app that works everywhere. No Chrome-only browser extension limitations.",
-    color: "from-white/20 to-white/5",
-  },
-  {
-    icon: Code,
-    title: "Perfect JSON",
-    description: "Generates working N8N JSON that imports cleanly. No manual fixing required.",
-    color: "from-white/30 to-white/10",
+    icon: Eye,
+    title: "Preview Before You Commit",
+    description: "See exactly how your workflow will look before importing. Make adjustments with confidence, deliver professional results every time.",
+    color: "from-purple-500/30 to-purple-500/10",
+    highlight: "No surprises"
   },
   {
     icon: Rocket,
-    title: "Lightning Fast",
-    description: "Generate complex workflows in seconds. 10x faster than manual building.",
-    color: "from-white/25 to-white/10",
+    title: "Scale Your Business",
+    description: "Handle 10x more client work without hiring more people. Scale your automation business without scaling your stress.",
+    color: "from-orange-500/25 to-orange-500/10",
+    highlight: "10x capacity"
+  },
+  {
+    icon: Code,
+    title: "Professional Quality",
+    description: "Generate enterprise-grade workflows that impress clients and justify premium rates. No amateur outputs.",
+    color: "from-cyan-500/30 to-cyan-500/10",
+    highlight: "Enterprise-grade"
+  },
+  {
+    icon: Globe,
+    title: "Works Everywhere",
+    description: "No software to install, no browser extensions to break. Access your automation superpower from anywhere.",
+    color: "from-indigo-500/25 to-indigo-500/10",
+    highlight: "Always available"
   },
 ];
 
 export function FeaturesSection() {
+  const [showEmailCollector, setShowEmailCollector] = useState(false);
   return (
     <section id="features" className="py-20 px-4">
       <div className="max-w-7xl mx-auto">
@@ -68,19 +77,19 @@ export function FeaturesSection() {
             </span>
           </motion.div>
 
-          <h2 className="text-3xl lg:text-5xl font-bold mb-6">
+          <h2 className="text-2xl lg:text-3xl font-bold mb-6">
             <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-              Build Workflows
+              Why Automation Pros
             </span>
             <br />
-            <span className="bg-gradient-to-r from-gray-300 to-white bg-clip-text text-transparent">
-              10x Faster
+            <span className="bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
+              Choose N8N.AI
             </span>
           </h2>
 
-          <p className="text-lg text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            Stop wasting hours on manual workflow building. Generate, preview, and export 
-            professional N8N automations in seconds.
+          <p className="text-base text-gray-300 max-w-3xl mx-auto leading-relaxed">
+            Stop wasting your talent on tedious setup work. Start delivering results 
+            that wow clients and <span className="text-white font-semibold">boost your bottom line</span>.
           </p>
         </motion.div>
 
@@ -110,9 +119,14 @@ export function FeaturesSection() {
                 </div>
 
                 {/* Content */}
-                <h3 className="text-xl font-semibold text-white mb-4 group-hover:text-gray-100 transition-colors">
-                  {feature.title}
-                </h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xl font-semibold text-white group-hover:text-gray-100 transition-colors">
+                    {feature.title}
+                  </h3>
+                  <span className="px-2 py-1 bg-white/10 text-white/70 text-xs font-medium rounded-full border border-white/20">
+                    {feature.highlight}
+                  </span>
+                </div>
                 <p className="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">
                   {feature.description}
                 </p>
@@ -139,26 +153,31 @@ export function FeaturesSection() {
           <div className="relative inline-block">
             <div className="absolute -inset-4 bg-gradient-to-r from-white/10 to-white/5 rounded-2xl blur-xl"></div>
             <div className="relative glass-dark rounded-2xl p-8">
-              <h3 className="text-2xl font-bold text-white mb-4">
-              Ready to Save Hours Every Week?
+              <h3 className="text-xl font-bold text-white mb-4">
+              Ready to 10x Your Automation Business?
               </h3>
               <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
-              Join developers and agencies who've streamlined their workflow creation process. 
-              Start building faster, more reliable N8N automations today.
+              Join automation professionals who are earning more money in less time. 
+              Stop competing on hours and start competing on <span className="text-white font-semibold">results</span>.
               </p>
-              <Link href="/signup">
-                <motion.button
-                  whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(255, 255, 255, 0.1)" }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-xl font-semibold text-lg shadow-2xl hover:shadow-white/10 transition-all duration-300 border border-white/20 backdrop-blur-sm"
-                >
-                  Start Building Now
-                </motion.button>
-              </Link>
+              <motion.button
+                onClick={() => setShowEmailCollector(true)}
+                whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(34, 197, 94, 0.3)" }}
+                whileTap={{ scale: 0.95 }}
+                className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold text-base shadow-2xl hover:shadow-green-500/25 transition-all duration-300 border border-green-400/30"
+              >
+                Join The Beta (FREE)
+              </motion.button>
             </div>
           </div>
         </motion.div>
       </div>
+
+      {/* Email Collector Modal */}
+      <EmailCollector 
+        isOpen={showEmailCollector}
+        onClose={() => setShowEmailCollector(false)}
+      />
     </section>
   );
 }
