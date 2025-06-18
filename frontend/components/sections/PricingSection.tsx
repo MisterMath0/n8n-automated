@@ -18,8 +18,8 @@ const plans = [
     cta: "Get Started",
     popular: false,
     icon: Zap,
-    color: "from-gray-500 to-gray-600",
-    ctaColor: "from-gray-600 to-gray-700"
+    color: "from-white/20 to-white/10",
+    ctaColor: "from-white/15 to-white/5"
   },
   {
     name: "Professional", 
@@ -38,8 +38,8 @@ const plans = [
     cta: "Start Free Trial",
     popular: true,
     icon: Crown,
-    color: "from-blue-500 to-purple-600",
-    ctaColor: "from-blue-600 to-purple-700"
+    color: "from-white/30 to-white/15",
+    ctaColor: "from-white/25 to-white/10"
   },
   {
     name: "Enterprise",
@@ -57,8 +57,8 @@ const plans = [
     cta: "Contact Sales",
     popular: false,
     icon: Rocket,
-    color: "from-purple-500 to-pink-600", 
-    ctaColor: "from-purple-600 to-pink-700"
+    color: "from-white/25 to-white/10", 
+    ctaColor: "from-white/20 to-white/5"
   }
 ];
 
@@ -79,10 +79,10 @@ export function PricingSection() {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-green-500/30 bg-green-500/10 backdrop-blur-sm mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 bg-white/5 backdrop-blur-sm mb-6"
           >
-            <Crown className="w-4 h-4 text-green-400" />
-            <span className="text-green-300 text-sm font-medium">
+            <Crown className="w-4 h-4 text-white/70" />
+            <span className="text-white/70 text-sm font-medium">
               Transparent Pricing
             </span>
           </motion.div>
@@ -92,7 +92,7 @@ export function PricingSection() {
               Start Saving
             </span>
             <br />
-            <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-gray-300 to-white bg-clip-text text-transparent">
               Time Today
             </span>
           </h2>
@@ -123,7 +123,7 @@ export function PricingSection() {
                   transition={{ delay: index * 0.2 + 0.3 }}
                   className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10"
                 >
-                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                  <div className="bg-gradient-to-r from-white/25 to-white/15 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg border border-white/20 backdrop-blur-sm">
                     Most Popular
                   </div>
                 </motion.div>
@@ -133,14 +133,14 @@ export function PricingSection() {
               <div className={`absolute -inset-1 bg-gradient-to-r ${plan.color} rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-500`}></div>
               
               {/* Card */}
-              <div className={`relative bg-gray-900/80 backdrop-blur-sm border rounded-3xl p-8 h-full transition-all duration-300 ${
+              <div className={`relative bg-black/80 backdrop-blur-sm border rounded-3xl p-8 h-full transition-all duration-300 ${
                 plan.popular 
-                  ? 'border-blue-500/50 shadow-2xl shadow-blue-500/10' 
+                  ? 'border-white/30 shadow-2xl shadow-white/5' 
                   : 'border-gray-700/50 hover:border-gray-600/50'
               }`}>
                 {/* Icon */}
                 <div className="mb-6">
-                  <div className={`w-16 h-16 bg-gradient-to-r ${plan.color} rounded-2xl flex items-center justify-center`}>
+                  <div className={`w-16 h-16 bg-gradient-to-r ${plan.color} rounded-2xl flex items-center justify-center border border-white/20`}>
                     <plan.icon className="w-8 h-8 text-white" />
                   </div>
                 </div>
@@ -163,7 +163,7 @@ export function PricingSection() {
                 <div className="space-y-4 mb-8">
                   {plan.features.map((feature, i) => (
                     <div key={i} className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <Check className="w-5 h-5 text-white/70 mt-0.5 flex-shrink-0" />
                       <span className="text-gray-300">{feature}</span>
                     </div>
                   ))}
@@ -173,7 +173,7 @@ export function PricingSection() {
                 <motion.button
                   whileHover={{ scale: 1.02, boxShadow: "0 10px 30px rgba(0,0,0,0.3)" }}
                   whileTap={{ scale: 0.98 }}
-                  className={`w-full py-4 bg-gradient-to-r ${plan.ctaColor} text-white rounded-xl font-semibold text-lg shadow-lg transition-all duration-300`}
+                  className={`w-full py-4 bg-gradient-to-r ${plan.ctaColor} text-white rounded-xl font-semibold text-lg shadow-lg transition-all duration-300 border border-white/20 backdrop-blur-sm`}
                 >
                   {plan.cta}
                 </motion.button>
@@ -192,10 +192,10 @@ export function PricingSection() {
         >
           <div className="relative">
             {/* Glow effect */}
-            <div className="absolute -inset-4 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-3xl blur-xl"></div>
+            <div className="absolute -inset-4 bg-gradient-to-r from-white/10 to-white/5 rounded-3xl blur-xl"></div>
             
             {/* Card */}
-            <div className="relative bg-gray-900/80 backdrop-blur-sm border border-gray-700/50 rounded-3xl p-12">
+            <div className="relative bg-black/80 backdrop-blur-sm border border-gray-700/50 rounded-3xl p-12">
               <div className="text-center mb-8">
                 <h3 className="text-3xl font-bold text-white mb-4">ROI Calculator</h3>
                 <p className="text-gray-300 text-lg">See how much N8N.AI saves you</p>
@@ -203,19 +203,19 @@ export function PricingSection() {
 
               <div className="grid md:grid-cols-3 gap-8 text-center">
                 <div>
-                  <div className="text-4xl font-bold text-blue-400 mb-2">4+ hours</div>
+                  <div className="text-4xl font-bold text-white mb-2">4+ hours</div>
                   <div className="text-gray-300">Saved per workflow</div>
                   <div className="text-sm text-gray-500 mt-2">vs manual building</div>
                 </div>
                 
                 <div>
-                  <div className="text-4xl font-bold text-green-400 mb-2">€100/hr</div>
+                  <div className="text-4xl font-bold text-gray-300 mb-2">€100/hr</div>
                   <div className="text-gray-300">Typical agency rate</div>
                   <div className="text-sm text-gray-500 mt-2">automation consultant</div>
                 </div>
                 
                 <div>
-                  <div className="text-4xl font-bold text-purple-400 mb-2">€400+</div>
+                  <div className="text-4xl font-bold text-gray-100 mb-2">€400+</div>
                   <div className="text-gray-300">Saved per workflow</div>
                   <div className="text-sm text-gray-500 mt-2">ROI: 1,379%</div>
                 </div>
@@ -223,12 +223,12 @@ export function PricingSection() {
 
               <div className="mt-8 text-center">
                 <p className="text-gray-300 text-lg mb-6">
-                  Professional plan pays for itself with just <span className="text-green-400 font-semibold">one workflow</span> saved
+                  Professional plan pays for itself with just <span className="text-white font-semibold">one workflow</span> saved
                 </p>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl font-semibold text-lg shadow-lg"
+                  className="px-8 py-4 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-xl font-semibold text-lg shadow-lg border border-white/20 backdrop-blur-sm"
                 >
                   Start Saving Time Today
                 </motion.button>
@@ -247,19 +247,19 @@ export function PricingSection() {
         >
           <h3 className="text-2xl font-bold text-white mb-8">Frequently Asked Questions</h3>
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            <div className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-left">
+            <div className="bg-black/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-left">
               <h4 className="font-semibold text-white mb-3">How accurate are the generated workflows?</h4>
               <p className="text-gray-300 text-sm">Our AI generates working N8N workflows with smart validation and auto-fixing. Visual previews let you verify before exporting.</p>
             </div>
-            <div className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-left">
+            <div className="bg-black/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-left">
               <h4 className="font-semibold text-white mb-3">Do I need API keys?</h4>
               <p className="text-gray-300 text-sm">No! Built-in AI means you can start generating workflows immediately without complex setup.</p>
             </div>
-            <div className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-left">
+            <div className="bg-black/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-left">
               <h4 className="font-semibold text-white mb-3">Can I export to my N8N instance?</h4>
               <p className="text-gray-300 text-sm">Yes! Perfect JSON exports that import cleanly. Professional plan includes direct instance integration.</p>
             </div>
-            <div className="bg-gray-900/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-left">
+            <div className="bg-black/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-left">
               <h4 className="font-semibold text-white mb-3">What's the refund policy?</h4>
               <p className="text-gray-300 text-sm">30-day money-back guarantee. If it doesn't save you time, get your money back.</p>
             </div>

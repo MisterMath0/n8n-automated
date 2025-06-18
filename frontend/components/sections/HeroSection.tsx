@@ -20,10 +20,10 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-500/30 bg-purple-500/10 backdrop-blur-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 bg-white/5 backdrop-blur-sm"
           >
-            <Sparkles className="w-4 h-4 text-purple-400" />
-            <span className="text-purple-300 text-sm font-medium">
+            <Sparkles className="w-4 h-4 text-white/70" />
+            <span className="text-white/70 text-sm font-medium">
               Generate Perfect N8N Workflows in Seconds
             </span>
           </motion.div>
@@ -36,11 +36,11 @@ export function HeroSection() {
               transition={{ delay: 0.5, duration: 0.8 }}
               className="text-4xl lg:text-6xl font-bold leading-tight"
             >
-              <span className="bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-white via-gray-100 to-gray-200 bg-clip-text text-transparent">
                 Generate N8N
               </span>
               <br />
-              <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-gray-300 via-white to-gray-100 bg-clip-text text-transparent">
                 Workflows
               </span>
               <br />
@@ -68,12 +68,12 @@ export function HeroSection() {
             <motion.button
               whileHover={{ 
                 scale: 1.05, 
-                boxShadow: "0 20px 40px rgba(59, 130, 246, 0.3)" 
+                boxShadow: "0 20px 40px rgba(255, 255, 255, 0.1)" 
               }}
               whileTap={{ scale: 0.95 }}
-              className="group relative px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold text-base shadow-2xl overflow-hidden"
+              className="group relative px-6 py-3 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-xl font-semibold text-base shadow-2xl overflow-hidden border border-white/20 backdrop-blur-sm"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <div className="relative flex items-center justify-center gap-3">
                 <Zap className="w-5 h-5" />
                 Generate Your First Workflow
@@ -121,7 +121,7 @@ export function HeroSection() {
         >
           <div className="relative">
             {/* Glow effect */}
-            <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur-xl"></div>
+            <div className="absolute -inset-4 bg-gradient-to-r from-white/10 to-white/5 rounded-3xl blur-xl"></div>
             
             {/* Container */}
             <div className="relative bg-black/40 backdrop-blur-sm border border-white/10 rounded-3xl p-6 shadow-2xl">

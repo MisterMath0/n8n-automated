@@ -10,9 +10,9 @@ const processes = [
     title: "Manual Building",
     subtitle: "The old way",
     time: "2-4 hours",
-    color: "from-orange-500 to-red-500",
-    bgColor: "from-orange-500/10 to-red-500/10",
-    borderColor: "border-orange-500/20",
+    color: "from-gray-500 to-gray-400",
+    bgColor: "from-gray-500/10 to-gray-400/10",
+    borderColor: "border-gray-500/20",
     steps: [
       { text: "Research N8N documentation", time: "30-45 min" },
       { text: "Design workflow architecture", time: "45-60 min" },
@@ -27,9 +27,9 @@ const processes = [
     title: "N8N.AI Generation",
     subtitle: "The smart way",
     time: "30 seconds",
-    color: "from-green-500 to-blue-500",
-    bgColor: "from-green-500/10 to-blue-500/10",
-    borderColor: "border-green-500/30",
+    color: "from-white/30 to-white/10",
+    bgColor: "from-white/10 to-white/5",
+    borderColor: "border-white/30",
     steps: [
       { text: "Describe in plain English", time: "10 sec" },
       { text: "AI generates structure", time: "5 sec" },
@@ -90,8 +90,8 @@ export function DemoSection() {
             transition={{ delay: 0.2 }}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full glass-dark mb-6"
           >
-            <Play className="w-5 h-5 text-green-400" />
-            <span className="text-green-300 font-medium">
+            <Play className="w-5 h-5 text-white/70" />
+            <span className="text-white/70 font-medium">
               Live Demo
             </span>
           </motion.div>
@@ -101,7 +101,7 @@ export function DemoSection() {
               See It In
             </span>
             <br />
-            <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-gray-300 to-white bg-clip-text text-transparent">
               Action
             </span>
           </h2>
@@ -125,14 +125,14 @@ export function DemoSection() {
                 onClick={() => setActiveTab("comparison")}
                 className={`px-8 py-4 rounded-xl font-semibold transition-all duration-300 relative overflow-hidden ${
                   activeTab === "comparison"
-                    ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-500/30"
+                    ? "bg-gradient-to-r from-white/20 to-white/10 text-white border border-white/30"
                     : "text-gray-400 hover:text-gray-300 hover:bg-white/5"
                 }`}
               >
                 {activeTab === "comparison" && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl"
+                    className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 rounded-xl"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
@@ -145,14 +145,14 @@ export function DemoSection() {
                 onClick={() => setActiveTab("benefits")}
                 className={`px-8 py-4 rounded-xl font-semibold transition-all duration-300 relative overflow-hidden ${
                   activeTab === "benefits"
-                    ? "bg-gradient-to-r from-green-500/20 to-blue-500/20 text-white border border-green-500/30"
+                    ? "bg-gradient-to-r from-white/20 to-white/10 text-white border border-white/30"
                     : "text-gray-400 hover:text-gray-300 hover:bg-white/5"
                 }`}
               >
                 {activeTab === "benefits" && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-xl"
+                    className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 rounded-xl"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
@@ -261,7 +261,7 @@ export function DemoSection() {
                             <motion.button
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
-                              className="px-8 py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl font-semibold text-lg shadow-lg flex items-center gap-3 mx-auto"
+                              className="px-8 py-4 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-xl font-semibold text-lg shadow-lg flex items-center gap-3 mx-auto border border-white/20 backdrop-blur-sm"
                             >
                               Try N8N.AI Now
                               <ArrowRight className="w-5 h-5" />
@@ -295,24 +295,24 @@ export function DemoSection() {
                   className="group relative"
                 >
                   {/* Glow effect */}
-                  <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition duration-500"></div>
+                  <div className="absolute -inset-2 bg-gradient-to-r from-white/20 to-white/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition duration-500"></div>
                   
                   {/* Card */}
                   <div className="relative glass-card rounded-2xl p-8 h-full border border-white/10 group-hover:border-white/20 transition-all duration-300">
                     <div className="flex items-start gap-6">
                       {/* Icon */}
                       <div className="relative">
-                        <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center">
+                        <div className="w-16 h-16 bg-gradient-to-r from-white/30 to-white/10 rounded-2xl flex items-center justify-center border border-white/20">
                           <benefit.icon className="w-8 h-8 text-white" />
                         </div>
-                        <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-lg opacity-0 group-hover:opacity-40 transition duration-300"></div>
+                        <div className="absolute -inset-2 bg-gradient-to-r from-white/20 to-white/10 rounded-2xl blur-lg opacity-0 group-hover:opacity-40 transition duration-300"></div>
                       </div>
                       
                       {/* Content */}
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
                           <h3 className="text-xl font-semibold text-white">{benefit.title}</h3>
-                          <span className="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-medium rounded-full border border-green-500/30">
+                          <span className="px-3 py-1 bg-white/10 text-white/70 text-xs font-medium rounded-full border border-white/20">
                             {benefit.highlight}
                           </span>
                         </div>
@@ -336,7 +336,7 @@ export function DemoSection() {
         >
           <div className="relative">
             {/* Background glow */}
-            <div className="absolute -inset-8 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-green-500/10 rounded-3xl blur-2xl"></div>
+            <div className="absolute -inset-8 bg-gradient-to-r from-white/5 via-white/3 to-white/5 rounded-3xl blur-2xl"></div>
             
             {/* Stats container */}
             <div className="relative glass-dark rounded-3xl p-8 border border-white/10">
@@ -347,9 +347,9 @@ export function DemoSection() {
               
               <div className="grid md:grid-cols-3 gap-8">
                 {[
-                  { value: "480x", label: "Faster Generation", sublabel: "30 seconds vs 4 hours", color: "text-green-400" },
-                  { value: "€400+", label: "Saved Per Workflow", sublabel: "Based on €100/hr rate", color: "text-blue-400" },
-                  { value: "100%", label: "Success Rate", sublabel: "Working exports every time", color: "text-purple-400" }
+                  { value: "480x", label: "Faster Generation", sublabel: "30 seconds vs 4 hours", color: "text-white" },
+                  { value: "€400+", label: "Saved Per Workflow", sublabel: "Based on €100/hr rate", color: "text-gray-300" },
+                  { value: "100%", label: "Success Rate", sublabel: "Working exports every time", color: "text-gray-100" }
                 ].map((stat, index) => (
                   <motion.div
                     key={stat.label}
