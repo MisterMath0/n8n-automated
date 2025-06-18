@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, Clock, Users } from "lucide-react";
+import Link from 'next/link';
 
 export function CTASection() {
   return (
@@ -111,20 +112,22 @@ export function CTASection() {
                   transition={{ delay: 1 }}
                   className="flex flex-col sm:flex-row gap-6 justify-center items-center"
                 >
-                  <motion.button
-                    whileHover={{ 
-                      scale: 1.05, 
-                      boxShadow: "0 25px 50px rgba(255, 255, 255, 0.1)" 
-                    }}
-                    whileTap={{ scale: 0.95 }}
-                    className="group relative px-12 py-6 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-2xl font-bold text-xl shadow-2xl overflow-hidden border border-white/20 backdrop-blur-sm"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <div className="relative flex items-center justify-center gap-4">
-                      <span>Start Building Now</span>
-                      <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
-                    </div>
-                  </motion.button>
+                  <Link href="/signup">
+                    <motion.button
+                      whileHover={{ 
+                        scale: 1.05, 
+                        boxShadow: "0 25px 50px rgba(255, 255, 255, 0.1)" 
+                      }}
+                      whileTap={{ scale: 0.95 }}
+                      className="group relative px-12 py-6 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-2xl font-bold text-xl shadow-2xl overflow-hidden border border-white/20 backdrop-blur-sm"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <div className="relative flex items-center justify-center gap-4">
+                        <span>Start Building Now</span>
+                        <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+                      </div>
+                    </motion.button>
+                  </Link>
 
                   <motion.button
                     whileHover={{ scale: 1.02 }}

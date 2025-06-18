@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Play, CheckCircle, Clock, Zap, Eye, Code, ArrowRight, Sparkles } from "lucide-react";
+import Link from 'next/link';
 
 const processes = [
   {
@@ -258,14 +259,16 @@ export function DemoSection() {
                             transition={{ delay: 0.8 }}
                             className="mt-8 text-center"
                           >
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              className="px-8 py-4 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-xl font-semibold text-lg shadow-lg flex items-center gap-3 mx-auto border border-white/20 backdrop-blur-sm"
-                            >
-                              Try N8N.AI Now
-                              <ArrowRight className="w-5 h-5" />
-                            </motion.button>
+                            <Link href="/signup">
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="px-8 py-4 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-xl font-semibold text-lg shadow-lg flex items-center gap-3 mx-auto border border-white/20 backdrop-blur-sm"
+                              >
+                                Try N8N.AI Now
+                                <ArrowRight className="w-5 h-5" />
+                              </motion.button>
+                            </Link>
                           </motion.div>
                         )}
                       </div>

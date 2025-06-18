@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { Menu, X, Zap } from "lucide-react";
+import Link from 'next/link';
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -65,13 +66,15 @@ export function Navbar() {
                 transition={{ delay: 0.8 }}
                 className="hidden md:block"
               >
-                <motion.button
-                  whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(255, 255, 255, 0.2)" }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-6 py-2 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-lg font-medium shadow-lg hover:shadow-white/10 transition-all duration-300 border border-white/20 backdrop-blur-sm"
-                >
-                  Get Started
-                </motion.button>
+                <Link href="/signup">
+                  <motion.button
+                    whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(255, 255, 255, 0.2)" }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-6 py-2 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-lg font-medium shadow-lg hover:shadow-white/10 transition-all duration-300 border border-white/20 backdrop-blur-sm"
+                  >
+                    Get Started
+                  </motion.button>
+                </Link>
               </motion.div>
 
               {/* Mobile menu button */}
@@ -108,16 +111,18 @@ export function Navbar() {
                       {item.name}
                     </motion.a>
                   ))}
-                  <motion.button
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="mt-4 px-6 py-3 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-lg font-medium shadow-lg border border-white/20 backdrop-blur-sm"
-                  >
-                    Get Started
-                  </motion.button>
+                  <Link href="/signup">
+                    <motion.button
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="mt-4 px-6 py-3 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-lg font-medium shadow-lg border border-white/20 backdrop-blur-sm text-center"
+                    >
+                      Get Started
+                    </motion.button>
+                  </Link>
                 </div>
               </div>
             </motion.div>

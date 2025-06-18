@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, Zap } from "lucide-react";
 import { ReactFlowDemo } from "@/components/animations/ReactFlowDemo";
+import Link from 'next/link';
 
 export function HeroSection() {
   return (
@@ -65,21 +66,23 @@ export function HeroSection() {
             transition={{ delay: 0.9 }}
             className="flex flex-col sm:flex-row gap-4"
           >
-            <motion.button
-              whileHover={{ 
-                scale: 1.05, 
-                boxShadow: "0 20px 40px rgba(255, 255, 255, 0.1)" 
-              }}
-              whileTap={{ scale: 0.95 }}
-              className="group relative px-6 py-3 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-xl font-semibold text-base shadow-2xl overflow-hidden border border-white/20 backdrop-blur-sm"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative flex items-center justify-center gap-3">
-                <Zap className="w-5 h-5" />
-                Generate Your First Workflow
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </motion.button>
+            <Link href="/signup">
+              <motion.button
+                whileHover={{ 
+                  scale: 1.05, 
+                  boxShadow: "0 20px 40px rgba(255, 255, 255, 0.1)" 
+                }}
+                whileTap={{ scale: 0.95 }}
+                className="group relative px-6 py-3 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-xl font-semibold text-base shadow-2xl overflow-hidden border border-white/20 backdrop-blur-sm"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative flex items-center justify-center gap-3">
+                  <Zap className="w-5 h-5" />
+                  Generate Your First Workflow
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </motion.button>
+            </Link>
 
             <motion.button
               whileHover={{ scale: 1.02 }}

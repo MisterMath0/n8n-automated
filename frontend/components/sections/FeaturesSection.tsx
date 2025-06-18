@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Eye, Zap, Shield, Rocket, Code, Globe } from "lucide-react";
+import Link from 'next/link';
 
 const features = [
   {
@@ -145,13 +146,15 @@ export function FeaturesSection() {
               Join developers and agencies who've streamlined their workflow creation process. 
               Start building faster, more reliable N8N automations today.
               </p>
-              <motion.button
-                whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(255, 255, 255, 0.1)" }}
-                whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-xl font-semibold text-lg shadow-2xl hover:shadow-white/10 transition-all duration-300 border border-white/20 backdrop-blur-sm"
-              >
-                Start Building Now
-              </motion.button>
+              <Link href="/signup">
+                <motion.button
+                  whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(255, 255, 255, 0.1)" }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-8 py-4 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-xl font-semibold text-lg shadow-2xl hover:shadow-white/10 transition-all duration-300 border border-white/20 backdrop-blur-sm"
+                >
+                  Start Building Now
+                </motion.button>
+              </Link>
             </div>
           </div>
         </motion.div>

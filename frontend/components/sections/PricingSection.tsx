@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Check, Zap, Crown, Rocket } from "lucide-react";
+import Link from 'next/link';
 
 const plans = [
   {
@@ -170,13 +171,25 @@ export function PricingSection() {
                 </div>
 
                 {/* CTA Button */}
-                <motion.button
-                  whileHover={{ scale: 1.02, boxShadow: "0 10px 30px rgba(0,0,0,0.3)" }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`w-full py-4 bg-gradient-to-r ${plan.ctaColor} text-white rounded-xl font-semibold text-lg shadow-lg transition-all duration-300 border border-white/20 backdrop-blur-sm`}
-                >
-                  {plan.cta}
-                </motion.button>
+                {plan.cta !== 'Contact Sales' ? (
+                  <Link href="/signup">
+                    <motion.button
+                      whileHover={{ scale: 1.02, boxShadow: "0 10px 30px rgba(0,0,0,0.3)" }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`w-full py-4 bg-gradient-to-r ${plan.ctaColor} text-white rounded-xl font-semibold text-lg shadow-lg transition-all duration-300 border border-white/20 backdrop-blur-sm`}
+                    >
+                      {plan.cta}
+                    </motion.button>
+                  </Link>
+                ) : (
+                  <motion.button
+                    whileHover={{ scale: 1.02, boxShadow: "0 10px 30px rgba(0,0,0,0.3)" }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`w-full py-4 bg-gradient-to-r ${plan.ctaColor} text-white rounded-xl font-semibold text-lg shadow-lg transition-all duration-300 border border-white/20 backdrop-blur-sm`}
+                  >
+                    {plan.cta}
+                  </motion.button>
+                )}
               </div>
             </motion.div>
           ))}
@@ -225,13 +238,15 @@ export function PricingSection() {
                 <p className="text-gray-300 text-lg mb-6">
                   Professional plan pays for itself with just <span className="text-white font-semibold">one workflow</span> saved
                 </p>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-xl font-semibold text-lg shadow-lg border border-white/20 backdrop-blur-sm"
-                >
-                  Start Saving Time Today
-                </motion.button>
+                <Link href="/signup">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-8 py-4 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-xl font-semibold text-lg shadow-lg border border-white/20 backdrop-blur-sm"
+                  >
+                    Start Saving Time Today
+                  </motion.button>
+                </Link>
               </div>
             </div>
           </div>
