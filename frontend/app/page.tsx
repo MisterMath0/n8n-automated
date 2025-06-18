@@ -11,7 +11,7 @@ import { BackgroundEffects } from "@/components/ui/BackgroundEffects";
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-black via-gray-900 to-black overflow-x-hidden">
+    <div className="relative min-h-screen bg-black overflow-x-hidden">
       <BackgroundEffects />
       <Navbar />
       <main className="relative z-10">
