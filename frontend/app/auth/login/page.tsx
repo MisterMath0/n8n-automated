@@ -5,6 +5,10 @@ import { useState } from "react";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { BackgroundEffects } from "@/components/ui/BackgroundEffects";
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/components/providers';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,23 +16,42 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const toast = useToast();
+  const { user } = useAuth();
+  const router = useRouter();
+
+  // Redirect if already logged in
+  if (user) {
+    router.push('/dashboard');
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
+    // Basic validation
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      // TODO: Implement your authentication logic
-      console.log("Login attempt:", { email, password });
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Redirect to dashboard on success
-      window.location.href = "/dashboard";
-    } catch (err) {
-      setError("Invalid credentials. Please try again.");
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      toast.success('Successfully signed in!');
+      router.push('/dashboard');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

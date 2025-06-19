@@ -5,6 +5,10 @@ import { useState } from "react";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { BackgroundEffects } from "@/components/ui/BackgroundEffects";
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/components/providers';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -18,6 +22,15 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const toast = useToast();
+  const { user } = useAuth();
+  const router = useRouter();
+
+  // Redirect if already logged in
+  if (user) {
+    router.push('/dashboard');
+    return null;
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -32,33 +45,53 @@ export default function SignupPage() {
     setError("");
 
     // Validation
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+      setError("Please fill in all fields");
+      setIsLoading(false);
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords don't match");
       setIsLoading(false);
       return;
     }
 
-    if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters");
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters");
       setIsLoading(false);
       return;
     }
 
     try {
-      // TODO: Implement your registration logic
-      console.log("Signup attempt:", formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSuccess(true);
-      
-      // Redirect after success
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 2000);
-    } catch (err) {
-      setError("Something went wrong. Please try again.");
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.name,
+          },
+          emailRedirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.user && !data.session) {
+        toast.success('Please check your email for the confirmation link!');
+        setSuccess(true);
+        // Don't redirect immediately, let them see the success message
+      } else if (data.session) {
+        toast.success('Account created successfully!');
+        setSuccess(true);
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 1000);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -85,10 +118,10 @@ export default function SignupPage() {
             </motion.div>
             <h1 className="text-2xl font-bold text-white mb-4">Welcome to N8N.AI!</h1>
             <p className="text-gray-300 mb-6">
-              Your account has been created successfully. You now have access to the beta.
+              Your account has been created successfully! Please check your email to confirm your account.
             </p>
             <div className="text-sm text-gray-400">
-              Redirecting to dashboard...
+              You can close this page and return when you've confirmed your email.
             </div>
           </div>
         </motion.div>
@@ -132,27 +165,6 @@ export default function SignupPage() {
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-white mb-2">Join the Beta</h1>
               <p className="text-gray-400">Get early access to AI-powered workflow generation</p>
-            </div>
-
-            {/* Beta Benefits */}
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              {[
-                "Early access",
-                "Priority support", 
-                "Lifetime discount",
-                "Beta community"
-              ].map((benefit, index) => (
-                <motion.div
-                  key={benefit}
-                  initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + index * 0.1 }}
-                  className="flex items-center gap-2 text-sm text-gray-300 p-2 rounded-lg bg-white/5"
-                >
-                  <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
-                  {benefit}
-                </motion.div>
-              ))}
             </div>
 
             {/* Form */}
