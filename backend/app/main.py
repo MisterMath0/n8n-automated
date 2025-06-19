@@ -65,5 +65,3 @@ async def health():
         "version": settings.app_version,
         "environment": settings.environment.value
     }
-`
-}

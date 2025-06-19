@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List, Optional
+from typing import List, Optional, Union
 from enum import Enum
 
 
@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     api_port: int = 8000
     api_reload: bool = True
     
-    cors_origins: List[str] = Field(
+    cors_origins: Union[str, List[str]] = Field(
         default=["http://localhost:3000", "http://localhost:3001"]
     )
     cors_allow_credentials: bool = True
@@ -64,6 +64,14 @@ class Settings(BaseSettings):
     )
     
     database_url: Optional[str] = Field(default=None, alias="DATABASE_URL")
+    
+    @field_validator('cors_origins')
+    @classmethod
+    def parse_cors_origins(cls, v):
+        if isinstance(v, str):
+            # Handle comma-separated string from .env
+            return [origin.strip() for origin in v.split(',') if origin.strip()]
+        return v
     
     @property
     def is_development(self) -> bool:

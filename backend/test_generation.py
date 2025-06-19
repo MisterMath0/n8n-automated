@@ -19,7 +19,7 @@ async def test_workflow_generation():
         
         workflow, generation_time, tokens_used = await ai_service.generate_workflow(
             description="Create a simple webhook that receives data and sends it to Slack",
-            model=AIModel.CLAUDE_4_SONNET,
+            model=AIModel.GPT_4O,
             temperature=0.3
         )
         
@@ -39,7 +39,7 @@ async def test_workflow_generation():
         edited_workflow, edit_time, edit_tokens, changes = await ai_service.edit_workflow(
             workflow=workflow,
             edit_instruction="Add a Set node to format the data before sending to Slack",
-            model=AIModel.CLAUDE_4_SONNET
+            model=AIModel.GPT_4O
         )
         
         print(f"✅ Workflow edited successfully!")

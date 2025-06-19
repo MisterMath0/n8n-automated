@@ -25,7 +25,7 @@ class AIService:
         models_config = config_loader.load_models()
         
         for model_key, model_config in models_config.items():
-            api_key = os.getenv(model_config.api_key_env)
+            api_key = getattr(settings, model_config.api_key_env.lower(), None)
             if not api_key:
                 continue
                 
