@@ -6,12 +6,19 @@ import { WorkflowCanvas } from "@/components/dashboard/WorkflowCanvas";
 import { AIChat } from "@/components/dashboard/AIChat";
 import { WorkflowSidebar } from "@/components/dashboard/WorkflowSidebar";
 import { useWorkflows } from "@/hooks/useWorkflows";
-import { useWorkflowGeneration } from "@/hooks/useWorkflowGeneration";
+import { N8NWorkflow } from "@/types/api";
+import { useToast } from "@/components/providers";
 
 export default function DashboardPage() {
   const { workflows, selectedWorkflow, selectWorkflow, isLoading } = useWorkflows();
-  const { generateWorkflow, generatedWorkflow, isGenerating } = useWorkflowGeneration();
   const [isChatOpen, setIsChatOpen] = useState(true);
+  const [currentWorkflow, setCurrentWorkflow] = useState<N8NWorkflow | null>(null);
+  const toast = useToast();
+
+  const handleWorkflowGenerated = (workflow: N8NWorkflow) => {
+    setCurrentWorkflow(workflow);
+    toast.success('Workflow generated successfully!');
+  };
 
   return (
     <DashboardLayout>
@@ -25,14 +32,13 @@ export default function DashboardPage() {
         
         <div className="flex-1 flex">
           <WorkflowCanvas 
-            workflow={generatedWorkflow || selectedWorkflow}
+            workflow={currentWorkflow || selectedWorkflow}
           />
           
           {isChatOpen && (
             <AIChat 
               onClose={() => setIsChatOpen(false)}
-              onGenerateWorkflow={generateWorkflow}
-              isGenerating={isGenerating}
+              onWorkflowGenerated={handleWorkflowGenerated}
             />
           )}
         </div>
