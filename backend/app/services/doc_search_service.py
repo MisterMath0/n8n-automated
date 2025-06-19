@@ -399,43 +399,43 @@ def get_search_service() -> BM25DocumentationSearch:
 
 
 # Convenience functions for common use cases
-def search_docs(query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+def search_docs(query: str) -> List[Dict[str, Any]]:
     """
     Simple search function that returns results as dictionaries.
+    Uses default top_k from configuration.
     
     Args:
         query: Search query
-        top_k: Number of results to return
         
     Returns:
         List of search results as dictionaries
     """
     service = get_search_service()
-    results, _ = service.search(query, top_k)
+    results, _ = service.search(query)  # Uses config default
     return [result.to_dict() for result in results]
 
 
-def search_integrations(query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+def search_integrations(query: str) -> List[Dict[str, Any]]:
     """
     Search specifically for N8N integrations.
+    Uses default top_k from configuration.
     """
     service = get_search_service()
     results, _ = service.search(
         query, 
-        top_k, 
         filters={"section_type": "integration"}
     )
     return [result.to_dict() for result in results]
 
 
-def search_concepts(query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+def search_concepts(query: str) -> List[Dict[str, Any]]:
     """
     Search specifically for N8N concepts and explanations.
+    Uses default top_k from configuration.
     """
     service = get_search_service()
     results, _ = service.search(
         query, 
-        top_k, 
         filters={"section_type": "concept"}
     )
     return [result.to_dict() for result in results]
