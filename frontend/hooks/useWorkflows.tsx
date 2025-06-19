@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { workflowStorage, StoredWorkflow } from "@/lib/workflow-storage";
 import { N8NWorkflow } from "@/types/api";
 import { useToast } from "@/components/providers";
+import { useAuth } from "./useAuth";
 
 // Convert StoredWorkflow to the interface expected by components
 export interface Workflow {
@@ -20,6 +21,7 @@ export interface Workflow {
 }
 
 export function useWorkflows() {
+  const { user } = useAuth();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,12 +43,18 @@ export function useWorkflows() {
   });
 
   const fetchWorkflows = useCallback(async () => {
+    if (!user) {
+      setWorkflows([]);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
       
-      // Load workflows from local storage
-      const storedWorkflows = workflowStorage.getWorkflows();
+      // Load workflows from Supabase
+      const storedWorkflows = await workflowStorage.getWorkflows(user.id);
       const convertedWorkflows = storedWorkflows.map(convertStoredWorkflow);
       
       setWorkflows(convertedWorkflows);
@@ -58,7 +66,7 @@ export function useWorkflows() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [user, toast]);
 
   const selectWorkflow = useCallback((workflow: Workflow | null) => {
     setSelectedWorkflow(workflow);
@@ -67,10 +75,25 @@ export function useWorkflows() {
   const saveGeneratedWorkflow = useCallback(async (
     workflow: N8NWorkflow, 
     name?: string, 
-    description?: string
+    description?: string,
+    aiModel?: string,
+    generationTimeMs?: number,
+    tokensUsed?: number
   ): Promise<Workflow> => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
     try {
-      const stored = workflowStorage.saveWorkflow(workflow, name, description);
+      const stored = await workflowStorage.saveWorkflow(
+        workflow, 
+        user.id, 
+        name, 
+        description,
+        aiModel,
+        generationTimeMs,
+        tokensUsed
+      );
       const converted = convertStoredWorkflow(stored);
       
       // Update workflows list
@@ -84,17 +107,22 @@ export function useWorkflows() {
       toast.error(errorMessage);
       throw err;
     }
-  }, [toast]);
+  }, [user, toast]);
 
   const updateWorkflow = useCallback(async (
     id: string, 
     updates: Partial<Workflow>
   ): Promise<Workflow> => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
     try {
-      const updatedStored = workflowStorage.updateWorkflow(id, {
+      const updatedStored = await workflowStorage.updateWorkflow(id, user.id, {
         name: updates.name,
         description: updates.description,
-        status: updates.status
+        status: updates.status,
+        workflow: updates.workflow
       });
       
       if (!updatedStored) {
@@ -119,11 +147,15 @@ export function useWorkflows() {
       toast.error(errorMessage);
       throw err;
     }
-  }, [selectedWorkflow, toast]);
+  }, [user, selectedWorkflow, toast]);
 
   const deleteWorkflow = useCallback(async (id: string): Promise<void> => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
     try {
-      const success = workflowStorage.deleteWorkflow(id);
+      const success = await workflowStorage.deleteWorkflow(id, user.id);
       
       if (!success) {
         throw new Error('Workflow not found');
@@ -144,21 +176,34 @@ export function useWorkflows() {
       toast.error(errorMessage);
       throw err;
     }
-  }, [selectedWorkflow, toast]);
+  }, [user, selectedWorkflow, toast]);
 
-  const exportWorkflow = useCallback((id: string) => {
+  const exportWorkflow = useCallback(async (id: string) => {
+    if (!user) {
+      toast.error('User not authenticated');
+      return;
+    }
+
     try {
-      workflowStorage.exportWorkflow(id);
+      await workflowStorage.exportWorkflow(id, user.id);
       toast.success('Workflow exported successfully!');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to export workflow';
       toast.error(errorMessage);
     }
-  }, [toast]);
+  }, [user, toast]);
 
-  const getWorkflowStats = useCallback(() => {
-    return workflowStorage.getStats();
-  }, []);
+  const getWorkflowStats = useCallback(async () => {
+    if (!user) return {
+      total: 0,
+      active: 0,
+      inactive: 0,
+      totalNodes: 0,
+      lastCreated: null
+    };
+
+    return await workflowStorage.getStats(user.id);
+  }, [user]);
 
   // Load workflows on mount
   useEffect(() => {

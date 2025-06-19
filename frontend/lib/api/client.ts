@@ -1,5 +1,6 @@
 import { APIError, APIResponse } from '@/types/api';
 import { API_CONFIG, ENDPOINT_TIMEOUTS } from './config';
+import { supabase } from '@/lib/supabase';
 
 // Custom error class for API errors
 export class APIClientError extends Error {
@@ -101,6 +102,19 @@ class APIClient {
     return data;
   }
 
+  // Get auth headers from Supabase
+  private async getAuthHeaders(): Promise<Record<string, string>> {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session?.access_token) {
+      return {
+        'Authorization': `Bearer ${session.access_token}`
+      };
+    }
+    
+    return {};
+  }
+
   // Main request method with retry logic
   private async requestWithRetry<T>(
     url: string,
@@ -112,6 +126,9 @@ class APIClient {
       retryDelay = API_CONFIG.RETRY_DELAY,
       ...fetchConfig
     } = config;
+
+    // Get auth headers
+    const authHeaders = await this.getAuthHeaders();
 
     let lastError: Error;
 
@@ -142,6 +159,7 @@ class APIClient {
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
+            ...authHeaders,
             ...fetchConfig.headers,
           },
         });
