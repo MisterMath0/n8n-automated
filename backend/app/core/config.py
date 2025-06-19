@@ -14,6 +14,8 @@ class AIModelConfig(BaseModel):
     name: str
     provider: str
     model_id: str
+    base_url: Optional[str] = None  # Only for OpenAI-compatible providers
+    api_key_env: str
     max_tokens: int
     cost_per_1k_input_tokens: float
     cost_per_1k_output_tokens: float

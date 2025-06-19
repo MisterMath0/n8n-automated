@@ -1,268 +1,90 @@
 import time
 import json
+import os
 from typing import Dict, Any, Optional, Tuple, List
-from abc import ABC, abstractmethod
 
-import anthropic
 import openai
-from groq import Groq
+import anthropic
 
-from ..models.workflow import AIModel, AIProvider, N8NWorkflow
+from ..models.workflow import AIModel, N8NWorkflow
 from ..core.config import settings
 from ..core.config_loader import config_loader
 
 
-class AIProviderError(Exception):
+class AIServiceError(Exception):
     pass
-
-
-class AIProviderBase(ABC):
-    @abstractmethod
-    async def generate_workflow(
-        self, 
-        prompt: str, 
-        model_id: str, 
-        temperature: float = 0.3,
-        max_tokens: int = 4000
-    ) -> Tuple[str, Optional[int]]:
-        pass
-
-    @abstractmethod
-    async def edit_workflow(
-        self, 
-        workflow_json: str,
-        edit_instruction: str,
-        model_id: str, 
-        temperature: float = 0.3
-    ) -> Tuple[str, Optional[int]]:
-        pass
-
-
-class AnthropicProvider(AIProviderBase):
-    def __init__(self):
-        if not settings.anthropic_api_key:
-            raise AIProviderError("Anthropic API key not configured")
-        self.client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    
-    async def generate_workflow(
-        self, 
-        prompt: str, 
-        model_id: str, 
-        temperature: float = 0.3,
-        max_tokens: int = 4000
-    ) -> Tuple[str, Optional[int]]:
-        try:
-            system_prompt = config_loader.get_prompt_template("workflow_generation", "system")
-            user_prompt = config_loader.get_prompt_template("workflow_generation", "user")
-            
-            response = self.client.messages.create(
-                model=model_id,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                system=system_prompt,
-                messages=[{
-                    "role": "user", 
-                    "content": user_prompt.format(description=prompt)
-                }]
-            )
-            
-            return response.content[0].text, response.usage.input_tokens + response.usage.output_tokens
-            
-        except Exception as e:
-            raise AIProviderError(f"Anthropic API error: {str(e)}")
-
-    async def edit_workflow(
-        self, 
-        workflow_json: str,
-        edit_instruction: str,
-        model_id: str, 
-        temperature: float = 0.3
-    ) -> Tuple[str, Optional[int]]:
-        try:
-            system_prompt = config_loader.get_prompt_template("workflow_editing", "system")
-            user_prompt = config_loader.get_prompt_template("workflow_editing", "user")
-            
-            response = self.client.messages.create(
-                model=model_id,
-                max_tokens=4000,
-                temperature=temperature,
-                system=system_prompt.format(workflow_json=workflow_json),
-                messages=[{
-                    "role": "user", 
-                    "content": user_prompt.format(edit_instruction=edit_instruction)
-                }]
-            )
-            
-            return response.content[0].text, response.usage.input_tokens + response.usage.output_tokens
-            
-        except Exception as e:
-            raise AIProviderError(f"Anthropic API error: {str(e)}")
-
-
-class OpenAIProvider(AIProviderBase):
-    def __init__(self):
-        if not settings.openai_api_key:
-            raise AIProviderError("OpenAI API key not configured")
-        self.client = openai.OpenAI(api_key=settings.openai_api_key)
-    
-    async def generate_workflow(
-        self, 
-        prompt: str, 
-        model_id: str, 
-        temperature: float = 0.3,
-        max_tokens: int = 4000
-    ) -> Tuple[str, Optional[int]]:
-        try:
-            system_prompt = config_loader.get_prompt_template("workflow_generation", "system")
-            user_prompt = config_loader.get_prompt_template("workflow_generation", "user")
-            
-            response = self.client.chat.completions.create(
-                model=model_id,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                response_format={"type": "json_object"},
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt.format(description=prompt)}
-                ]
-            )
-            
-            return response.choices[0].message.content, response.usage.total_tokens
-            
-        except Exception as e:
-            raise AIProviderError(f"OpenAI API error: {str(e)}")
-
-    async def edit_workflow(
-        self, 
-        workflow_json: str,
-        edit_instruction: str,
-        model_id: str, 
-        temperature: float = 0.3
-    ) -> Tuple[str, Optional[int]]:
-        try:
-            system_prompt = config_loader.get_prompt_template("workflow_editing", "system")
-            user_prompt = config_loader.get_prompt_template("workflow_editing", "user")
-            
-            response = self.client.chat.completions.create(
-                model=model_id,
-                max_tokens=4000,
-                temperature=temperature,
-                response_format={"type": "json_object"},
-                messages=[
-                    {"role": "system", "content": system_prompt.format(workflow_json=workflow_json)},
-                    {"role": "user", "content": user_prompt.format(edit_instruction=edit_instruction)}
-                ]
-            )
-            
-            return response.choices[0].message.content, response.usage.total_tokens
-            
-        except Exception as e:
-            raise AIProviderError(f"OpenAI API error: {str(e)}")
-
-
-class GroqProvider(AIProviderBase):
-    def __init__(self):
-        if not settings.groq_api_key:
-            raise AIProviderError("Groq API key not configured")
-        self.client = Groq(api_key=settings.groq_api_key)
-    
-    async def generate_workflow(
-        self, 
-        prompt: str, 
-        model_id: str, 
-        temperature: float = 0.3,
-        max_tokens: int = 4000
-    ) -> Tuple[str, Optional[int]]:
-        try:
-            system_prompt = config_loader.get_prompt_template("workflow_generation", "system")
-            user_prompt = config_loader.get_prompt_template("workflow_generation", "user")
-            
-            response = self.client.chat.completions.create(
-                model=model_id,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt.format(description=prompt)}
-                ]
-            )
-            
-            return response.choices[0].message.content, None
-            
-        except Exception as e:
-            raise AIProviderError(f"Groq API error: {str(e)}")
-
-    async def edit_workflow(
-        self, 
-        workflow_json: str,
-        edit_instruction: str,
-        model_id: str, 
-        temperature: float = 0.3
-    ) -> Tuple[str, Optional[int]]:
-        try:
-            system_prompt = config_loader.get_prompt_template("workflow_editing", "system")
-            user_prompt = config_loader.get_prompt_template("workflow_editing", "user")
-            
-            response = self.client.chat.completions.create(
-                model=model_id,
-                max_tokens=4000,
-                temperature=temperature,
-                messages=[
-                    {"role": "system", "content": system_prompt.format(workflow_json=workflow_json)},
-                    {"role": "user", "content": user_prompt.format(edit_instruction=edit_instruction)}
-                ]
-            )
-            
-            return response.choices[0].message.content, None
-            
-        except Exception as e:
-            raise AIProviderError(f"Groq API error: {str(e)}")
 
 
 class AIService:
     def __init__(self):
-        self.providers: Dict[AIProvider, AIProviderBase] = {}
-        self._initialize_providers()
-        
-        self.model_provider_map = {
-            AIModel.CLAUDE_4_SONNET: AIProvider.ANTHROPIC,
-            AIModel.CLAUDE_4_OPUS: AIProvider.ANTHROPIC,
-            AIModel.GPT_4O: AIProvider.OPENAI,
-            AIModel.O3: AIProvider.OPENAI,
-            AIModel.LLAMA_3_3_70B: AIProvider.GROQ,
-            AIModel.LLAMA_3_1_8B: AIProvider.GROQ,
-        }
+        self.openai_clients: Dict[str, openai.OpenAI] = {}
+        self.anthropic_client: Optional[anthropic.Anthropic] = None
+        self._initialize_clients()
 
-    def _initialize_providers(self):
-        try:
-            if settings.anthropic_api_key:
-                self.providers[AIProvider.ANTHROPIC] = AnthropicProvider()
-        except AIProviderError:
-            pass
-            
-        try:
-            if settings.openai_api_key:
-                self.providers[AIProvider.OPENAI] = OpenAIProvider()
-        except AIProviderError:
-            pass
-            
-        try:
-            if settings.groq_api_key:
-                self.providers[AIProvider.GROQ] = GroqProvider()
-        except AIProviderError:
-            pass
+    def _initialize_clients(self):
+        models_config = config_loader.load_models()
+        
+        for model_key, model_config in models_config.items():
+            api_key = os.getenv(model_config.api_key_env)
+            if not api_key:
+                continue
+                
+            try:
+                if model_config.provider == "anthropic":
+                    if not self.anthropic_client:
+                        self.anthropic_client = anthropic.Anthropic(api_key=api_key)
+                
+                elif model_config.provider in ["openai", "groq"]:
+                    client = openai.OpenAI(
+                        api_key=api_key,
+                        base_url=model_config.base_url
+                    )
+                    self.openai_clients[model_key] = client
+                    
+            except Exception:
+                continue
 
-    def _get_provider_and_model_id(self, model: AIModel) -> Tuple[AIProviderBase, str]:
-        provider_type = self.model_provider_map.get(model)
-        if not provider_type:
-            raise ValueError(f"Unsupported model: {model}")
-        
-        provider = self.providers.get(provider_type)
-        if not provider:
-            raise ValueError(f"Provider not available: {provider_type}")
-        
+    def _get_client_and_config(self, model: AIModel) -> Tuple[Any, Any]:
         model_config = config_loader.get_model_config(model.value)
-        return provider, model_config.model_id
+        
+        if model_config.provider == "anthropic":
+            if not self.anthropic_client:
+                raise AIServiceError(f"Anthropic client not available for model: {model.value}")
+            return self.anthropic_client, model_config
+            
+        elif model_config.provider in ["openai", "groq"]:
+            if model.value not in self.openai_clients:
+                raise AIServiceError(f"OpenAI client not available for model: {model.value}")
+            return self.openai_clients[model.value], model_config
+            
+        else:
+            raise AIServiceError(f"Unsupported provider: {model_config.provider}")
+
+    def _build_messages(self, prompt_type: str, **kwargs) -> List[Dict[str, str]]:
+        system_prompt = config_loader.get_prompt_template(prompt_type, "system")
+        user_prompt = config_loader.get_prompt_template(prompt_type, "user")
+        
+        messages = [
+            {"role": "system", "content": system_prompt}
+        ]
+        
+        if prompt_type == "workflow_generation":
+            messages.append({
+                "role": "user", 
+                "content": user_prompt.format(description=kwargs.get("description", ""))
+            })
+        elif prompt_type == "workflow_editing":
+            messages[0]["content"] = system_prompt.format(
+                workflow_json=kwargs.get("workflow_json", "")
+            )
+            messages.append({
+                "role": "user",
+                "content": user_prompt.format(
+                    edit_instruction=kwargs.get("edit_instruction", "")
+                )
+            })
+        
+        return messages
 
     def _parse_workflow_json(self, json_str: str) -> N8NWorkflow:
         try:
@@ -291,20 +113,39 @@ class AIService:
         start_time = time.time()
         
         try:
-            provider, model_id = self._get_provider_and_model_id(model)
+            client, model_config = self._get_client_and_config(model)
+            messages = self._build_messages("workflow_generation", description=description)
             
-            response, tokens_used = await provider.generate_workflow(
-                description, model_id, temperature, max_tokens
-            )
+            if model_config.provider == "anthropic":
+                response = client.messages.create(
+                    model=model_config.model_id,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    system=messages[0]["content"],
+                    messages=messages[1:]
+                )
+                content = response.content[0].text
+                tokens_used = response.usage.input_tokens + response.usage.output_tokens
+                
+            else:  # OpenAI or Groq via OpenAI SDK
+                response = client.chat.completions.create(
+                    model=model_config.model_id,
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    response_format={"type": "json_object"} if model_config.supports_json_mode else None
+                )
+                content = response.choices[0].message.content
+                tokens_used = getattr(response.usage, 'total_tokens', None) if response.usage else None
             
-            workflow = self._parse_workflow_json(response)
+            workflow = self._parse_workflow_json(content)
             generation_time = time.time() - start_time
             
             return workflow, generation_time, tokens_used
             
         except Exception as e:
             generation_time = time.time() - start_time
-            raise Exception(f"Workflow generation failed: {str(e)}")
+            raise AIServiceError(f"Workflow generation failed: {str(e)}")
 
     async def edit_workflow(
         self,
@@ -316,15 +157,38 @@ class AIService:
         start_time = time.time()
         
         try:
-            provider, model_id = self._get_provider_and_model_id(model)
-            
+            client, model_config = self._get_client_and_config(model)
             workflow_json = workflow.model_dump_json(indent=2)
             
-            response, tokens_used = await provider.edit_workflow(
-                workflow_json, edit_instruction, model_id, temperature
+            messages = self._build_messages(
+                "workflow_editing", 
+                workflow_json=workflow_json,
+                edit_instruction=edit_instruction
             )
             
-            edited_workflow = self._parse_workflow_json(response)
+            if model_config.provider == "anthropic":
+                response = client.messages.create(
+                    model=model_config.model_id,
+                    max_tokens=4000,
+                    temperature=temperature,
+                    system=messages[0]["content"],
+                    messages=messages[1:]
+                )
+                content = response.content[0].text
+                tokens_used = response.usage.input_tokens + response.usage.output_tokens
+                
+            else:  # OpenAI or Groq via OpenAI SDK
+                response = client.chat.completions.create(
+                    model=model_config.model_id,
+                    messages=messages,
+                    max_tokens=4000,
+                    temperature=temperature,
+                    response_format={"type": "json_object"} if model_config.supports_json_mode else None
+                )
+                content = response.choices[0].message.content
+                tokens_used = getattr(response.usage, 'total_tokens', None) if response.usage else None
+            
+            edited_workflow = self._parse_workflow_json(content)
             changes_made = self._detect_changes(workflow, edited_workflow)
             
             generation_time = time.time() - start_time
@@ -333,7 +197,7 @@ class AIService:
             
         except Exception as e:
             generation_time = time.time() - start_time
-            raise Exception(f"Workflow editing failed: {str(e)}")
+            raise AIServiceError(f"Workflow editing failed: {str(e)}")
 
     def _detect_changes(self, original: N8NWorkflow, edited: N8NWorkflow) -> List[str]:
         changes = []
@@ -365,10 +229,28 @@ class AIService:
         return changes
 
     def get_available_providers(self) -> Dict[str, bool]:
-        return {
-            provider.value: provider in self.providers 
-            for provider in AIProvider
-        }
+        models_config = config_loader.load_models()
+        providers = {}
+        
+        for model_key, model_config in models_config.items():
+            provider = model_config.provider
+            if provider == "anthropic":
+                providers[provider] = self.anthropic_client is not None
+            else:
+                providers[provider] = model_key in self.openai_clients
+        
+        return providers
+
+    def get_available_models(self) -> List[str]:
+        available_models = []
+        if self.anthropic_client:
+            models_config = config_loader.load_models()
+            for model_key, model_config in models_config.items():
+                if model_config.provider == "anthropic":
+                    available_models.append(model_key)
+        
+        available_models.extend(list(self.openai_clients.keys()))
+        return available_models
 
 
 ai_service = AIService()
