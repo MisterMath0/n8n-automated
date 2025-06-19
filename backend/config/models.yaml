@@ -1,0 +1,78 @@
+models:
+  claude-4-sonnet:
+    name: "Claude 4 Sonnet"
+    provider: "anthropic"
+    model_id: "claude-sonnet-4-20250514"
+    base_url: "https://api.anthropic.com/v1/"
+    api_key_env: "ANTHROPIC_API_KEY"
+    max_tokens: 200000
+    cost_per_1k_input_tokens: 3.0
+    cost_per_1k_output_tokens: 15.0
+    supports_json_mode: true
+    supports_streaming: true
+    context_window: 200000
+
+  claude-4-opus:
+    name: "Claude 4 Opus"
+    provider: "anthropic"
+    model_id: "claude-opus-4-20250514"
+    base_url: "https://api.anthropic.com/v1/"
+    api_key_env: "ANTHROPIC_API_KEY"
+    max_tokens: 200000
+    cost_per_1k_input_tokens: 15.0
+    cost_per_1k_output_tokens: 75.0
+    supports_json_mode: true
+    supports_streaming: true
+    context_window: 200000
+
+  gpt-4o:
+    name: "GPT-4o"
+    provider: "openai"
+    model_id: "gpt-4o"
+    base_url: "https://api.openai.com/v1"
+    api_key_env: "OPENAI_API_KEY"
+    max_tokens: 128000
+    cost_per_1k_input_tokens: 2.5
+    cost_per_1k_output_tokens: 10.0
+    supports_json_mode: true
+    supports_streaming: true
+    context_window: 128000
+
+  o3:
+    name: "OpenAI o3"
+    provider: "openai"
+    model_id: "o3"
+    base_url: "https://api.openai.com/v1"
+    api_key_env: "OPENAI_API_KEY"
+    max_tokens: 128000
+    cost_per_1k_input_tokens: 10.0
+    cost_per_1k_output_tokens: 40.0
+    supports_json_mode: true
+    supports_streaming: true
+    context_window: 128000
+
+  llama-3-3-70b:
+    name: "Llama 3.3 70B"
+    provider: "groq"
+    model_id: "llama-3.3-70b-versatile"
+    base_url: "https://api.groq.com/openai/v1"
+    api_key_env: "GROQ_API_KEY"
+    max_tokens: 32768
+    cost_per_1k_input_tokens: 0.5
+    cost_per_1k_output_tokens: 0.8
+    supports_json_mode: true
+    supports_streaming: true
+    context_window: 32768
+
+  llama-3-1-8b:
+    name: "Llama 3.1 8B"
+    provider: "groq"
+    model_id: "llama-3.1-8b-instant"
+    base_url: "https://api.groq.com/openai/v1"
+    api_key_env: "GROQ_API_KEY"
+    max_tokens: 8192
+    cost_per_1k_input_tokens: 0.05
+    cost_per_1k_output_tokens: 0.08
+    supports_json_mode: true
+    supports_streaming: true
+    context_window: 8192
