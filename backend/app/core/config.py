@@ -63,7 +63,9 @@ class Settings(BaseSettings):
         description="Secret key for JWT tokens"
     )
     
-    database_url: Optional[str] = Field(default=None, alias="DATABASE_URL")
+    supabase_url: Optional[str] = Field(default=None, alias="SUPABASE_URL")
+    supabase_service_role_key: Optional[str] = Field(default=None, alias="SUPABASE_SERVICE_ROLE_KEY")
+    supabase_jwt_secret: Optional[str] = Field(default=None, alias="SUPABASE_JWT_SECRET")
     
     @field_validator('cors_origins')
     @classmethod
