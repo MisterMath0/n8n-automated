@@ -2,22 +2,31 @@
 
 import { useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { WorkflowCanvas } from "@/components/dashboard/WorkflowCanvas";
-import { AIChat } from "@/components/dashboard/AIChat";
-import { WorkflowSidebar } from "@/components/dashboard/WorkflowSidebar";
+import { WorkflowCanvas } from "@/components/dashboard/workflow/WorkflowCanvas";
+import { SimpleChat } from "@/components/dashboard/SimpleChat";
+import { WorkflowSidebar } from "@/components/dashboard/workflow/WorkflowSidebar";
 import { useWorkflows } from "@/hooks/useWorkflows";
 import { N8NWorkflow } from "@/types/api";
 import { useToast } from "@/components/providers";
 
+
 export default function DashboardPage() {
-  const { workflows, selectedWorkflow, selectWorkflow, isLoading } = useWorkflows();
+  const { workflows, selectedWorkflow, selectWorkflow, isLoading, saveGeneratedWorkflow, exportWorkflow, deleteWorkflow } = useWorkflows();
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [currentWorkflow, setCurrentWorkflow] = useState<N8NWorkflow | null>(null);
   const toast = useToast();
 
-  const handleWorkflowGenerated = (workflow: N8NWorkflow) => {
+  const handleWorkflowGenerated = async (workflow: N8NWorkflow) => {
     setCurrentWorkflow(workflow);
-    toast.success('Workflow generated successfully!');
+    
+    // Automatically save generated workflows
+    try {
+      await saveGeneratedWorkflow(workflow);
+      toast.success(`Workflow "${workflow.name}" generated and saved!`);
+    } catch (error) {
+      console.error('Failed to save generated workflow:', error);
+      toast.warning('Workflow generated but failed to save locally');
+    }
   };
 
   return (
@@ -27,6 +36,8 @@ export default function DashboardPage() {
           workflows={workflows}
           selectedWorkflow={selectedWorkflow}
           onSelectWorkflow={selectWorkflow}
+          onExportWorkflow={exportWorkflow}
+          onDeleteWorkflow={deleteWorkflow}
           isLoading={isLoading}
         />
         
@@ -36,7 +47,7 @@ export default function DashboardPage() {
           />
           
           {isChatOpen && (
-            <AIChat 
+            <SimpleChat 
               onClose={() => setIsChatOpen(false)}
               onWorkflowGenerated={handleWorkflowGenerated}
             />
