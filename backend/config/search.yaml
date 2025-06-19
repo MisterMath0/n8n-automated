@@ -1,0 +1,158 @@
+# BM25 Search Configuration
+# 
+# This file configures the BM25 search algorithm parameters and behavior.
+# BM25 (Best Matching 25) is a ranking function used to estimate the relevance
+# of documents to a given search query.
+
+search:
+  # BM25 Algorithm Parameters
+  bm25:
+    # k1 parameter: Controls term frequency saturation
+    # - Higher values (1.2-2.0) = more weight to term frequency
+    # - Lower values (0.5-1.0) = less weight to term frequency
+    # - Default: 1.2 (good for most use cases)
+    k1: 1.2
+    
+    # b parameter: Controls document length normalization
+    # - Higher values (0.7-1.0) = more penalty for longer documents
+    # - Lower values (0.0-0.3) = less penalty for longer documents
+    # - Default: 0.75 (balanced approach)
+    b: 0.75
+    
+    # delta parameter: Controls minimum score (only for BM25Plus and BM25L variants)
+    # - Ensures all matching terms contribute positively to the score
+    # - Range: 0.0-2.0, Default: 1.0
+    delta: 1.0
+    
+    # BM25 variant to use (bm25s library variants)
+    # Options: "lucene" (default), "robertson", "atire", "bm25l", "bm25+"
+    # - lucene: Lucene's BM25 implementation (most common, default)
+    # - robertson: Original BM25 from Robertson et al.
+    # - atire: ATIRE BM25 variant (clamps negative IDF values)
+    # - bm25l: BM25L with linear document length normalization
+    # - bm25+: BM25+ with lower-bound bonus for term occurrences
+    variant: "lucene"
+
+  # Text Processing
+  text_processing:
+    # Convert text to lowercase before indexing and searching
+    lowercase: true
+    
+    # Remove common English stop words (a, the, is, etc.)
+    # This can improve search quality by focusing on meaningful terms
+    remove_stopwords: true
+    
+    # Language for stopwords (if remove_stopwords is true)
+    # Options: "en", "es", "fr", "de", "it", etc.
+    stopwords_language: "en"
+    
+    # Apply stemming to reduce words to their root form
+    # Example: "running", "runs", "ran" all become "run"
+    # This improves recall but may reduce precision
+    enable_stemming: false
+    
+    # Stemming language (if enable_stemming is true)
+    stemming_language: "english"
+    
+    # Minimum word length to include in index
+    # Words shorter than this are ignored
+    min_word_length: 2
+    
+    # Maximum word length to include in index
+    # Very long words (often typos or URLs) are ignored
+    max_word_length: 50
+
+  # Search Behavior
+  search_behavior:
+    # Default number of results to return if not specified
+    default_top_k: 5
+    
+    # Maximum number of results that can be requested
+    max_top_k: 50
+    
+    # Minimum score threshold for results
+    # Results with scores below this are filtered out
+    min_score_threshold: 0.0
+    
+    # Weight different section types differently
+    # Higher weights mean these sections will rank higher in results
+    section_type_weights:
+      integration: 1.2    # N8N node integrations (most important for users)
+      concept: 1.0        # Core concepts and explanations
+      example: 0.9        # Examples and tutorials
+      general: 0.8        # General documentation
+    
+    # Boost scores for sections with specific node types
+    # When user searches for a specific integration, boost those results
+    node_type_boost: 1.3
+    
+    # Include URL in search results metadata
+    include_url: true
+    
+    # Include section type in search results metadata
+    include_section_type: true
+    
+    # Include node type in search results metadata (if available)
+    include_node_type: true
+
+  # Performance
+  performance:
+    # Cache search results for repeated queries
+    # This improves response time for common searches
+    enable_caching: true
+    
+    # Maximum number of queries to cache
+    cache_size: 1000
+    
+    # Cache expiration time in seconds
+    cache_ttl: 3600  # 1 hour
+    
+    # Enable parallel processing for large queries
+    enable_parallel_processing: true
+    
+    # Number of worker threads for parallel processing
+    num_workers: 4
+
+  # Index Management
+  index:
+    # Automatically rebuild index if documentation is newer than index
+    auto_rebuild: true
+    
+    # Save index to disk for faster startup
+    # Set to false if you want to rebuild index every time (slower but uses less disk)
+    save_index: true
+    
+    # Index file location (relative to backend/data/)
+    index_file: "bm25_index.pkl"
+    
+    # Include debug information in index
+    # This adds memory overhead but helps with debugging
+    include_debug_info: false
+
+  # Logging
+  logging:
+    # Log search queries and results for debugging
+    log_searches: true
+    
+    # Log slow queries (queries taking longer than this many seconds)
+    log_slow_queries_threshold: 1.0
+    
+    # Log index building process
+    log_index_building: true
+    
+    # Log level for search service
+    # Options: "DEBUG", "INFO", "WARNING", "ERROR"
+    log_level: "INFO"
+
+# Field-specific search configuration
+# You can configure how different fields are weighted in search
+field_weights:
+  # How much weight to give to title matches vs content matches
+  title_weight: 2.0      # Title matches are 2x more important
+  content_weight: 1.0    # Base weight for content matches
+  
+  # Boost exact phrase matches
+  exact_phrase_boost: 1.5
+  
+  # Boost matches at the beginning of content
+  beginning_boost: 1.2
