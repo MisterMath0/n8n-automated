@@ -49,6 +49,7 @@ export function useModels() {
 
     try {
       const response = await workflowService.getAvailableModels();
+      console.log('🔍 [DEBUG] Available models from API:', response.models);
       setModels(response.models);
       setLastFetch(new Date());
     } catch (error) {

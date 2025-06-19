@@ -2,16 +2,27 @@
 // This ensures type safety between frontend and backend
 
 export enum AIProvider {
+  GOOGLE = "google",
   ANTHROPIC = "anthropic",
   OPENAI = "openai",
   GROQ = "groq"
 }
 
 export enum AIModel {
+  // Gemini models (Google AI) - Free tier with high context
+  GEMINI_2_5_FLASH = "gemini-2-5-flash",
+  GEMINI_1_5_FLASH = "gemini-1-5-flash",
+  GEMINI_1_5_PRO = "gemini-1-5-pro",
+  
+  // Anthropic Claude models
   CLAUDE_4_SONNET = "claude-4-sonnet",
   CLAUDE_4_OPUS = "claude-4-opus",
+  
+  // OpenAI models
   GPT_4O = "gpt-4o",
   O3 = "o3",
+  
+  // Groq models
   LLAMA_3_3_70B = "llama-3-3-70b",
   LLAMA_3_1_8B = "llama-3-1-8b"
 }
@@ -83,12 +94,13 @@ export interface WorkflowEditResponse {
 export interface AIModelInfo {
   name: string;
   provider: AIProvider;
-  description: string;
+  model_id: AIModel;
+  description?: string;
   max_tokens: number;
   cost_per_1k_input_tokens: number;
   cost_per_1k_output_tokens: number;
-  supports_json_mode: boolean;
-  supports_streaming: boolean;
+  supports_json_mode?: boolean;
+  supports_streaming?: boolean;
   context_window: number;
 }
 
