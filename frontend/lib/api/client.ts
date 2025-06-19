@@ -72,6 +72,20 @@ class APIClient {
     }
 
     if (!response.ok) {
+      // 🔍 DEBUG: Log detailed error response for 422 errors
+      if (response.status === 422) {
+        console.error('🔍 [DEBUG] 422 Validation Error Details:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url,
+          responseData: data,
+          responseDataStringified: JSON.stringify(data, null, 2),
+          contentType,
+          headers: Object.fromEntries(response.headers.entries()),
+          timestamp: new Date().toISOString()
+        });
+      }
+      
       // Handle FastAPI error format
       const errorMessage = data?.detail || data?.message || `HTTP ${response.status}`;
       const errorCode = data?.code || 'API_ERROR';
@@ -101,6 +115,23 @@ class APIClient {
 
     let lastError: Error;
 
+    // 🔍 DEBUG: Log outgoing request details
+    if (fetchConfig.method === 'POST' && url.includes('/generate')) {
+      console.log('🔍 [DEBUG] API Client sending request:', {
+        url,
+        method: fetchConfig.method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          ...fetchConfig.headers,
+        },
+        body: fetchConfig.body,
+        bodyParsed: fetchConfig.body ? JSON.parse(fetchConfig.body as string) : null,
+        timeout,
+        timestamp: new Date().toISOString()
+      });
+    }
+
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         const signal = this.createTimeoutSignal(timeout);
@@ -110,9 +141,23 @@ class APIClient {
           signal,
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             ...fetchConfig.headers,
           },
         });
+
+        // 🔍 DEBUG: Log response details for generate requests
+        if (fetchConfig.method === 'POST' && url.includes('/generate')) {
+          console.log('🔍 [DEBUG] API Client received response:', {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
+            headers: Object.fromEntries(response.headers.entries()),
+            url: response.url,
+            attempt: attempt + 1,
+            timestamp: new Date().toISOString()
+          });
+        }
 
         return await this.handleResponse<T>(response);
       } catch (error) {
