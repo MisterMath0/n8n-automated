@@ -67,6 +67,9 @@ class Settings(BaseSettings):
     supabase_service_role_key: Optional[str] = Field(default=None, alias="SUPABASE_SERVICE_ROLE_KEY")
     supabase_jwt_secret: Optional[str] = Field(default=None, alias="SUPABASE_JWT_SECRET")
     
+    # Documentation scraping
+    apify_api_token: Optional[str] = Field(default=None, alias="APIFY_API_TOKEN")
+    
     @field_validator('cors_origins')
     @classmethod
     def parse_cors_origins(cls, v):

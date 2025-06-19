@@ -8,6 +8,7 @@ class ConfigLoader:
         self.config_dir = Path(__file__).parent.parent.parent / "config"
         self._models_cache = None
         self._prompts_cache = None
+        self._search_cache = None
     
     def load_models(self) -> Dict[str, AIModelConfig]:
         if self._models_cache is None:
@@ -41,6 +42,18 @@ class ConfigLoader:
         if role not in prompts[template_type]:
             raise ValueError(f"Unknown role: {role}")
         return prompts[template_type][role]
+    
+    def load_search_config(self) -> Dict[str, Any]:
+        """Load search configuration from search.yaml"""
+        if self._search_cache is None:
+            search_file = self.config_dir / "search.yaml"
+            if not search_file.exists():
+                raise FileNotFoundError(f"Search config file not found: {search_file}")
+            
+            with open(search_file, 'r') as f:
+                self._search_cache = yaml.safe_load(f)
+        
+        return self._search_cache["search"]  # Return the 'search' section
 
 
 config_loader = ConfigLoader()
