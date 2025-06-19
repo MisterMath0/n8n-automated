@@ -13,7 +13,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="h-screen bg-black overflow-hidden">
       {/* Top Header */}
       <header className="h-16 border-b border-white/10 bg-black/90 backdrop-blur-sm px-6 flex items-center justify-between relative z-40">
         {/* Logo */}
@@ -59,7 +59,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </header>
 
       {/* Main Content */}
-      <main className="h-[calc(100vh-4rem)]">
+      <main className="h-[calc(100vh-4rem)] overflow-hidden">
         {children}
       </main>
     </div>

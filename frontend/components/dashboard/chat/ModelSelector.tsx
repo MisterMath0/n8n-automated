@@ -51,9 +51,6 @@ export function ModelSelector({ selectedModel, availableModels, modelsLoading, i
               )}
             >
               <div className="font-medium">{model.name}</div>
-              <div className="text-xs text-muted-foreground">
-                {model.provider} • ${model.cost_per_1k_input_tokens.toFixed(3)}/${model.cost_per_1k_output_tokens.toFixed(3)} per 1k
-              </div>
             </DropdownMenuItem>
           );
         })}

@@ -13,7 +13,7 @@ interface MessagesAreaProps {
 
 export function MessagesArea({ messages, isGenerating, messagesEndRef }: MessagesAreaProps) {
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="h-full overflow-y-auto p-4 space-y-4">
       <AnimatePresence>
         {messages.map((message) => (
           <MessageBubble key={message.id} message={message} />

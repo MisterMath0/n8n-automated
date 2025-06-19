@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useWorkflowGeneration, useModels } from "@/hooks/api";
+import { useWorkflowGeneration, useModels, useChatWithAI } from "@/hooks/api";
 import { useToast } from "@/components/providers";
 import { useAuth } from "@/hooks/useAuth";
 import { useConversations } from "@/hooks/useConversations";
-import { AIModel, WorkflowGenerationRequest } from "@/types/api";
+import { AIModel, WorkflowGenerationRequest, ChatMessage, ChatRequest, ChatResponse } from "@/types/api";
 import { ChatHeader } from "./ChatHeader";
 import { ModelsError } from "./ModelsError";
 import { ChatInput } from "./ChatInput";
@@ -23,6 +23,7 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
   const { models, loading: modelsLoading, error: modelsError } = useModels();
   const { currentConversation, setCurrentConversation, createConversation, addMessage, getContextMessages } = useConversations();
   const toast = useToast();
+  const { chatWithAI, isChatting } = useChatWithAI();
   
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const [inputValue, setInputValue] = useState("");
@@ -89,7 +90,7 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
   }, [inputValue, adjustTextareaHeight]);
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isGenerating || !user || !currentConversation) return;
+    if (!inputValue.trim() || isChatting || !user || !currentConversation) return;
 
     const description = inputValue.trim();
     const userTokens = estimateTokens(description);
@@ -116,67 +117,93 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
         userTokens
       );
 
-      // Get context messages within token limit
+      // Build conversation history for backend
       const contextMessages = getContextMessages(currentConversation, maxContextTokens);
-      
-      console.log('🔍 [DEBUG] Context management:', {
-        totalMessages: currentConversation.messages.length,
-        contextMessages: contextMessages.length,
-        maxTokens: maxContextTokens,
-        currentTotalTokens: currentConversation.total_tokens
-      });
+      const chatMessages: ChatMessage[] = [
+        ...contextMessages.map((msg: any) => ({
+          role: msg.role || (msg.sender === 'user' ? 'user' : 'assistant'),
+          content: msg.content,
+          timestamp: msg.created_at || undefined
+        })),
+        { role: 'user', content: description }
+      ];
 
-      const request: WorkflowGenerationRequest = {
-        description: description,
+      const request: ChatRequest = {
+        messages: chatMessages,
+        conversation_id: currentConversation.id,
         model: selectedModel,
         temperature: 0.3,
         max_tokens: 4000,
       };
 
-      const response = await generateWorkflow(request);
-      
-      if (response.success && response.workflow) {
-        const assistantTokens = estimateTokens(response.workflow.name + JSON.stringify(response.workflow.nodes));
-        
+      const response: ChatResponse = await chatWithAI(request);
+
+      // Always show the main AI message
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: response.message,
+        sender: 'ai',
+        type: 'text'
+      };
+      setMessages(prev => [...prev, aiMessage]);
+      await addMessage(
+        currentConversation.id,
+        response.message,
+        'assistant',
+        'text',
+        undefined,
+        estimateTokens(response.message)
+      );
+
+      // If workflow is present, show it
+      if (response.workflow) {
         const workflowMessage: Message = {
-          id: (Date.now() + 1).toString(),
+          id: (Date.now() + 2).toString(),
           content: `Generated workflow "${response.workflow.name}" with ${response.workflow.nodes.length} nodes in ${response.generation_time.toFixed(2)}s using ${response.tokens_used || 'N/A'} tokens.`,
           sender: 'ai',
           type: 'workflow',
           workflowData: response.workflow
         };
-
         setMessages(prev => [...prev, workflowMessage]);
-        
-        // Save assistant message to database
         await addMessage(
           currentConversation.id,
           workflowMessage.content,
           'assistant',
           'workflow',
           response.workflow,
-          assistantTokens
+          estimateTokens(workflowMessage.content)
         );
-
         onWorkflowGenerated?.(response.workflow);
-        
-        if (response.warnings.length > 0) {
-          response.warnings.forEach(warning => toast.warning(warning));
-        }
+      }
+
+      // If search_results are present, show them as a single message
+      if (response.search_results && response.search_results.length > 0) {
+        const searchContent = response.search_results.map((r: any, i: number) => `Result ${i + 1}: ${r.title}\n${r.content}\n${r.url ? r.url : ''}`).join('\n\n');
+        const searchMessage: Message = {
+          id: (Date.now() + 3).toString(),
+          content: searchContent,
+          sender: 'ai',
+          type: 'text'
+        };
+        setMessages(prev => [...prev, searchMessage]);
+        await addMessage(
+          currentConversation.id,
+          searchContent,
+          'assistant',
+          'text',
+          undefined,
+          estimateTokens(searchContent)
+        );
       }
     } catch (error) {
-      console.error('🔍 [DEBUG] Workflow generation failed:', error);
-
+      console.error('🔍 [DEBUG] Chat failed:', error);
       const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: 'Sorry, I encountered an error generating that workflow. Please try again.',
+        id: (Date.now() + 10).toString(),
+        content: 'Sorry, I encountered an error processing your request. Please try again.',
         sender: 'ai',
         type: 'error'
       };
-      
       setMessages(prev => [...prev, errorMessage]);
-      
-      // Save error message to database
       if (currentConversation) {
         await addMessage(
           currentConversation.id,
@@ -222,7 +249,7 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
   }
 
   return (
-    <div className="w-96 h-full bg-black/80 border-l border-white/10 flex flex-col">
+    <div className="w-96 h-full bg-black/80 border-l border-white/10 flex flex-col overflow-hidden">
       <ChatHeader 
         selectedModelName={getSelectedModelInfo()?.name}
         onClose={onClose}
@@ -232,11 +259,13 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
 
       {modelsError && <ModelsError error={modelsError} />}
 
-      <MessagesArea 
-        messages={messages}
-        isGenerating={isGenerating}
-        messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
-      />
+      <div className="flex-1 overflow-hidden">
+        <MessagesArea 
+          messages={messages}
+          isGenerating={isGenerating}
+          messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
+        />
+      </div>
 
       <ChatInput
         inputValue={inputValue}

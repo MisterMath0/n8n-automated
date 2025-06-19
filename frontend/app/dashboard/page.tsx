@@ -40,8 +40,8 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col h-screen bg-black">
-        <div className="flex flex-1">
+      <div className="flex flex-col h-full bg-black overflow-hidden">
+        <div className="flex flex-1 overflow-hidden">
           <WorkflowSidebar 
             workflows={workflows}
             selectedWorkflow={selectedWorkflow}
@@ -51,7 +51,7 @@ export default function DashboardPage() {
             isLoading={isLoading}
           />
           
-          <div className="flex-1 flex">
+          <div className="flex-1 flex overflow-hidden">
             <WorkflowCanvas 
               workflow={currentWorkflow || selectedWorkflow}
             />
