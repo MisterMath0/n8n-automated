@@ -29,11 +29,7 @@ class ToolBasedChatService:
     
     def __init__(self, legacy_ai_service=None):
         """Initialize with all components"""
-        # Use existing client manager from ai_service if available
-        if legacy_ai_service:
-            self.client_manager = legacy_ai_service
-        else:
-            self.client_manager = AIClientManager()
+        self.client_manager = AIClientManager()
             
         self.tool_definitions = ToolDefinitions(legacy_ai_service)
         self.tool_executor = ToolExecutor(self.tool_definitions)
