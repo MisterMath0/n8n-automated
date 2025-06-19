@@ -2,10 +2,14 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
-import { Send, X, Bot, User, Loader2, Sparkles } from "lucide-react";
+import { Send, X, Bot, User, Loader2, Sparkles, Settings } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
 import { SuggestedPrompts } from "./SuggestedPrompts";
 import { ChatInput } from "./ChatInput";
+import { ModelSelector } from "@/components/features/model-selection";
+import { useWorkflowGeneration, useModels } from "@/hooks/api";
+import { useToast } from "@/components/providers";
+import { AIModel, WorkflowGenerationRequest } from "@/types/api";
 
 interface Message {
   id: string;
@@ -18,8 +22,7 @@ interface Message {
 
 interface AIChatProps {
   onClose: () => void;
-  onGenerateWorkflow: (prompt: string) => Promise<any>;
-  isGenerating: boolean;
+  onWorkflowGenerated?: (workflow: any) => void;
 }
 
 const welcomeMessage: Message = {
@@ -30,11 +33,16 @@ const welcomeMessage: Message = {
   type: 'text'
 };
 
-export function AIChat({ onClose, onGenerateWorkflow, isGenerating }: AIChatProps) {
+export function AIChat({ onClose, onWorkflowGenerated }: AIChatProps) {
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const [inputValue, setInputValue] = useState("");
+  const [selectedModel, setSelectedModel] = useState<AIModel>(AIModel.CLAUDE_4_SONNET);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  const { generateWorkflow, isGenerating, error: apiError } = useWorkflowGeneration();
+  const { models } = useModels();
+  const toast = useToast();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -59,18 +67,39 @@ export function AIChat({ onClose, onGenerateWorkflow, isGenerating }: AIChatProp
     setInputValue("");
 
     try {
-      const workflow = await onGenerateWorkflow(message);
-      
-      const workflowMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: `Great! I've generated a workflow for "${message}". You can see it in the main canvas and export it as n8n JSON when ready.`,
-        sender: 'ai',
-        timestamp: new Date(),
-        type: 'workflow',
-        workflowData: workflow
+      const request: WorkflowGenerationRequest = {
+        description: message,
+        model: selectedModel,
+        temperature: 0.3,
+        max_tokens: 4000,
       };
 
-      setMessages(prev => [...prev, workflowMessage]);
+      const response = await generateWorkflow(request);
+      
+      if (response.success && response.workflow) {
+        const workflowMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: `Great! I've generated a workflow for "${message}" using ${response.model_used}. Generation took ${response.generation_time.toFixed(2)}s and used ${response.tokens_used || 'N/A'} tokens. You can see it in the main canvas and export it as n8n JSON when ready.`,
+          sender: 'ai',
+          timestamp: new Date(),
+          type: 'workflow',
+          workflowData: response.workflow
+        };
+
+        setMessages(prev => [...prev, workflowMessage]);
+        
+        // Notify parent component
+        onWorkflowGenerated?.(response.workflow);
+        
+        // Show warnings if any
+        if (response.warnings.length > 0) {
+          response.warnings.forEach(warning => {
+            toast.warning(warning);
+          });
+        }
+      } else {
+        throw new Error(response.error || 'Generation failed');
+      }
     } catch (error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -81,6 +110,7 @@ export function AIChat({ onClose, onGenerateWorkflow, isGenerating }: AIChatProp
       };
 
       setMessages(prev => [...prev, errorMessage]);
+      toast.handleApiError(error, 'Failed to generate workflow');
     }
   };
 
@@ -92,22 +122,35 @@ export function AIChat({ onClose, onGenerateWorkflow, isGenerating }: AIChatProp
   return (
     <div className="w-96 h-full bg-black/80 border-l border-white/10 flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-white/10 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-            <Bot className="w-5 h-5 text-white" />
+      <div className="p-4 border-b border-white/10">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+              <Bot className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-white font-semibold">AI Assistant</h3>
+              <p className="text-xs text-gray-400">Workflow Generator</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-white font-semibold">AI Assistant</h3>
-            <p className="text-xs text-gray-400">Workflow Generator</p>
-          </div>
+          <button
+            onClick={onClose}
+            className="p-1 text-gray-400 hover:text-white transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="p-1 text-gray-400 hover:text-white transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+
+        {/* Model Selection */}
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-400">AI Model:</span>
+          <ModelSelector
+            selectedModel={selectedModel}
+            onModelChange={setSelectedModel}
+            disabled={isGenerating}
+            compact
+          />
+        </div>
       </div>
 
       {/* Messages */}
