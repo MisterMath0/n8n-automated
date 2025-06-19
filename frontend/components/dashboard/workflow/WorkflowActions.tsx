@@ -2,14 +2,14 @@
 
 import { motion } from "framer-motion";
 import { Download, Play, Save, Loader2 } from "lucide-react";
-import { Workflow, GeneratedWorkflow } from "@/hooks/useWorkflows";
+import { Workflow } from "@/hooks/useWorkflows";
 
 interface WorkflowActionsProps {
-  workflow: Workflow | GeneratedWorkflow;
+  workflow: Workflow;
   onTest: () => void;
   onExport: () => void;
   onSave: () => void;
-  isTestingWorkflow: boolean;
+  isValidatingWorkflow: boolean;
 }
 
 export function WorkflowActions({ 
@@ -17,7 +17,7 @@ export function WorkflowActions({
   onTest, 
   onExport, 
   onSave, 
-  isTestingWorkflow 
+  isValidatingWorkflow: isValidatingWorkflow 
 }: WorkflowActionsProps) {
   return (
     <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-black/90 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
@@ -25,15 +25,15 @@ export function WorkflowActions({
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={onTest}
-        disabled={isTestingWorkflow}
+        disabled={isValidatingWorkflow}
         className="px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 hover:shadow-orange-500/25 transition-all disabled:opacity-50"
       >
-        {isTestingWorkflow ? (
+        {isValidatingWorkflow ? (
           <Loader2 className="w-4 h-4 animate-spin" />
         ) : (
           <Play className="w-4 h-4" />
         )}
-        {isTestingWorkflow ? 'Testing...' : 'Test workflow'}
+        {isValidatingWorkflow ? 'Validating...' : 'Validate workflow'}
       </motion.button>
       
       <motion.button

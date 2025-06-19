@@ -25,7 +25,7 @@ interface WorkflowCanvasProps {
 export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState(workflow?.nodes || []);
   const [edges, setEdges, onEdgesChange] = useEdgesState(workflow?.edges || []);
-  const [isTestingWorkflow, setIsTestingWorkflow] = useState(false);
+  const [isValidatingWorkflow, setIsValidatingWorkflow] = useState(false);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -35,7 +35,7 @@ export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
   const handleTestWorkflow = async () => {
     if (!workflow || nodes.length === 0) return;
     
-    setIsTestingWorkflow(true);
+    setIsValidatingWorkflow(true);
     try {
       // TODO: Replace with your testing API
       const response = await fetch('/api/workflows/test', {
@@ -56,7 +56,7 @@ export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
     } catch (error) {
       console.error('Workflow test error:', error);
     } finally {
-      setIsTestingWorkflow(false);
+      setIsValidatingWorkflow(false);
     }
   };
 
@@ -159,7 +159,7 @@ export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
         onTest={handleTestWorkflow}
         onExport={handleExportWorkflow}
         onSave={handleSaveWorkflow}
-        isTestingWorkflow={isTestingWorkflow}
+        isValidatingWorkflow={isValidatingWorkflow}
       />
     </div>
   );

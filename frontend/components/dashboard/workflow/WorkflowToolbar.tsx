@@ -1,10 +1,10 @@
 "use client";
 
 import { Share, MoreHorizontal } from "lucide-react";
-import { Workflow, GeneratedWorkflow } from "@/hooks/useWorkflows";
+import { Workflow } from "@/hooks/useWorkflows";
 
 interface WorkflowToolbarProps {
-  workflow: Workflow | GeneratedWorkflow;
+  workflow: Workflow;
 }
 
 export function WorkflowToolbar({ workflow }: WorkflowToolbarProps) {
