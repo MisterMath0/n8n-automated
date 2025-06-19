@@ -1,6 +1,13 @@
 "use client";
 
-import { useState } from "react";
+// Legacy hook - replaced by useWorkflowGeneration from hooks/api
+// This file remains for backward compatibility during migration
+// TODO: Remove after all components are updated to use hooks/api
+
+import { useState, useCallback } from "react";
+import { useWorkflowGeneration as useWorkflowGenerationAPI } from "@/hooks/api";
+import { AIModel, WorkflowGenerationRequest, N8NWorkflow } from "@/types/api";
+import { useToast } from "@/components/providers";
 
 export interface GeneratedWorkflow {
   id: string;
@@ -15,90 +22,66 @@ export interface GeneratedWorkflow {
   };
 }
 
+/**
+ * @deprecated Use useWorkflowGeneration from @/hooks/api instead
+ * This hook is kept for backward compatibility
+ */
 export function useWorkflowGeneration() {
-  const [generatedWorkflow, setGeneratedWorkflow] = useState<GeneratedWorkflow | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const apiHook = useWorkflowGenerationAPI();
+  const toast = useToast();
+  const [selectedModel, setSelectedModel] = useState<AIModel>(AIModel.CLAUDE_4_SONNET);
 
-  const generateWorkflow = async (prompt: string) => {
+  const generateWorkflow = useCallback(async (prompt: string) => {
     try {
-      setIsGenerating(true);
-      setError(null);
+      const request: WorkflowGenerationRequest = {
+        description: prompt,
+        model: selectedModel,
+        temperature: 0.3,
+        max_tokens: 4000,
+      };
+
+      const response = await apiHook.generateWorkflow(request);
       
-      // TODO: Replace with your AI workflow generation API
-      const response = await fetch('/api/generate-workflow', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to generate workflow');
+      if (response.success && response.workflow) {
+        toast.success(`Workflow generated successfully! (${response.generation_time.toFixed(2)}s)`);
+        
+        // Transform to legacy format
+        const legacyWorkflow: GeneratedWorkflow = {
+          id: response.workflow.id,
+          name: response.workflow.name,
+          description: prompt,
+          nodes: response.workflow.nodes,
+          edges: [], // Convert connections to edges if needed
+          metadata: {
+            generatedAt: new Date().toISOString(),
+            prompt,
+            version: '1.0',
+          },
+        };
+        
+        return legacyWorkflow;
+      } else {
+        throw new Error(response.error || 'Generation failed');
       }
-      
-      const workflow = await response.json();
-      setGeneratedWorkflow(workflow);
-      
-      return workflow;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to generate workflow';
-      setError(errorMessage);
-      console.error('Workflow generation error:', err);
-      throw err;
-    } finally {
-      setIsGenerating(false);
+    } catch (error) {
+      toast.handleApiError(error, 'Failed to generate workflow');
+      throw error;
     }
-  };
+  }, [apiHook, selectedModel, toast]);
 
-  const clearGenerated = () => {
-    setGeneratedWorkflow(null);
-    setError(null);
-  };
-
-  const saveGeneratedWorkflow = async (name?: string) => {
-    if (!generatedWorkflow) return null;
-    
-    try {
-      const response = await fetch('/api/workflows', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name || generatedWorkflow.name,
-          description: generatedWorkflow.description,
-          nodes: generatedWorkflow.nodes,
-          edges: generatedWorkflow.edges,
-          metadata: generatedWorkflow.metadata
-        })
-      });
-      
-      if (!response.ok) throw new Error('Failed to save workflow');
-      
-      const savedWorkflow = await response.json();
-      setGeneratedWorkflow(null); // Clear after saving
-      
-      return savedWorkflow;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save workflow');
-      throw err;
-    }
-  };
-
-  const exportWorkflow = (workflow: GeneratedWorkflow | null = generatedWorkflow) => {
+  const exportWorkflow = useCallback((workflow: N8NWorkflow | null) => {
     if (!workflow) return;
     
     const exportData = {
       name: workflow.name,
       nodes: workflow.nodes,
-      edges: workflow.edges,
-      connections: workflow.edges,
-      settings: {},
-      staticData: null,
-      tags: [],
-      triggerCount: 0,
-      meta: {
-        templateCredsSetupCompleted: true
-      },
-      ...workflow.metadata
+      connections: workflow.connections,
+      settings: workflow.settings || {},
+      pinData: workflow.pinData || {},
+      tags: workflow.tags || [],
+      active: workflow.active,
+      versionId: workflow.versionId,
+      meta: workflow.meta || {},
     };
     
     const blob = new Blob([JSON.stringify(exportData, null, 2)], {
@@ -108,18 +91,24 @@ export function useWorkflowGeneration() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${workflow.name.replace(/\\s+/g, '_').toLowerCase()}.json`;
+    a.download = `${workflow.name.replace(/\s+/g, '_').toLowerCase()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  };
+  }, []);
 
   return {
-    generatedWorkflow,
-    isGenerating,
-    error,
+    generatedWorkflow: apiHook.workflow,
+    isGenerating: apiHook.isGenerating,
+    error: apiHook.error,
     generateWorkflow,
-    clearGenerated,
-    saveGeneratedWorkflow,
-    exportWorkflow
+    clearGenerated: apiHook.clearGenerated,
+    exportWorkflow,
+    // New properties from API
+    selectedModel,
+    setSelectedModel,
+    generationTime: apiHook.generationTime,
+    tokensUsed: apiHook.tokensUsed,
+    modelUsed: apiHook.modelUsed,
+    warnings: apiHook.warnings,
   };
 }
