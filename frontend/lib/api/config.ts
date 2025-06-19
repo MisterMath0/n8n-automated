@@ -13,6 +13,7 @@ export const API_ROUTES = {
     EDIT: '/api/v1/workflows/edit',
     MODELS: '/api/v1/workflows/models',
     HEALTH: '/api/v1/workflows/health',
+    CHAT: '/api/v1/workflows/chat',
   },
 } as const;
 

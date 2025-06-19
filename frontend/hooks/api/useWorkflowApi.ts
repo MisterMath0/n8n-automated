@@ -144,3 +144,59 @@ export function useWorkflowEdit() {
     modelUsed: state.data?.model_used,
   };
 }
+
+/**
+ * Hook for tool-based chat operations
+ * Handles only React state management - API calls are delegated to services
+ */
+export function useChatWithAI() {
+  const [state, setState] = useState<APIState<import('@/types/api').ChatResponse>>({
+    data: null,
+    loading: false,
+    error: null,
+  });
+
+  const chatWithAI = useCallback(async (request: import('@/types/api').ChatRequest) => {
+    setState(prev => ({ ...prev, loading: true, error: null }));
+    try {
+      const response = await workflowService.chatWithAI(request);
+      setState({
+        data: response,
+        loading: false,
+        error: null,
+      });
+      return response;
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      setState({
+        data: null,
+        loading: false,
+        error: errorMessage,
+      });
+      throw error;
+    }
+  }, []);
+
+  const clearChat = useCallback(() => {
+    setState({
+      data: null,
+      loading: false,
+      error: null,
+    });
+  }, []);
+
+  return {
+    ...state,
+    chatWithAI,
+    clearChat,
+    // Computed properties
+    aiMessage: state.data?.message || null,
+    workflow: state.data?.workflow || null,
+    searchResults: state.data?.search_results || [],
+    isChatting: state.loading,
+    generationTime: state.data?.generation_time,
+    tokensUsed: state.data?.tokens_used,
+    toolsUsed: state.data?.tools_used || [],
+    modelUsed: state.data?.model_used,
+  };
+}

@@ -68,6 +68,19 @@ export class WorkflowService {
       }
     );
   }
+
+  /**
+   * Chat with AI using tool-based system
+   */
+  async chatWithAI(request: import('@/types/api').ChatRequest): Promise<import('@/types/api').ChatResponse> {
+    return apiClient.post<import('@/types/api').ChatResponse>(
+      API_ROUTES.WORKFLOWS.CHAT,
+      request,
+      {
+        timeout: ENDPOINT_TIMEOUTS.GENERATE, // Use GENERATE timeout for chat
+      }
+    );
+  }
 }
 
 // Export singleton instance

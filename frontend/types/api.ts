@@ -120,3 +120,33 @@ export interface APIResponse<T> {
     requestId?: string;
   };
 }
+
+// --- Chat API Types ---
+
+export type MessageRole = 'user' | 'assistant' | 'system';
+
+export interface ChatMessage {
+  role: MessageRole;
+  content: string;
+  timestamp?: string; // ISO string, optional for frontend
+}
+
+export interface ChatRequest {
+  messages: ChatMessage[];
+  conversation_id?: string;
+  model?: AIModel;
+  temperature?: number;
+  max_tokens?: number;
+}
+
+export interface ChatResponse {
+  success: boolean;
+  message: string;
+  workflow?: N8NWorkflow;
+  search_results?: any[]; // Use any for now, can be refined if SearchResult type is defined
+  conversation_id: string;
+  generation_time: number;
+  tokens_used?: number;
+  tools_used: string[];
+  model_used: AIModel;
+}
