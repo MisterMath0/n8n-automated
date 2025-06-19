@@ -11,7 +11,7 @@ import { ModelsError } from "./ModelsError";
 import { ChatInput } from "./ChatInput";
 import { MessagesArea } from "./MessagesArea";
 import { Message, SimpleChatProps } from "@/components/dashboard/chat/types";
-import { welcomeMessage, MODEL_NAME_TO_ENUM } from "@/components/dashboard/chat/constants";
+import { welcomeMessage, MODEL_NAME_TO_ENUM, DEFAULT_MODEL, SELECTED_MODEL_KEY } from "@/components/dashboard/chat/constants";
 
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
@@ -27,7 +27,13 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
   
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const [inputValue, setInputValue] = useState("");
-  const [selectedModel, setSelectedModel] = useState<AIModel>(AIModel.CLAUDE_4_SONNET);
+  const [selectedModel, setSelectedModel] = useState<AIModel>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(SELECTED_MODEL_KEY);
+      return stored ? (stored as AIModel) : DEFAULT_MODEL;
+    }
+    return DEFAULT_MODEL;
+  });
   const [maxContextTokens, setMaxContextTokens] = useState(8000);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -75,15 +81,31 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
     initConversation();
   }, [user, currentConversation, createConversation, setCurrentConversation, maxContextTokens]);
 
+  // Persist model selection
+  const handleModelChange = (model: AIModel) => {
+    setSelectedModel(model);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(SELECTED_MODEL_KEY, model);
+    }
+  };
+
   // Auto-select first available model when models load
   useEffect(() => {
-    if (availableModels.length > 0 && !getSelectedModelInfo()) {
-      const firstAvailable = MODEL_NAME_TO_ENUM[availableModels[0].name];
-      if (firstAvailable) {
-        setSelectedModel(firstAvailable);
+    if (availableModels.length > 0) {
+      // Check if current selected model is available
+      const currentModelAvailable = availableModels.some(m => m.model_id === selectedModel);
+      if (!currentModelAvailable) {
+        // Try to find Gemini model first
+        const geminiModel = availableModels.find(m => m.model_id === AIModel.GEMINI_2_5_FLASH);
+        if (geminiModel) {
+          handleModelChange(geminiModel.model_id);
+        } else {
+          // Fall back to first available model
+          handleModelChange(availableModels[0].model_id);
+        }
       }
     }
-  }, [availableModels, models, modelsLoading, selectedModel]);
+  }, [availableModels, selectedModel]);
 
   useEffect(() => {
     adjustTextareaHeight();
@@ -255,6 +277,9 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
         onClose={onClose}
         maxContextTokens={maxContextTokens}
         onMaxContextTokensChange={setMaxContextTokens}
+        onModelChange={handleModelChange}
+        selectedModel={selectedModel}
+        isGenerating={isChatting}
       />
 
       {modelsError && <ModelsError error={modelsError} />}
@@ -262,7 +287,7 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
       <div className="flex-1 overflow-hidden">
         <MessagesArea 
           messages={messages}
-          isGenerating={isGenerating}
+          isGenerating={isChatting}
           messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
         />
       </div>
@@ -272,11 +297,11 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
         setInputValue={setInputValue}
         textareaRef={textareaRef as React.RefObject<HTMLTextAreaElement>}
         handleSendMessage={handleSendMessage}
-        isGenerating={isGenerating}
+        isGenerating={isChatting}
         availableModels={availableModels}
         selectedModel={selectedModel}
         modelsLoading={modelsLoading}
-        onModelChange={setSelectedModel}
+        onModelChange={handleModelChange}
       />
     </div>
   );

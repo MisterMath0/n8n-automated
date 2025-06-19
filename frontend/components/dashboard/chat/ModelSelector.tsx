@@ -1,26 +1,37 @@
 "use client";
 
-import { Settings } from "lucide-react";
-import { AIModel } from "@/types/api";
+import { Settings, Zap, Sparkles } from "lucide-react";
+import { AIModel, AIModelInfo } from "@/types/api";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { MODEL_NAME_TO_ENUM } from "./constants";
+import { MODEL_ENUM_TO_NAME } from "./constants";
 
 interface ModelSelectorProps {
   selectedModel: AIModel;
-  availableModels: any[];
+  availableModels: AIModelInfo[];
   modelsLoading: boolean;
   isGenerating: boolean;
   onModelChange: (model: AIModel) => void;
 }
 
 export function ModelSelector({ selectedModel, availableModels, modelsLoading, isGenerating, onModelChange }: ModelSelectorProps) {
+  // Group models by provider
+  const groupedModels = availableModels.reduce((acc, model) => {
+    if (!acc[model.provider]) {
+      acc[model.provider] = [];
+    }
+    acc[model.provider].push(model);
+    return acc;
+  }, {} as Record<string, AIModelInfo[]>);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -34,26 +45,43 @@ export function ModelSelector({ selectedModel, availableModels, modelsLoading, i
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
-        {availableModels.map((model) => {
-          const modelEnum = MODEL_NAME_TO_ENUM[model.name];
-          if (!modelEnum) return null;
-          
-          return (
-            <DropdownMenuItem
-              key={model.name}
-              onClick={() => {
-                console.log('🔍 [DEBUG] Model changed to:', model.name);
-                onModelChange(modelEnum);
-              }}
-              className={cn(
-                "flex flex-col items-start py-3",
-                selectedModel === modelEnum && "bg-accent"
-              )}
-            >
-              <div className="font-medium">{model.name}</div>
-            </DropdownMenuItem>
-          );
-        })}
+        {Object.entries(groupedModels).map(([provider, models]) => (
+          <div key={provider}>
+            <DropdownMenuLabel className="text-xs font-bold uppercase text-muted-foreground">
+              {provider}
+            </DropdownMenuLabel>
+            {models.map((model) => {
+              const modelEnum = model.model_id;
+              const displayName = MODEL_ENUM_TO_NAME[modelEnum] || model.name;
+              
+              const isFree = model.cost_per_1k_input_tokens === 0;
+              
+              return (
+                <DropdownMenuItem
+                  key={model.model_id}
+                  onClick={() => {
+                    console.log('🔍 [DEBUG] Model changed to:', model.model_id);
+                    onModelChange(modelEnum);
+                  }}
+                  className={cn(
+                    "flex flex-col items-start py-3 gap-1",
+                    selectedModel === modelEnum && "bg-accent"
+                  )}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <div className="font-medium flex-1">{displayName}</div>
+                    {isFree && <Sparkles className="h-3 w-3 text-green-400" />}
+                    {model.supports_streaming && <Zap className="h-3 w-3 text-yellow-400" />}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {model.description || `Context: ${model.context_window.toLocaleString()} tokens`}
+                  </div>
+                </DropdownMenuItem>
+              );
+            })}
+            <DropdownMenuSeparator />
+          </div>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );
