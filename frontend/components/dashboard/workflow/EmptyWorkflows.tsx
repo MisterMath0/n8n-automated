@@ -36,11 +36,6 @@ export function EmptyWorkflows({ onCreateWorkflow }: EmptyWorkflowsProps) {
           <Plus className="w-4 h-4" />
           Create Workflow
         </motion.button>
-        
-        <button className="w-full px-4 py-3 bg-white/5 border border-white/20 text-gray-300 rounded-lg font-medium text-sm flex items-center justify-center gap-2 hover:bg-white/10 transition-all">
-          <MessageSquare className="w-4 h-4" />
-          Chat with AI
-        </button>
       </div>
     </motion.div>
   );
