@@ -1,4 +1,51 @@
 models:
+  # Gemini models (Google AI) - Free tier with high context windows
+  gemini-2-5-flash:
+    name: "Gemini 2.5 Flash"
+    provider: "google"
+    model_id: "gemini-2.5-flash-001"
+    api_key_env: "GOOGLE_API_KEY"
+    base_url: "https://generativelanguage.googleapis.com/v1beta"
+    max_tokens: 8192
+    cost_per_1k_input_tokens: 0.0  # Free tier
+    cost_per_1k_output_tokens: 0.0  # Free tier
+    supports_json_mode: true
+    supports_streaming: true
+    supports_tools: true
+    context_window: 1000000  # 1M tokens
+    default_temperature: 0.3
+    
+  gemini-1-5-flash:
+    name: "Gemini 1.5 Flash"
+    provider: "google"
+    model_id: "gemini-1.5-flash-001"
+    api_key_env: "GOOGLE_API_KEY"
+    base_url: "https://generativelanguage.googleapis.com/v1beta"
+    max_tokens: 8192
+    cost_per_1k_input_tokens: 0.0  # Free tier
+    cost_per_1k_output_tokens: 0.0  # Free tier
+    supports_json_mode: true
+    supports_streaming: true
+    supports_tools: true
+    context_window: 1000000  # 1M tokens
+    default_temperature: 0.3
+    
+  gemini-1-5-pro:
+    name: "Gemini 1.5 Pro"
+    provider: "google"
+    model_id: "gemini-1.5-pro-001"
+    api_key_env: "GOOGLE_API_KEY"
+    base_url: "https://generativelanguage.googleapis.com/v1beta"
+    max_tokens: 8192
+    cost_per_1k_input_tokens: 1.25  # Paid tier
+    cost_per_1k_output_tokens: 5.0   # Paid tier
+    supports_json_mode: true
+    supports_streaming: true
+    supports_tools: true
+    context_window: 2000000  # 2M tokens
+    default_temperature: 0.3
+
+  # Anthropic Claude models
   claude-4-sonnet:
     name: "Claude 4 Sonnet"
     provider: "anthropic"
@@ -9,7 +56,9 @@ models:
     cost_per_1k_output_tokens: 15.0
     supports_json_mode: true
     supports_streaming: true
+    supports_tools: true
     context_window: 200000
+    default_temperature: 0.3
 
   claude-4-opus:
     name: "Claude 4 Opus"
@@ -21,8 +70,11 @@ models:
     cost_per_1k_output_tokens: 75.0
     supports_json_mode: true
     supports_streaming: true
+    supports_tools: true
     context_window: 200000
+    default_temperature: 0.3
 
+  # OpenAI models
   gpt-4o:
     name: "GPT-4o"
     provider: "openai"
@@ -34,7 +86,9 @@ models:
     cost_per_1k_output_tokens: 10.0
     supports_json_mode: true
     supports_streaming: true
+    supports_tools: true
     context_window: 128000
+    default_temperature: 0.3
 
   o3:
     name: "OpenAI o3"
@@ -47,8 +101,11 @@ models:
     cost_per_1k_output_tokens: 40.0
     supports_json_mode: true
     supports_streaming: true
+    supports_tools: true
     context_window: 128000
+    default_temperature: 0.3
 
+  # Groq models
   llama-3-3-70b:
     name: "Llama 3.3 70B"
     provider: "groq"
@@ -60,7 +117,9 @@ models:
     cost_per_1k_output_tokens: 0.8
     supports_json_mode: true
     supports_streaming: true
+    supports_tools: true
     context_window: 32768
+    default_temperature: 0.3
 
   llama-3-1-8b:
     name: "Llama 3.1 8B"
@@ -73,4 +132,16 @@ models:
     cost_per_1k_output_tokens: 0.08
     supports_json_mode: true
     supports_streaming: true
+    supports_tools: true
     context_window: 8192
+    default_temperature: 0.3
+
+# Default model configuration
+default_model: "gemini-2-5-flash"  # Free, high-performance model with 1M context window
+
+# Provider priority (for fallback)
+provider_priority:
+  - "google"     # Free tier, high context
+  - "anthropic"  # High quality
+  - "groq"       # Fast inference  
+  - "openai"     # Reliable
