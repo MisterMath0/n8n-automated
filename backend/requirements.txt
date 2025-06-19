@@ -22,6 +22,9 @@ structlog==25.1.0
 # Additional utilities
 python-multipart==0.0.20
 
+# Search and indexing
+bm25s>=0.2.0
+
 # Supabase integration
 supabase==2.15.3
 PyJWT==2.9.0
