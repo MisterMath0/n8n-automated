@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 import structlog
 
@@ -13,14 +13,19 @@ from ..models.workflow import (
     AIProvider
 )
 from ..services.ai_service import ai_service
+from ..services.supabase_service import supabase_service
 from ..core.config_loader import config_loader
+from ..core.auth import get_current_user, get_optional_user, CurrentUser
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/api/v1/workflows", tags=["workflows"])
 
 
 @router.post("/generate", response_model=WorkflowGenerationResponse)
-async def generate_workflow(request: WorkflowGenerationRequest):
+async def generate_workflow(
+    request: WorkflowGenerationRequest,
+    current_user: CurrentUser = Depends(get_current_user)
+):
     try:
         workflow, generation_time, tokens_used = await ai_service.generate_workflow(
             description=request.description,
@@ -34,7 +39,8 @@ async def generate_workflow(request: WorkflowGenerationRequest):
             model=request.model.value,
             generation_time=generation_time,
             tokens_used=tokens_used,
-            node_count=len(workflow.nodes)
+            node_count=len(workflow.nodes),
+            user_id=current_user.id if current_user else None
         )
         
         return WorkflowGenerationResponse(
@@ -60,7 +66,10 @@ async def generate_workflow(request: WorkflowGenerationRequest):
 
 
 @router.post("/edit", response_model=WorkflowEditResponse)
-async def edit_workflow(request: WorkflowEditRequest):
+async def edit_workflow(
+    request: WorkflowEditRequest,
+    current_user: CurrentUser = Depends(get_current_user)
+):
     try:
         workflow, generation_time, tokens_used, changes = await ai_service.edit_workflow(
             workflow=request.workflow,

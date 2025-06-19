@@ -22,6 +22,10 @@ structlog==25.1.0
 # Additional utilities
 python-multipart==0.0.20
 
+# Supabase integration
+supabase==2.15.3
+PyJWT==2.9.0
+
 # Development dependencies (uncomment for dev)
 # pytest==8.0.0
 # pytest-asyncio==0.21.0
