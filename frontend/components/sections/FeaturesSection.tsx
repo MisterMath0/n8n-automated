@@ -16,7 +16,7 @@ const features = [
   },
   {
     icon: Shield,
-    title: "Guaranteed Working Outputs",
+    title: "Up To Date Nodes",
     description: "Every workflow imports perfectly into n8n. No broken connections, no missing nodes, no frustrated clients.",
     color: "from-blue-500/25 to-blue-500/5",
     highlight: "100% success rate"

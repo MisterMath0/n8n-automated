@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useWorkflowGeneration, useModels } from "@/hooks/api";
 import { useToast } from "@/components/providers";
+import { useAuth } from "@/hooks/useAuth";
+import { useConversations } from "@/hooks/useConversations";
 import { AIModel, WorkflowGenerationRequest } from "@/types/api";
 import { ChatHeader } from "./ChatHeader";
 import { ModelsError } from "./ModelsError";
@@ -11,16 +13,23 @@ import { MessagesArea } from "./MessagesArea";
 import { Message, SimpleChatProps } from "@/components/dashboard/chat/types";
 import { welcomeMessage, MODEL_NAME_TO_ENUM } from "@/components/dashboard/chat/constants";
 
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
 export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
+  const { user } = useAuth();
+  const { generateWorkflow, isGenerating } = useWorkflowGeneration();
+  const { models, loading: modelsLoading, error: modelsError } = useModels();
+  const { currentConversation, setCurrentConversation, createConversation, addMessage, getContextMessages } = useConversations();
+  const toast = useToast();
+  
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const [inputValue, setInputValue] = useState("");
   const [selectedModel, setSelectedModel] = useState<AIModel>(AIModel.CLAUDE_4_SONNET);
+  const [maxContextTokens, setMaxContextTokens] = useState(8000);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  
-  const { generateWorkflow, isGenerating } = useWorkflowGeneration();
-  const { models, loading: modelsLoading, error: modelsError } = useModels();
-  const toast = useToast();
 
   // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
@@ -32,6 +41,7 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
   }, [messages, scrollToBottom]);
 
   const availableModels = models.filter(model => MODEL_NAME_TO_ENUM[model.name]);
+  
   // Auto-resize textarea
   const adjustTextareaHeight = useCallback(() => {
     const textarea = textareaRef.current;
@@ -42,57 +52,49 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
     }
   }, []);
 
+  // Initialize conversation when user is available
+  useEffect(() => {
+    const initConversation = async () => {
+      if (user && !currentConversation) {
+        try {
+          const conversation = await createConversation(
+            undefined,
+            'New Workflow Chat',
+            maxContextTokens
+          );
+          if (conversation) {
+            setCurrentConversation(conversation);
+          }
+        } catch (error) {
+          console.error('Failed to create conversation:', error);
+        }
+      }
+    };
+
+    initConversation();
+  }, [user, currentConversation, createConversation, setCurrentConversation, maxContextTokens]);
+
   // Auto-select first available model when models load
   useEffect(() => {
     if (availableModels.length > 0 && !getSelectedModelInfo()) {
       const firstAvailable = MODEL_NAME_TO_ENUM[availableModels[0].name];
       if (firstAvailable) {
-        console.log('🔍 [DEBUG] Auto-selecting first available model:', {
-          from: selectedModel,
-          to: firstAvailable,
-          modelName: availableModels[0].name
-        });
         setSelectedModel(firstAvailable);
       }
     }
   }, [availableModels, models, modelsLoading, selectedModel]);
 
   useEffect(() => {
-      adjustTextareaHeight();
-    }, [inputValue, adjustTextareaHeight]);
+    adjustTextareaHeight();
+  }, [inputValue, adjustTextareaHeight]);
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isGenerating) return;
+    if (!inputValue.trim() || isGenerating || !user || !currentConversation) return;
 
     const description = inputValue.trim();
+    const userTokens = estimateTokens(description);
 
-    // 🔍 DEBUG: Log all request details before sending
-    console.log('🔍 [DEBUG] Sending message request:', {
-      timestamp: new Date().toISOString(),
-      input: {
-        description: description,
-        length: description.length,
-        originalInput: inputValue,
-        trimmedLength: description.length
-      },
-      modelSelection: {
-        selectedModel,
-        selectedModelName: getSelectedModelInfo()?.name,
-        selectedModelProvider: getSelectedModelInfo()?.provider,
-        hasValidModelInfo: !!getSelectedModelInfo(),
-        availableModelsCount: availableModels.length,
-        totalModelsCount: models.length
-      },
-      requestParameters: {
-        temperature: 0.3,
-        max_tokens: 4000
-      },
-      validation: {
-        hasSelectedModel: !!selectedModel,
-        modelInAvailableList: availableModels.some(m => MODEL_NAME_TO_ENUM[m.name] === selectedModel)
-      }
-    });
-
+    // Add user message to local state and database
     const userMessage: Message = {
       id: Date.now().toString(),
       content: description,
@@ -101,40 +103,41 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const currentInput = description;
     setInputValue("");
 
     try {
+      // Save user message to database
+      await addMessage(
+        currentConversation.id,
+        description,
+        'user',
+        'text',
+        undefined,
+        userTokens
+      );
+
+      // Get context messages within token limit
+      const contextMessages = getContextMessages(currentConversation, maxContextTokens);
+      
+      console.log('🔍 [DEBUG] Context management:', {
+        totalMessages: currentConversation.messages.length,
+        contextMessages: contextMessages.length,
+        maxTokens: maxContextTokens,
+        currentTotalTokens: currentConversation.total_tokens
+      });
+
       const request: WorkflowGenerationRequest = {
-        description: currentInput,
+        description: description,
         model: selectedModel,
         temperature: 0.3,
         max_tokens: 4000,
       };
 
-      // 🔍 DEBUG: Log exact request payload
-      console.log('🔍 [DEBUG] Exact request payload:', {
-        request,
-        requestStringified: JSON.stringify(request, null, 2),
-        modelValueType: typeof selectedModel,
-        modelValue: selectedModel,
-        descriptionType: typeof currentInput,
-        descriptionValue: currentInput
-      });
-
       const response = await generateWorkflow(request);
       
-      // 🔍 DEBUG: Log successful response
-      console.log('🔍 [DEBUG] Workflow generation successful:', {
-        success: response.success,
-        modelUsed: response.model_used,
-        generationTime: response.generation_time,
-        tokensUsed: response.tokens_used,
-        hasWorkflow: !!response.workflow,
-        warningsCount: response.warnings?.length || 0
-      });
-      
       if (response.success && response.workflow) {
+        const assistantTokens = estimateTokens(response.workflow.name + JSON.stringify(response.workflow.nodes));
+        
         const workflowMessage: Message = {
           id: (Date.now() + 1).toString(),
           content: `Generated workflow "${response.workflow.name}" with ${response.workflow.nodes.length} nodes in ${response.generation_time.toFixed(2)}s using ${response.tokens_used || 'N/A'} tokens.`,
@@ -144,6 +147,17 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
         };
 
         setMessages(prev => [...prev, workflowMessage]);
+        
+        // Save assistant message to database
+        await addMessage(
+          currentConversation.id,
+          workflowMessage.content,
+          'assistant',
+          'workflow',
+          response.workflow,
+          assistantTokens
+        );
+
         onWorkflowGenerated?.(response.workflow);
         
         if (response.warnings.length > 0) {
@@ -151,27 +165,28 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
         }
       }
     } catch (error) {
-      // 🔍 DEBUG: Log detailed error information
-      console.error('🔍 [DEBUG] Workflow generation failed:', {
-        error,
-        errorMessage: error instanceof Error ? error.message : String(error),
-        errorStack: error instanceof Error ? error.stack : undefined,
-        errorType: error?.constructor?.name,
-        timestamp: new Date().toISOString(),
-        lastRequestDetails: {
-          description: currentInput,
-          model: selectedModel,
-          selectedModelInfo: getSelectedModelInfo()
-        }
-      });
+      console.error('🔍 [DEBUG] Workflow generation failed:', error);
 
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: 'Sorry, I encountered an error generating that workflow. Please check the console and try again.',
+        content: 'Sorry, I encountered an error generating that workflow. Please try again.',
         sender: 'ai',
         type: 'error'
       };
+      
       setMessages(prev => [...prev, errorMessage]);
+      
+      // Save error message to database
+      if (currentConversation) {
+        await addMessage(
+          currentConversation.id,
+          errorMessage.content,
+          'assistant',
+          'error',
+          undefined,
+          estimateTokens(errorMessage.content)
+        );
+      }
     }
   };
 
@@ -186,11 +201,33 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
     return models.find(model => MODEL_NAME_TO_ENUM[model.name] === selectedModel);
   };
 
+  // Show auth required message if user is not authenticated
+  if (!user) {
+    return (
+      <div className="w-96 h-full bg-black/80 border-l border-white/10 flex flex-col items-center justify-center">
+        <div className="text-center p-6">
+          <h3 className="text-white text-lg font-semibold mb-2">Authentication Required</h3>
+          <p className="text-gray-400 text-sm mb-4">
+            Please sign in to start generating workflows and save your conversation history.
+          </p>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-96 h-full bg-black/80 border-l border-white/10 flex flex-col">
       <ChatHeader 
         selectedModelName={getSelectedModelInfo()?.name}
         onClose={onClose}
+        maxContextTokens={maxContextTokens}
+        onMaxContextTokensChange={setMaxContextTokens}
       />
 
       {modelsError && <ModelsError error={modelsError} />}

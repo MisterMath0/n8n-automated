@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Plus, Sparkles, MessageSquare } from "lucide-react";
+import { Plus, Network, MessageSquare } from "lucide-react";
 
 interface EmptyWorkflowsProps {
   onCreateWorkflow: () => void;
@@ -15,7 +15,7 @@ export function EmptyWorkflows({ onCreateWorkflow }: EmptyWorkflowsProps) {
       className="p-6 text-center"
     >
       <div className="w-16 h-16 bg-black/80 border border-white/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-        <Sparkles className="w-8 h-8 text-gray-400" />
+        <Network className="w-8 h-8 text-gray-400" />
       </div>
       
       <h3 className="text-lg font-medium text-white mb-2">

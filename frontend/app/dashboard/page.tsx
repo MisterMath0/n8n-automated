@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { WorkflowCanvas } from "@/components/dashboard/workflow/WorkflowCanvas";
 import { SimpleChat } from "@/components/dashboard/chat/SimpleChat";
 import { WorkflowSidebar } from "@/components/dashboard/workflow/WorkflowSidebar";
@@ -19,49 +20,59 @@ export default function DashboardPage() {
   const handleWorkflowGenerated = async (workflow: N8NWorkflow) => {
     setCurrentWorkflow(workflow);
     
-    // Automatically save generated workflows
+    // The workflow is now automatically saved by the backend
+    // We just need to update the local state and show success
     try {
-      await saveGeneratedWorkflow(workflow);
+      await saveGeneratedWorkflow(
+        workflow, 
+        undefined, 
+        undefined, 
+        undefined, 
+        undefined, 
+        undefined
+      );
       toast.success(`Workflow "${workflow.name}" generated and saved!`);
     } catch (error) {
-      console.error('Failed to save generated workflow:', error);
-      toast.warning('Workflow generated but failed to save locally');
+      console.error('Failed to sync generated workflow:', error);
+      toast.warning('Workflow generated but failed to sync');
     }
   };
 
   return (
     <DashboardLayout>
-      <div className="flex h-screen bg-black">
-        <WorkflowSidebar 
-          workflows={workflows}
-          selectedWorkflow={selectedWorkflow}
-          onSelectWorkflow={selectWorkflow}
-          onExportWorkflow={exportWorkflow}
-          onDeleteWorkflow={deleteWorkflow}
-          isLoading={isLoading}
-        />
-        
-        <div className="flex-1 flex">
-          <WorkflowCanvas 
-            workflow={currentWorkflow || selectedWorkflow}
+      <div className="flex flex-col h-screen bg-black">
+        <div className="flex flex-1">
+          <WorkflowSidebar 
+            workflows={workflows}
+            selectedWorkflow={selectedWorkflow}
+            onSelectWorkflow={selectWorkflow}
+            onExportWorkflow={exportWorkflow}
+            onDeleteWorkflow={deleteWorkflow}
+            isLoading={isLoading}
           />
           
-          {isChatOpen && (
-            <SimpleChat 
-              onClose={() => setIsChatOpen(false)}
-              onWorkflowGenerated={handleWorkflowGenerated}
+          <div className="flex-1 flex">
+            <WorkflowCanvas 
+              workflow={currentWorkflow || selectedWorkflow}
             />
+            
+            {isChatOpen && (
+              <SimpleChat 
+                onClose={() => setIsChatOpen(false)}
+                onWorkflowGenerated={handleWorkflowGenerated}
+              />
+            )}
+          </div>
+          
+          {!isChatOpen && (
+            <button
+              onClick={() => setIsChatOpen(true)}
+              className="fixed right-4 bottom-4 w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg hover:shadow-green-500/25 transition-all z-50"
+            >
+              <span className="text-white font-bold">AI</span>
+            </button>
           )}
         </div>
-        
-        {!isChatOpen && (
-          <button
-            onClick={() => setIsChatOpen(true)}
-            className="fixed right-4 bottom-4 w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg hover:shadow-green-500/25 transition-all z-50"
-          >
-            <span className="text-white font-bold">AI</span>
-          </button>
-        )}
       </div>
     </DashboardLayout>
   );

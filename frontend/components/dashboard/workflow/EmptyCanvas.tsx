@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Sparkles, MessageSquare } from "lucide-react";
+import { Network, MessageSquare } from "lucide-react";
 
 export function EmptyCanvas() {
   return (
@@ -12,7 +12,7 @@ export function EmptyCanvas() {
         className="text-center max-w-md"
       >
         <div className="w-20 h-20 bg-black/80 border border-white/20 rounded-xl flex items-center justify-center mx-auto mb-6">
-          <Sparkles className="w-10 h-10 text-gray-400" />
+          <Network className="w-10 h-10 text-gray-400" />
         </div>
         
         <h3 className="text-xl font-medium text-white mb-3">
