@@ -2,115 +2,129 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 import structlog
 
-from ..models.workflow import (
-    WorkflowGenerationRequest,
-    WorkflowGenerationResponse,
-    WorkflowEditRequest,
-    WorkflowEditResponse,
-    AvailableModelsResponse,
-    AIModelInfo,
-    AIModel,
-    AIProvider
+from ..models.workflow import AIModel, AIProvider
+from ..models.conversation import (
+    ChatRequest,
+    ChatResponse,
+    DocumentationSearchRequest,
+    DocumentationSearchResponse
 )
 from ..services.ai_service import ai_service
-from ..services.supabase_service import supabase_service
+from ..services.doc_search_service import get_search_service
 from ..core.config_loader import config_loader
-from ..core.auth import get_current_user, get_optional_user, CurrentUser
+from ..core.auth import get_current_user, CurrentUser
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/api/v1/workflows", tags=["workflows"])
 
 
-@router.post("/generate", response_model=WorkflowGenerationResponse)
-async def generate_workflow(
-    request: WorkflowGenerationRequest,
+@router.post("/chat", response_model=ChatResponse)
+async def chat_with_ai(
+    request: ChatRequest,
     current_user: CurrentUser = Depends(get_current_user)
 ):
+    """Chat with AI using tool-based system for workflows and documentation search"""
     try:
-        workflow, generation_time, tokens_used = await ai_service.generate_workflow(
-            description=request.description,
+        response = await ai_service.chat_with_tools(
+            messages=request.messages,
             model=request.model,
             temperature=request.temperature,
-            max_tokens=request.max_tokens
+            max_tokens=request.max_tokens,
+            conversation_id=request.conversation_id
         )
         
         logger.info(
-            "Workflow generated successfully",
+            "Chat completed",
             model=request.model.value,
-            generation_time=generation_time,
-            tokens_used=tokens_used,
-            node_count=len(workflow.nodes),
+            message_count=len(request.messages),
+            tools_used=response.tools_used,
+            generation_time=response.generation_time,
+            workflow_generated=response.workflow is not None,
+            search_results_count=len(response.search_results) if response.search_results else 0,
             user_id=current_user.id if current_user else None
         )
         
-        return WorkflowGenerationResponse(
-            success=True,
-            workflow=workflow,
-            generation_time=generation_time,
-            tokens_used=tokens_used,
-            model_used=request.model
-        )
+        return response
         
     except ValueError as e:
-        logger.error("Invalid input for workflow generation", error=str(e))
+        logger.error("Invalid input for chat", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
     except Exception as e:
-        logger.error("Workflow generation failed", error=str(e))
+        logger.error("Chat failed", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Workflow generation failed"
+            detail="Chat request failed"
         )
 
 
-@router.post("/edit", response_model=WorkflowEditResponse)
-async def edit_workflow(
-    request: WorkflowEditRequest,
+@router.post("/search-docs", response_model=DocumentationSearchResponse)
+async def search_documentation(
+    request: DocumentationSearchRequest,
     current_user: CurrentUser = Depends(get_current_user)
 ):
+    """Search N8N documentation directly"""
     try:
-        workflow, generation_time, tokens_used, changes = await ai_service.edit_workflow(
-            workflow=request.workflow,
-            edit_instruction=request.edit_instruction,
-            model=request.model,
-            temperature=request.temperature
+        search_service = get_search_service()
+        
+        filters = {}
+        if request.section_type:
+            filters["section_type"] = request.section_type
+        
+        results, stats = search_service.search(
+            query=request.query,
+            top_k=request.top_k,
+            filters=filters if filters else None,
+            include_highlights=True
         )
+        
+        search_results = []
+        for result in results:
+            search_results.append({
+                "title": result.title,
+                "content": result.content,
+                "url": result.url,
+                "score": result.score,
+                "section_type": result.section_type,
+                "node_type": result.node_type,
+                "highlight": result.highlight
+            })
         
         logger.info(
-            "Workflow edited successfully",
-            model=request.model.value,
-            generation_time=generation_time,
-            tokens_used=tokens_used,
-            changes_count=len(changes)
+            "Documentation search completed",
+            query=request.query,
+            results_found=len(results),
+            search_time_ms=stats.search_time_ms,
+            user_id=current_user.id if current_user else None
         )
         
-        return WorkflowEditResponse(
+        return DocumentationSearchResponse(
             success=True,
-            workflow=workflow,
-            changes_made=changes,
-            generation_time=generation_time,
-            tokens_used=tokens_used,
-            model_used=request.model
+            results=search_results,
+            query=request.query,
+            total_results=stats.total_results,
+            search_time_ms=stats.search_time_ms
         )
         
     except ValueError as e:
-        logger.error("Invalid input for workflow editing", error=str(e))
+        logger.error("Invalid search request", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
     except Exception as e:
-        logger.error("Workflow editing failed", error=str(e))
+        logger.error("Documentation search failed", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Workflow editing failed"
+            detail="Documentation search failed"
         )
 
 
-@router.get("/models", response_model=AvailableModelsResponse)
+@router.get("/models")
 async def get_available_models():
+    """Get available AI models"""
     try:
         models_config = config_loader.load_models()
         available_providers = ai_service.get_available_providers()
@@ -120,19 +134,15 @@ async def get_available_models():
             if model_enum.value in models_config:
                 model_config = models_config[model_enum.value]
                 if available_providers.get(model_config.provider, False):
-                    models.append(AIModelInfo(
-                        name=model_config.name,
-                        provider=AIProvider(model_config.provider),
-                        description=f"{model_config.name} - {model_config.context_window:,} context window",
-                        max_tokens=model_config.max_tokens,
-                        cost_per_1k_input_tokens=model_config.cost_per_1k_input_tokens,
-                        cost_per_1k_output_tokens=model_config.cost_per_1k_output_tokens,
-                        supports_json_mode=model_config.supports_json_mode,
-                        supports_streaming=model_config.supports_streaming,
-                        context_window=model_config.context_window
-                    ))
+                    models.append({
+                        "name": model_config.name,
+                        "provider": model_config.provider,
+                        "model_id": model_enum.value,
+                        "context_window": model_config.context_window,
+                        "max_tokens": model_config.max_tokens
+                    })
         
-        return AvailableModelsResponse(models=models)
+        return {"models": models}
         
     except Exception as e:
         logger.error("Failed to get available models", error=str(e))
@@ -144,8 +154,10 @@ async def get_available_models():
 
 @router.get("/health")
 async def health_check():
+    """Service health check"""
     try:
         available_providers = ai_service.get_available_providers()
+        tool_info = ai_service.get_tool_info()
         total_providers = len(available_providers)
         active_providers = sum(available_providers.values())
         
@@ -158,7 +170,8 @@ async def health_check():
         return {
             "status": "healthy",
             "providers": available_providers,
-            "provider_health": f"{active_providers}/{total_providers} providers available"
+            "provider_health": f"{active_providers}/{total_providers} providers available",
+            "tools": tool_info
         }
         
     except HTTPException:
