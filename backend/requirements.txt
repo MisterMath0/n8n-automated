@@ -1,10 +1,29 @@
-fastapi==0.109.2
-uvicorn==0.27.1
+# Core FastAPI and server dependencies - Latest 2025 versions
+fastapi==0.115.13
+uvicorn[standard]==0.34.0
+pydantic==2.11.7
+pydantic-settings==2.9.1
+
+# AI SDKs - Hybrid approach for production
+openai==1.59.3        # For OpenAI and Groq (fully compatible)
+anthropic==0.54.0     # Native for Claude (full features)
+
+# HTTP and async dependencies  
+httpx==0.28.1
+anyio>=3.5.0,<5
+
+# Configuration and environment
 python-dotenv==1.0.1
-anthropic==0.18.1
-supabase==2.3.4
-pydantic==2.6.1
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-python-multipart==0.0.9
-httpx==0.26.0 
+PyYAML>=6.0.0
+
+# Logging and monitoring
+structlog==25.1.0
+
+# Additional utilities
+python-multipart==0.0.20
+
+# Development dependencies (uncomment for dev)
+# pytest==8.0.0
+# pytest-asyncio==0.21.0
+# black==24.0.0
+# ruff==0.1.0
