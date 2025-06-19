@@ -66,7 +66,7 @@ export function Navbar() {
                 transition={{ delay: 0.8 }}
                 className="hidden md:block"
               >
-                <Link href="/signup">
+                <Link href="/auth/signup">
                   <motion.button
                   whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(34, 197, 94, 0.3)" }}
                   whileTap={{ scale: 0.95 }}
@@ -111,7 +111,7 @@ export function Navbar() {
                       {item.name}
                     </motion.a>
                   ))}
-                  <Link href="/signup">
+                  <Link href="/auth/signup">
                     <motion.button
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
