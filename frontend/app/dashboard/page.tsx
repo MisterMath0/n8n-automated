@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { WorkflowCanvas } from "@/components/dashboard/workflow/WorkflowCanvas";
-import { SimpleChat } from "@/components/dashboard/SimpleChat";
+import { SimpleChat } from "@/components/dashboard/chat/SimpleChat";
 import { WorkflowSidebar } from "@/components/dashboard/workflow/WorkflowSidebar";
 import { useWorkflows } from "@/hooks/useWorkflows";
 import { N8NWorkflow } from "@/types/api";
