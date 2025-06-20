@@ -185,17 +185,57 @@ class AIService:
                 logger.error("Failed to set conversation title", error=str(e), conversation_id=conversation_id)
                 # Continue anyway - this is not critical
         
-        # 3. Add new user message
+        # 3. Add new user message to history
         all_messages = history_messages + [{"role": "user", "content": user_message}]
 
-        # 4. Call tool-based chat service
-        return await self.tool_chat_service.chat(
+        # 4. Save user message to database BEFORE processing
+        try:
+            user_token_count = len(user_message.split())  # Simple token estimation
+            await supabase_service.add_message(
+                conversation_id=conversation_id,
+                content=user_message,
+                role="user",
+                message_type="text",
+                workflow_data=None,
+                token_count=user_token_count
+            )
+            logger.info("Saved user message to database", conversation_id=conversation_id)
+        except Exception as e:
+            logger.error("Failed to save user message", error=str(e), conversation_id=conversation_id)
+            # Continue anyway - chat can still work without saving
+
+        # 5. Call tool-based chat service
+        response = await self.tool_chat_service.chat(
             messages=[ChatMessage(**msg) for msg in all_messages],
             model=model,
             temperature=temperature,
             max_tokens=max_tokens,
             conversation_id=conversation_id
         )
+
+        # 6. Save AI response to database AFTER processing
+        try:
+            ai_token_count = response.tokens_used or len(response.message.split())  # Use actual or estimate
+            
+            # Prepare workflow data if present
+            workflow_data = None
+            if response.workflow:
+                workflow_data = response.workflow.model_dump()
+                
+            await supabase_service.add_message(
+                conversation_id=conversation_id,
+                content=response.message,
+                role="assistant",
+                message_type="workflow" if response.workflow else "text",
+                workflow_data=workflow_data,
+                token_count=ai_token_count
+            )
+            logger.info("Saved AI response to database", conversation_id=conversation_id, has_workflow=response.workflow is not None)
+        except Exception as e:
+            logger.error("Failed to save AI response", error=str(e), conversation_id=conversation_id)
+            # Continue anyway - user still gets the response
+
+        return response
 
     def get_available_providers(self) -> Dict[str, bool]:
         models_config = config_loader.load_models()

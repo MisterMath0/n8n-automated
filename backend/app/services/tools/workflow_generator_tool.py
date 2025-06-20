@@ -64,7 +64,7 @@ class WorkflowGeneratorTool(BaseTool):
             
             params = tool_call.parameters
             description = params.get("description", "")
-            search_docs_first = params.get("search_docs_first", False)
+            search_docs_first = params.get("search_docs_first", True)
             
             if not description.strip():
                 return self._create_error_result(tool_call, "Description cannot be empty")
@@ -102,27 +102,27 @@ class WorkflowGeneratorTool(BaseTool):
             logger.error("Workflow generation tool failed", error=str(e))
             return self._create_error_result(tool_call, f"Workflow generation failed: {str(e)}")
     
-    async def _enhance_with_docs(self, description: str, search_docs_first: bool) -> str:
-        """Enhance description with documentation context if requested"""
+    async def _enhance_with_docs(self, description: str, search_docs_first: bool = True) -> str:
+        """Dynamic context based on model capabilities"""
         if not search_docs_first:
             return description
         
-        try:
-            # Search for relevant integrations and nodes
-            search_results, _ = self.search_service.search(
-                f"{description} nodes integrations",
-                top_k=3,
-                filters={"section_type": "integration"}
-            )
-            
-            if search_results:
-                context = "\n\nLatest N8N node information:\n"
-                for result in search_results[:2]:  # Use top 2 results
-                    context += f"- {result.title}: {result.content[:200]}...\n"
-                
-                return description + context
-                
-        except Exception as e:
-            logger.warning("Failed to enhance description with docs", error=str(e))
+        # Get ALL relevant results
+        search_results, stats = self.search_service.search(
+            f"{description} nodes integrations parameters examples",
+            top_k=100,  # Get even more!
+            include_highlights=True
+        )
         
-        return description
+        # Build comprehensive context
+        context = f"\n\n=== N8N DOCUMENTATION ({stats.total_results} total results) ===\n"
+        
+        for result in search_results:
+            context += f"\n## {result.title} (Score: {result.score:.2f})\n"
+            context += f"{result.content}\n"
+            if result.node_type:
+                context += f"Node Type: {result.node_type}\n"
+            context += "---\n"
+        
+        logger.info(f"Enhanced with {len(search_results)} documentation results")
+        return description + context

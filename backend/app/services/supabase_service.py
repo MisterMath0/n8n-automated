@@ -119,10 +119,20 @@ class SupabaseService:
         result = self.client.table("messages").insert(message_data).execute()
         
         # Update conversation total tokens
-        self.client.table("conversations")\
-            .update({"total_tokens": f"total_tokens + {token_count}"})\
+        conv_result = self.client.table("conversations")\
+            .select("total_tokens")\
             .eq("id", conversation_id)\
+            .single()\
             .execute()
+
+        if conv_result.data:
+            current_tokens = conv_result.data.get("total_tokens", 0) or 0
+            new_total = current_tokens + token_count
+            
+            self.client.table("conversations")\
+                .update({"total_tokens": new_total})\
+                .eq("id", conversation_id)\
+                .execute()
         
         return result.data[0] if result.data else None
 

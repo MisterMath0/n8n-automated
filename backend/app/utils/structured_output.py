@@ -38,7 +38,7 @@ def create_n8n_workflow_schema() -> Dict[str, Any]:
                     "properties": {
                         "id": {
                             "type": "string",
-                            "description": "Unique UUID for the node"
+                            "description": "Generate a proper UUID v4 format like '550e8400-e29b-41d4-a716-446655440000' using random hex digits"
                         },
                         "name": {
                             "type": "string", 
@@ -61,13 +61,13 @@ def create_n8n_workflow_schema() -> Dict[str, Any]:
                             "maxItems": 2
                         },
                         "parameters": {
-                            "type": "object",
-                            "description": "Node-specific configuration parameters",
+                            "type": "string",
+                            "description": "Node-specific configuration parameters as a JSON string.",
                             "nullable": True
                         },
                         "credentials": {
-                            "type": "object", 
-                            "description": "Credential references for the node",
+                            "type": "string", 
+                            "description": "Credential references for the node as a JSON string.",
                             "nullable": True
                         },
                         "webhookId": {
@@ -80,43 +80,25 @@ def create_n8n_workflow_schema() -> Dict[str, Any]:
                 }
             },
             "connections": {
-                "type": "object",
-                "description": "Node connections defining workflow flow",
-                "additionalProperties": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "node": {"type": "string"},
-                                    "type": {"type": "string"},
-                                    "index": {"type": "integer"}
-                                },
-                                "required": ["node", "type", "index"]
-                            }
-                        }
-                    }
-                }
+                "type": "string",
+                "description": "A JSON string representing the node connections. Example: '{\"Webhook\":{\"main\":[[{\"node\":\"Set\",\"type\":\"main\",\"index\":0}]]}}'"
             },
             "active": {
                 "type": "boolean",
                 "description": "Whether the workflow is active"
             },
             "settings": {
-                "type": "object",
-                "description": "Workflow execution settings",
-                "nullable": True
-            },
-            "versionId": {
                 "type": "string",
-                "description": "Version UUID for the workflow"
+                "description": "Workflow execution settings as a JSON string.",
+                "nullable": True
             },
             "id": {
                 "type": "string", 
-                "description": "Unique UUID for the workflow"
+                "description": "Generate a proper UUID v4 format like '550e8400-e29b-41d4-a716-446655440000' using random hex digits"
+            },
+            "versionId": {
+                "type": "string",
+                "description": "Generate a proper UUID v4 format like '550e8400-e29b-41d4-a716-446655440000' using random hex digits"
             },
             "tags": {
                 "type": "array",
@@ -171,9 +153,9 @@ def validate_and_fix_workflow_data(workflow_data: Dict[str, Any]) -> Dict[str, A
         raise ValueError(f"Workflow data must be a dictionary, got {type(workflow_data)}")
     
     # Ensure required fields exist
-    if "id" not in workflow_data:
+    if "id" not in workflow_data or workflow_data["id"] in ["workflow_id", "uuid", ""]:
         workflow_data["id"] = str(uuid.uuid4())
-    if "versionId" not in workflow_data:
+    if "versionId" not in workflow_data or workflow_data["versionId"] in ["version_id", "uuid", ""]:
         workflow_data["versionId"] = str(uuid.uuid4())
     if "tags" not in workflow_data:
         workflow_data["tags"] = []
@@ -181,21 +163,35 @@ def validate_and_fix_workflow_data(workflow_data: Dict[str, Any]) -> Dict[str, A
         workflow_data["active"] = False
     if "nodes" not in workflow_data:
         workflow_data["nodes"] = []
-    if "connections" not in workflow_data:
-        workflow_data["connections"] = {}
     if "name" not in workflow_data:
         workflow_data["name"] = "Generated Workflow"
+
+    def parse_json_string(field_value: Any) -> Dict:
+        if isinstance(field_value, str):
+            if not field_value.strip():
+                return {}
+            try:
+                # The model might forget to escape, so we try to fix it
+                if not field_value.strip().startswith('{'):
+                     field_value = extract_json_from_response(field_value)
+                return json.loads(field_value)
+            except json.JSONDecodeError:
+                logger.warning("Failed to parse JSON string, defaulting to empty.", json_string=field_value)
+                return {}
+        return field_value if isinstance(field_value, dict) else {}
+
+    workflow_data["connections"] = parse_json_string(workflow_data.get("connections", {}))
+    workflow_data["settings"] = parse_json_string(workflow_data.get("settings", {}))
     
-    # Ensure all nodes have required fields
+    # Ensure all nodes have required fields and parse string-encoded fields
     for node in workflow_data.get("nodes", []):
         if "id" not in node:
             node["id"] = str(uuid.uuid4())
         if "position" not in node:
             node["position"] = [0, 0]
-        if "parameters" not in node:
-            node["parameters"] = {}
-        if "credentials" not in node:
-            node["credentials"] = {}
+        
+        node["parameters"] = parse_json_string(node.get("parameters", {}))
+        node["credentials"] = parse_json_string(node.get("credentials", {}))
     
     return workflow_data
 
