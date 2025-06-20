@@ -83,10 +83,12 @@ class SupabaseService:
     async def create_conversation(
         self,
         user_id: str,
+        conversation_id: str,  # Accept specific conversation ID
         workflow_id: Optional[str] = None,
         title: Optional[str] = None
     ) -> Dict[str, Any]:
         conversation_data = {
+            "id": conversation_id,  # Use the provided conversation ID
             "user_id": user_id,
             "workflow_id": workflow_id,
             "title": title,
@@ -140,6 +142,7 @@ class SupabaseService:
         if not conv_result.data:
             return []
         
+        # Get context limit from model configuration
         context_limit = config_loader.get_model_context_window(model_key)
         
         # Get messages ordered by creation time
@@ -151,16 +154,17 @@ class SupabaseService:
         
         messages = messages_result.data
         
-        # Filter messages to fit within token limit
-        if context_limit > 0:
+        # Filter messages to fit within token limit if context limit is set
+        if context_limit and context_limit > 0:
             filtered_messages = []
             total_tokens = 0
             
             # Process messages in reverse order to get most recent first
             for message in reversed(messages):
-                if total_tokens + message["token_count"] <= context_limit:
+                message_tokens = message.get("token_count", 0) or 0
+                if total_tokens + message_tokens <= context_limit:
                     filtered_messages.insert(0, message)
-                    total_tokens += message["token_count"]
+                    total_tokens += message_tokens
                 else:
                     break
             
