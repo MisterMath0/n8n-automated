@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Body
 from typing import List
 import structlog
 
@@ -178,3 +178,15 @@ async def health_check():
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Service health check failed"
         )
+
+
+@router.patch("/conversations/{conversation_id}/workflow")
+async def update_conversation_workflow(
+    conversation_id: str,
+    workflow_id: str = Body(..., embed=True),
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    updated = await ai_service.supabase_service.update_conversation_workflow(conversation_id, current_user.id, workflow_id)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Conversation not found or not owned by user")
+    return updated

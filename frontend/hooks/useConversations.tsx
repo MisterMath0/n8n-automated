@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Database } from '@/types/supabase'
 import { useAuth } from './useAuth'
+import { apiClient } from '@/lib/api/client'
 
 type ConversationRow = Database['public']['Tables']['conversations']['Row']
 type MessageRow = Database['public']['Tables']['messages']['Row']
@@ -161,6 +162,24 @@ export function useConversations() {
     }
   }, [user?.id]) // Only depend on user.id
 
+  const updateConversationWorkflow = useCallback(async (
+    conversationId: string,
+    workflowId: string
+  ): Promise<boolean> => {
+    try {
+      await apiClient.patch(`/api/v1/workflows/conversations/${conversationId}/workflow`, {
+        workflow_id: workflowId
+      });
+      // Optionally refetch conversations to update state
+      await refetch();
+      return true;
+    } catch (err) {
+      console.error('Failed to update conversation workflow:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update conversation workflow');
+      return false;
+    }
+  }, [refetch]);
+
   // Simplified API
   return {
     conversations,
@@ -170,12 +189,12 @@ export function useConversations() {
     error,
     createConversation,
     refetch,
+    updateConversationWorkflow,
     
     // Placeholder functions - can be implemented if needed
     addMessage: async () => null,
     deleteConversation: async () => false,
     updateConversationTitle: async () => false,
-    updateConversationWorkflow: async () => false,
     getContextMessages: () => []
   }
 }

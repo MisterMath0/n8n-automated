@@ -227,5 +227,14 @@ class SupabaseService:
             .execute()
         return result.data
 
+    async def update_conversation_workflow(self, conversation_id: str, user_id: str, workflow_id: str):
+        """Updates the workflow_id of a conversation."""
+        result = self.client.table("conversations")\
+            .update({"workflow_id": workflow_id})\
+            .eq("id", conversation_id)\
+            .eq("user_id", user_id)\
+            .execute()
+        return result.data[0] if result.data else None
+
 
 supabase_service = SupabaseService()
