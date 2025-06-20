@@ -2,7 +2,6 @@ import uuid
 import time
 import asyncio
 import json
-import re
 from typing import Dict, Any, Optional, List, Tuple
 
 import openai
@@ -18,6 +17,11 @@ from ..core.config_loader import config_loader
 from .tools import ToolBasedChatService
 from .supabase_service import supabase_service
 from ..core.auth import get_current_user, CurrentUser
+from ..utils.structured_output import (
+    create_n8n_workflow_schema,
+    parse_workflow_with_recovery,
+    extract_json_from_response
+)
 
 logger = structlog.get_logger()
 
@@ -26,23 +30,7 @@ class AIServiceError(Exception):
     pass
 
 
-def extract_json_from_response(response_text: str) -> str:
-    """Extract JSON from AI response, handling markdown blocks and extra text."""
-    # Remove any text before the first JSON block
-    response_text = response_text.strip()
-    
-    # Try to find JSON in markdown code blocks
-    json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response_text, re.DOTALL)
-    if json_match:
-        return json_match.group(1)
-    
-    # Try to find JSON object directly
-    json_match = re.search(r'(\{.*\})', response_text, re.DOTALL)
-    if json_match:
-        return json_match.group(1)
-    
-    # If no JSON found, return the original text
-    return response_text
+
 
 
 class AIService:
@@ -173,10 +161,29 @@ class AIService:
             model_key=model.value
         )
 
-        # 2. Generate title if it's the first message
+        # 2. If no history exists, create the conversation first
         if not history_messages:
+            try:
+                # Create the conversation in the database
+                await supabase_service.create_conversation(
+                    user_id=user.id,
+                    conversation_id=conversation_id,  # Pass the conversation ID
+                    workflow_id=None,
+                    title=None  # Will be set below
+                )
+                logger.info("Created new conversation", conversation_id=conversation_id, user_id=user.id)
+            except Exception as e:
+                logger.warning("Failed to create conversation (may already exist)", error=str(e), conversation_id=conversation_id)
+                # Continue anyway - the conversation might already exist or there could be a race condition
+            
+            # Generate and set title
             title = await self._generate_conversation_title(user_message)
-            await supabase_service.update_conversation_title(conversation_id, user.id, title)
+            try:
+                await supabase_service.update_conversation_title(conversation_id, user.id, title)
+                logger.info("Set conversation title", conversation_id=conversation_id, title=title)
+            except Exception as e:
+                logger.error("Failed to set conversation title", error=str(e), conversation_id=conversation_id)
+                # Continue anyway - this is not critical
         
         # 3. Add new user message
         all_messages = history_messages + [{"role": "user", "content": user_message}]
@@ -242,12 +249,12 @@ class AIService:
     async def generate_workflow(
         self,
         description: str,
-        model: AIModel = AIModel.CLAUDE_4_SONNET,
+        model: AIModel = AIModel.GEMINI_2_5_FLASH,
         temperature: float = 0.3,
         max_tokens: int = 4000
     ):
         """
-        Generate an N8N workflow from a description using AI.
+        Generate an N8N workflow from a description using AI with structured output.
         This method is called by the WorkflowGeneratorTool.
         """
         start_time = time.time()
@@ -264,22 +271,40 @@ class AIService:
             
             # Generate workflow JSON using the appropriate provider
             if config.provider == "google":
-                # Use correct Google GenAI SDK syntax
+                # Use structured output with schema for Google GenAI
+                workflow_schema = create_n8n_workflow_schema()
+                
+                logger.info("Using Google GenAI structured output for workflow generation")
+                
                 response = client.models.generate_content(
                     model=config.model_id,
                     contents=full_prompt,
                     config=types.GenerateContentConfig(
                         temperature=temperature,
-                        max_output_tokens=max_tokens
+                        max_output_tokens=max_tokens,
+                        response_mime_type="application/json",
+                        response_schema=workflow_schema
                     )
                 )
                 workflow_json_str = response.text.strip()
                 tokens_used = response.usage_metadata.total_token_count if hasattr(response, 'usage_metadata') and response.usage_metadata else 0
                 
-                # Debug: Log the raw response
-                logger.info("Raw AI response", response_length=len(workflow_json_str), response_preview=workflow_json_str[:200])
+                logger.info("Google GenAI structured output response", response_length=len(workflow_json_str), response_preview=workflow_json_str[:200])
                 
             elif config.provider == "anthropic":
+                # Use structured output with tool calls for Anthropic
+                workflow_tool = {
+                    "name": "workflow_generator",
+                    "description": "Generate an N8N workflow JSON from a description",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "workflow": create_n8n_workflow_schema()
+                        },
+                        "required": ["workflow"]
+                    }
+                }
+                
                 response = client.messages.create(
                     model=config.model_id,
                     max_tokens=max_tokens,
@@ -288,6 +313,7 @@ class AIService:
                     messages=[
                         {"role": "user", "content": description}
                     ],
+                    tools=[workflow_tool],
                     tool_choice={"type": "tool", "name": "workflow_generator"}
                 )
                 
@@ -296,30 +322,19 @@ class AIService:
                 if not tool_call:
                     raise AIServiceError("Anthropic did not return the expected workflow tool call")
                 
-                workflow_json_str = json.dumps(tool_call.input)
+                workflow_json_str = json.dumps(tool_call.input.get("workflow", tool_call.input))
                 tokens_used = response.usage.input_tokens + response.usage.output_tokens
                 
-                # Debug: Log the raw response
-                logger.info("Raw AI response", response_length=len(workflow_json_str), response_preview=workflow_json_str[:200])
+                logger.info("Anthropic structured output response", response_length=len(workflow_json_str), response_preview=workflow_json_str[:200])
                 
             else:  # OpenAI compatible
-                # For OpenAI, we need to provide tools when using tool_choice
-                # Define the workflow generator tool for OpenAI
+                # Use structured output with function calling for OpenAI
                 workflow_tool = {
                     "type": "function",
                     "function": {
                         "name": "workflow_generator",
                         "description": "Generate an N8N workflow JSON from a description",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "workflow": {
-                                    "type": "object",
-                                    "description": "Complete N8N workflow JSON object"
-                                }
-                            },
-                            "required": ["workflow"]
-                        }
+                        "parameters": create_n8n_workflow_schema()
                     }
                 }
                 
@@ -345,28 +360,21 @@ class AIService:
                 
                 tokens_used = response.usage.total_tokens if response.usage else 0
                 
-                # Debug: Log the raw response
-                logger.info("Raw AI response", response_length=len(workflow_json_str), response_preview=workflow_json_str[:200])
+                logger.info("OpenAI structured output response", response_length=len(workflow_json_str), response_preview=workflow_json_str[:200])
             
-            # Parse the generated JSON
-            try:
-                # Extract JSON from response (handles markdown blocks)
-                extracted_json = extract_json_from_response(workflow_json_str)
-                workflow_data = json.loads(extracted_json)
-                workflow = N8NWorkflow(**workflow_data)
-            except json.JSONDecodeError as e:
-                logger.error("Failed to parse generated workflow JSON", error=str(e), raw_response=workflow_json_str[:500])
-                raise AIServiceError(f"Generated workflow is not valid JSON: {str(e)}. Raw response: {workflow_json_str[:200]}")
+            # Parse and validate the generated workflow
+            workflow = parse_workflow_with_recovery(workflow_json_str)
             
             generation_time = time.time() - start_time
             
             logger.info(
-                "Workflow generated successfully",
+                "Workflow generated successfully with structured output",
                 workflow_name=workflow.name,
                 nodes_count=len(workflow.nodes),
                 generation_time=generation_time,
                 tokens_used=tokens_used,
-                model=model.value
+                model=model.value,
+                provider=config.provider
             )
             
             return workflow, generation_time, tokens_used
@@ -379,12 +387,12 @@ class AIService:
         self,
         workflow: N8NWorkflow,
         description: str,
-        model: AIModel = AIModel.CLAUDE_4_SONNET,
+        model: AIModel = AIModel.GEMINI_2_5_FLASH,
         temperature: float = 0.3,
         max_tokens: int = 4000
     ):
         """
-        Edit an N8N workflow from a description using AI.
+        Edit an N8N workflow from a description using AI with structured output.
         This method is called by the WorkflowEditorTool.
         """
         start_time = time.time()
@@ -401,24 +409,39 @@ class AIService:
             
             # Generate edited workflow
             if config.provider == "google":
-                # Use correct Google GenAI SDK syntax
+                # Use structured output with schema for Google GenAI
+                workflow_schema = create_n8n_workflow_schema()
+                
                 response = client.models.generate_content(
                     model=config.model_id,
                     contents=edit_prompt,
                     config=types.GenerateContentConfig(
                         temperature=temperature,
-                        max_output_tokens=max_tokens
+                        max_output_tokens=max_tokens,
+                        response_mime_type="application/json",
+                        response_schema=workflow_schema
                     )
                 )
                 edited_workflow_json_str = response.text.strip()
                 tokens_used = response.usage_metadata.total_token_count if hasattr(response, 'usage_metadata') and response.usage_metadata else 0
                 
-                # Parse the JSON response
-                extracted_json = extract_json_from_response(edited_workflow_json_str)
-                edited_workflow_data = json.loads(extracted_json)
-                edited_workflow = N8NWorkflow(**edited_workflow_data)
+                # Parse the JSON response with recovery
+                edited_workflow = parse_workflow_with_recovery(edited_workflow_json_str)
                 
             elif config.provider == "anthropic":
+                # Use structured output with tool calls for Anthropic
+                workflow_editor_tool = {
+                    "name": "workflow_editor",
+                    "description": "Edit an N8N workflow JSON based on a description",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "workflow": create_n8n_workflow_schema()
+                        },
+                        "required": ["workflow"]
+                    }
+                }
+                
                 response = client.messages.create(
                     model=config.model_id,
                     max_tokens=max_tokens,
@@ -427,6 +450,7 @@ class AIService:
                     messages=[
                         {"role": "user", "content": edit_prompt}
                     ],
+                    tools=[workflow_editor_tool],
                     tool_choice={"type": "tool", "name": "workflow_editor"}
                 )
                 
@@ -435,28 +459,18 @@ class AIService:
                 if not tool_call:
                     raise AIServiceError("Anthropic did not return the expected workflow tool call")
                 
-                edited_workflow_data = tool_call.input
-                edited_workflow = N8NWorkflow(**edited_workflow_data)
+                edited_workflow_json_str = json.dumps(tool_call.input.get("workflow", tool_call.input))
+                edited_workflow = parse_workflow_with_recovery(edited_workflow_json_str)
                 tokens_used = response.usage.input_tokens + response.usage.output_tokens
                 
             else:  # OpenAI compatible
-                # For OpenAI, we need to provide tools when using tool_choice
-                # Define the workflow editor tool for OpenAI
+                # Use structured output with function calling for OpenAI
                 workflow_editor_tool = {
                     "type": "function",
                     "function": {
                         "name": "workflow_editor",
                         "description": "Edit an N8N workflow JSON based on a description",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "workflow": {
-                                    "type": "object",
-                                    "description": "Complete edited N8N workflow JSON object"
-                                }
-                            },
-                            "required": ["workflow"]
-                        }
+                        "parameters": create_n8n_workflow_schema()
                     }
                 }
                 
@@ -475,25 +489,24 @@ class AIService:
                 # Extract the tool call from the response
                 if response.choices[0].message.tool_calls:
                     tool_call = response.choices[0].message.tool_calls[0]
-                    edited_workflow_data = json.loads(tool_call.function.arguments)
+                    edited_workflow_json_str = tool_call.function.arguments
                 else:
                     # Fallback: try to extract from message content
                     edited_workflow_json_str = response.choices[0].message.content or ""
-                    extracted_json = extract_json_from_response(edited_workflow_json_str)
-                    edited_workflow_data = json.loads(extracted_json)
                 
-                edited_workflow = N8NWorkflow(**edited_workflow_data)
+                edited_workflow = parse_workflow_with_recovery(edited_workflow_json_str)
                 tokens_used = response.usage.total_tokens if response.usage else 0
             
             generation_time = time.time() - start_time
             
             logger.info(
-                "Workflow edited successfully",
+                "Workflow edited successfully with structured output",
                 workflow_name=edited_workflow.name,
                 nodes_count=len(edited_workflow.nodes),
                 generation_time=generation_time,
                 tokens_used=tokens_used,
-                model=model.value
+                model=model.value,
+                provider=config.provider
             )
             
             return edited_workflow, generation_time, tokens_used
