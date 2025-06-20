@@ -87,10 +87,14 @@ CREATE TABLE IF NOT EXISTS public.conversations (
     workflow_id UUID REFERENCES public.workflows(id),
     title TEXT,
     total_tokens INTEGER DEFAULT 0,
-    max_context_tokens INTEGER DEFAULT 8000,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Note: The max_context_tokens column was removed as this is now handled
+-- by the application logic based on the selected model's configuration.
+-- If you have an existing table, you can remove the column with:
+-- ALTER TABLE public.conversations DROP COLUMN IF EXISTS max_context_tokens;
 
 -- Enable RLS
 ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
