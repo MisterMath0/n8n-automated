@@ -4,7 +4,7 @@ import { Message } from "./types";
 export const welcomeMessage: Message = {
   id: '1',
   content: "Hi! Describe any automation you want to create and I'll generate a complete n8n workflow for you.",
-  sender: 'ai',
+  sender: 'assistant',
   type: 'text'
 };
 

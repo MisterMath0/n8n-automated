@@ -16,7 +16,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       animate={{ opacity: 1, y: 0 }}
       className={`flex gap-3 ${message.sender === 'user' ? 'justify-end' : ''}`}
     >
-      {message.sender === 'ai' && (
+      {message.sender === 'assistant' && (
         <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center flex-shrink-0">
           <Bot className="w-3 h-3 text-white" />
         </div>

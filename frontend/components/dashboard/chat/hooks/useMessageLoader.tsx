@@ -14,7 +14,7 @@ export function useMessageLoader({ currentConversation, setMessages }: UseMessag
       const conversationMessages = currentConversation.messages.map(msg => ({
         id: msg.id,
         content: msg.content,
-        sender: msg.role === 'user' ? 'user' : 'ai' as 'user' | 'ai',
+        sender: msg.role === 'user' ? 'user' : 'assistant' as 'user' | 'assistant',
         type: (msg.message_type || 'text') as 'text' | 'workflow' | 'error',
         workflowData: msg.workflow_data
       }));
