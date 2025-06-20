@@ -46,6 +46,22 @@ class ToolDefinitions:
         
         return openai_tools
     
+    def convert_tools_to_google_format(self) -> List[Dict[str, Any]]:
+        """Get tool definitions in Google format"""
+        google_tools = []
+        
+        for tool in self.tools.values():
+            definition = tool.get_definition()
+            google_tools.append({
+                "function_declarations": [{
+                    "name": definition["name"],
+                    "description": definition["description"],
+                    "parameters": definition["input_schema"]
+                }]
+            })
+        
+        return google_tools
+    
     def get_tool_by_name(self, name: str):
         """Get tool instance by name"""
         return self.tools.get(name)

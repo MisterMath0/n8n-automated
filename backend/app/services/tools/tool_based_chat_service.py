@@ -80,7 +80,7 @@ class ToolBasedChatService:
             # Validate model availability
             if not self.client_manager.is_model_available(model):
                 return self.response_processor.create_error_response(
-                    f"Model {model.value} is not available",
+                    f"Model {model} is not available",
                     conv_id,
                     time.time() - start_time,
                     model
@@ -111,7 +111,7 @@ class ToolBasedChatService:
                 )
                 
         except Exception as e:
-            logger.error("Chat service failed", error=str(e), model=model.value)
+            logger.error("Chat service failed", error=str(e), model=model)
             return self.response_processor.create_error_response(
                 str(e),
                 conv_id,

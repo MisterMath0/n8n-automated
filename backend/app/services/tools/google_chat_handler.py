@@ -1,6 +1,7 @@
 import time
 from typing import List
 import structlog
+from google.genai import types
 
 from ...models.conversation import ChatMessage, ChatResponse
 from ...models.workflow import AIModel
@@ -8,6 +9,7 @@ from .ai_client_manager import AIClientManager
 from .tool_definitions import ToolDefinitions
 from .tool_executor import ToolExecutor
 from .response_processor import ResponseProcessor
+from ...core.config_loader import config_loader
 
 logger = structlog.get_logger()
 
@@ -45,40 +47,39 @@ class GoogleChatHandler:
         start_time = time.time()
         
         try:
-            client, model_config = self.client_manager._get_client_and_config(model)
+            client, model_config = self.client_manager.get_client_and_config(model)
             
             # Build API messages
             api_messages = self._build_api_messages(messages)
             system_message = self._get_system_message()
             
             # Convert tools to Google format
-            google_tools = self._convert_tools_to_google_format()
-            
-            # Make API call using the new Google Gen AI SDK
-            from google.genai import types
-            
+            google_tools = self.tool_definitions.convert_tools_to_google_format()
+
+            # New SDK: Pass everything into generate_content
+            generation_config = types.GenerateContentConfig(
+                max_output_tokens=max_tokens,
+                temperature=temperature,
+                tools=google_tools,
+                system_instruction=system_message,
+            )
+
             response = client.models.generate_content(
                 model=model_config.model_id,
                 contents=api_messages,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_message,
-                    tools=google_tools if google_tools else None,
-                    max_output_tokens=max_tokens,
-                    temperature=temperature
-                )
+                config=generation_config,
             )
             
             generation_time = time.time() - start_time
-            tokens_used = getattr(response.usage, 'total_tokens', None) if hasattr(response, 'usage') else None
-            
-            # Process response
-            if hasattr(response, 'function_calls') and response.function_calls:
+            usage_metadata = response.usage_metadata
+            tokens_used = usage_metadata.total_token_count if usage_metadata else None
+
+            # Process response for tool calls or regular text
+            if response.function_calls:
                 return await self._handle_tool_calls(
-                    response.function_calls, response.text or "",
-                    model, generation_time, tokens_used, conversation_id
+                    response.function_calls, "", model, generation_time, tokens_used, conversation_id
                 )
             else:
-                # Regular text response
                 content = response.text or ""
                 return self.response_processor.create_chat_response(
                     success=True,
@@ -133,45 +134,29 @@ class GoogleChatHandler:
             tools_used=tools_used
         )
     
-    def _build_api_messages(self, messages: List[ChatMessage]) -> List[str]:
-        """Convert ChatMessage objects to Google API format"""
-        # Google Gen AI SDK expects simple string content for basic use
+    def _build_api_messages(self, messages: List[ChatMessage]) -> List[dict]:
+        """Convert ChatMessage objects to Google API format."""
         api_messages = []
-        
         for msg in messages:
-            if msg.role.value == "user":
-                api_messages.append(msg.content)
-        
-        # For simplicity, return the last user message
-        # In a full implementation, you'd handle the conversation history properly
-        return api_messages[-1] if api_messages else ""
+            # Map roles to Google's 'user' and 'model'
+            role = 'user' if msg.role == 'user' else 'model'
+            
+            # Skip system messages as they are handled in the model constructor
+            if msg.role == 'system':
+                continue
+                
+            api_messages.append({"role": role, "parts": [{"text": msg.content}]})
+        return api_messages
     
     def _convert_tools_to_google_format(self) -> List:
         """Convert tool definitions to Google format"""
         try:
-            # Convert our tool definitions to Python functions that Google SDK can understand
-            tools = []
-            
-            for tool_name, tool in self.tool_definitions.tools.items():
-                if tool_name == "workflow_generator":
-                    def workflow_generator_func(description: str, search_docs_first: bool = False) -> str:
-                        """Generate N8N workflows from user descriptions"""
-                        return f"workflow_generated:{description}"
-                    tools.append(workflow_generator_func)
-                
-                elif tool_name == "documentation_search":
-                    def documentation_search_func(query: str, section_type: str = None, top_k: int = 5) -> str:
-                        """Search N8N documentation for information"""
-                        return f"search_executed:{query}"
-                    tools.append(documentation_search_func)
-            
-            return tools if tools else None
+            return self.tool_executor.convert_tools_to_google_format()
         except Exception as e:
             logger.warning("Failed to convert tools to Google format", error=str(e))
             return None
     
     def _get_system_message(self) -> str:
         """Get system message for tool-based chat"""
-        from ...core.config_loader import config_loader
         prompts_config = config_loader.load_config("prompts")
         return prompts_config["chat_system"]["default"]

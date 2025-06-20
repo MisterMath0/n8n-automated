@@ -3,6 +3,7 @@ import structlog
 
 import openai
 import anthropic
+from google import genai
 
 from ...models.workflow import AIModel
 from ...core.config import settings
@@ -24,6 +25,7 @@ class AIClientManager:
     def __init__(self):
         self.openai_clients: Dict[str, openai.OpenAI] = {}
         self.anthropic_client: Optional[anthropic.Anthropic] = None
+        self.google_client: Optional[Any] = None
         self._initialize_clients()
     
     def _initialize_clients(self):
@@ -37,7 +39,11 @@ class AIClientManager:
                 continue
                 
             try:
-                if model_config.provider == "anthropic":
+                if model_config.provider == "google":
+                    if not self.google_client:
+                        self.google_client = genai.Client(api_key=api_key)
+                        logger.info("Google GenAI client initialized using 'google-genai' SDK")
+                elif model_config.provider == "anthropic":
                     if not self.anthropic_client:
                         self.anthropic_client = anthropic.Anthropic(api_key=api_key)
                         logger.info("Anthropic client initialized")
@@ -66,7 +72,12 @@ class AIClientManager:
         """
         model_config = config_loader.get_model_config(model.value)
         
-        if model_config.provider == "anthropic":
+        if model_config.provider == "google":
+            if not self.google_client:
+                raise ValueError(f"Google client not available for model: {model.value}")
+            return self.google_client, model_config
+        
+        elif model_config.provider == "anthropic":
             if not self.anthropic_client:
                 raise ValueError(f"Anthropic client not available for model: {model.value}")
             return self.anthropic_client, model_config
@@ -94,7 +105,9 @@ class AIClientManager:
         
         for model_key, model_config in models_config.items():
             provider = model_config.provider
-            if provider == "anthropic":
+            if provider == "google":
+                providers[provider] = self.google_client is not None
+            elif provider == "anthropic":
                 providers[provider] = self.anthropic_client is not None
             else:
                 providers[provider] = model_key in self.openai_clients
@@ -104,9 +117,14 @@ class AIClientManager:
     def get_available_models(self) -> List[str]:
         """Get list of available model keys"""
         available_models = []
+        models_config = config_loader.load_models()
+
+        if self.google_client:
+            for model_key, model_config in models_config.items():
+                if model_config.provider == "google":
+                    available_models.append(model_key)
         
         if self.anthropic_client:
-            models_config = config_loader.load_models()
             for model_key, model_config in models_config.items():
                 if model_config.provider == "anthropic":
                     available_models.append(model_key)

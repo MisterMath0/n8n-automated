@@ -20,7 +20,7 @@ class ToolExecutor:
         """Initialize with tool definitions"""
         self.tool_definitions = tool_definitions
     
-    async def execute_tool_call(self, tool_call: ToolCall) -> ToolResult:
+    async def execute_tool_call(self, tool_call: ToolCall, model=None) -> ToolResult:
         """Execute a single tool call"""
         try:
             tool_name = tool_call.name.value if hasattr(tool_call.name, 'value') else str(tool_call.name)
@@ -33,9 +33,14 @@ class ToolExecutor:
                     f"Unknown tool: {tool_name}"
                 )
             
-            # Execute tool
-            logger.info("Executing tool", tool_name=tool_name, tool_call_id=tool_call.id)
-            result = await tool.execute(tool_call)
+            # Execute tool with model context if available
+            logger.info("Executing tool", tool_name=tool_name, tool_call_id=tool_call.id, model=model.value if model else None)
+            
+            # Pass model context to tool if it supports it
+            if hasattr(tool, 'execute_with_model'):
+                result = await tool.execute_with_model(tool_call, model)
+            else:
+                result = await tool.execute(tool_call)
             
             logger.info(
                 "Tool execution completed",

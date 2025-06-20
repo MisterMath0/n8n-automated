@@ -110,7 +110,7 @@ class AnthropicChatHandler:
                 elif block.type == 'tool_use':
                     # Parse and execute tool call
                     tool_call = self.tool_executor.parse_anthropic_tool_call(block)
-                    tool_result = await self.tool_executor.execute_tool_call(tool_call)
+                    tool_result = await self.tool_executor.execute_tool_call(tool_call, model)
                     tool_results.append(tool_result)
         
         # Process tool results
@@ -135,9 +135,9 @@ class AnthropicChatHandler:
         api_messages = []
         
         for msg in messages:
-            if msg.role.value != "system":  # System messages handled separately
+            if msg.role != "system":  # System messages handled separately
                 api_messages.append({
-                    "role": msg.role.value,
+                    "role": msg.role,
                     "content": msg.content
                 })
         

@@ -136,9 +136,9 @@ class OpenAIChatHandler:
         ]
         
         for msg in messages:
-            if msg.role.value != "system":  # Skip system messages (already added)
+            if msg.role != "system":  # Skip system messages (already added)
                 api_messages.append({
-                    "role": msg.role.value,
+                    "role": msg.role,
                     "content": msg.content
                 })
         
