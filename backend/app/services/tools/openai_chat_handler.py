@@ -106,7 +106,7 @@ class OpenAIChatHandler:
         # Execute all tool calls
         for tool_call_data in tool_calls:
             tool_call = self.tool_executor.parse_openai_tool_call(tool_call_data)
-            tool_result = await self.tool_executor.execute_tool_call(tool_call)
+            tool_result = await self.tool_executor.execute_tool_call(tool_call, model)
             tool_results.append(tool_result)
         
         # Process tool results

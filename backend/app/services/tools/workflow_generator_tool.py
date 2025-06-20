@@ -58,6 +58,10 @@ class WorkflowGeneratorTool(BaseTool):
     async def execute_with_model(self, tool_call: ToolCall, model: AIModel) -> ToolResult:
         """Execute workflow generation with specific model"""
         try:
+            # Validate model parameter
+            if model is None:
+                return self._create_error_result(tool_call, "Model parameter is required")
+            
             params = tool_call.parameters
             description = params.get("description", "")
             search_docs_first = params.get("search_docs_first", False)
@@ -82,7 +86,7 @@ class WorkflowGeneratorTool(BaseTool):
                 nodes_count=len(workflow.nodes),
                 generation_time=generation_time,
                 used_docs_context=search_docs_first,
-                model=model.value
+                model=model.value if model else "unknown"
             )
             
             return self._create_success_result(tool_call, {

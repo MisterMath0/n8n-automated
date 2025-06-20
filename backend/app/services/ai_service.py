@@ -103,13 +103,13 @@ class AIService:
             prompt = f"Summarize the following user query into a short, concise title (4-8 words). Do not use quotes. Query: \"{user_message}\""
             
             if config.provider == "google":
-                model = client.GenerativeModel(config.model_id)
-                response = model.generate_content(
-                    prompt,
-                    generation_config={
-                        "temperature": 0.1,
-                        "max_output_tokens": 25
-                    }
+                response = client.models.generate_content(
+                    model=config.model_id,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        temperature=0.1,
+                        max_output_tokens=25
+                    )
                 )
                 return response.text.strip()
             elif config.provider == "anthropic":
@@ -117,33 +117,19 @@ class AIService:
                     model=config.model_id,
                     max_tokens=25,
                     temperature=0.1,
-                    messages=[{"role": "user", "content": prompt}],
-                    tool_choice={"type": "tool", "name": "workflow_generator"}
+                    messages=[{"role": "user", "content": prompt}]
                 )
                 return response.content[0].text.strip()
             else: # OpenAI compatible
                 response = client.chat.completions.create(
                     model=config.model_id,
                     messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": description}
+                        {"role": "user", "content": prompt}
                     ],
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    n=1,
-                    stop=None,
-                    tool_choice={"type": "function", "function": {"name": "workflow_generator"}}
+                    max_tokens=25,
+                    temperature=0.1
                 )
-                
-                # Extract the tool call from the response
-                tool_call = response.choices[0].message.tool_calls[0]
-                workflow_json_str = tool_call.function.arguments
-                tokens_used = response.usage.total_tokens
-                
-                # Debug: Log the raw response
-                logger.info("Raw AI response", response_length=len(workflow_json_str), response_preview=workflow_json_str[:200])
-                
-                return workflow_json_str
+                return response.choices[0].message.content.strip()
         except Exception:
             logger.warning("AI title generation failed, falling back to truncation.")
             return (user_message[:75] + '...') if len(user_message) > 75 else user_message
@@ -278,18 +264,17 @@ class AIService:
             
             # Generate workflow JSON using the appropriate provider
             if config.provider == "google":
+                # Use correct Google GenAI SDK syntax
                 response = client.models.generate_content(
                     model=config.model_id,
                     contents=full_prompt,
                     config=types.GenerateContentConfig(
                         temperature=temperature,
-                        max_output_tokens=max_tokens,
-                        response_mime_type="application/json",
-                        response_schema=N8NWorkflow
+                        max_output_tokens=max_tokens
                     )
                 )
                 workflow_json_str = response.text.strip()
-                tokens_used = response.usage.total_tokens if hasattr(response, 'usage') else 0
+                tokens_used = response.usage_metadata.total_token_count if hasattr(response, 'usage_metadata') and response.usage_metadata else 0
                 
                 # Debug: Log the raw response
                 logger.info("Raw AI response", response_length=len(workflow_json_str), response_preview=workflow_json_str[:200])
@@ -318,6 +303,26 @@ class AIService:
                 logger.info("Raw AI response", response_length=len(workflow_json_str), response_preview=workflow_json_str[:200])
                 
             else:  # OpenAI compatible
+                # For OpenAI, we need to provide tools when using tool_choice
+                # Define the workflow generator tool for OpenAI
+                workflow_tool = {
+                    "type": "function",
+                    "function": {
+                        "name": "workflow_generator",
+                        "description": "Generate an N8N workflow JSON from a description",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "workflow": {
+                                    "type": "object",
+                                    "description": "Complete N8N workflow JSON object"
+                                }
+                            },
+                            "required": ["workflow"]
+                        }
+                    }
+                }
+                
                 response = client.chat.completions.create(
                     model=config.model_id,
                     messages=[
@@ -326,30 +331,29 @@ class AIService:
                     ],
                     max_tokens=max_tokens,
                     temperature=temperature,
-                    n=1,
-                    stop=None,
+                    tools=[workflow_tool],
                     tool_choice={"type": "function", "function": {"name": "workflow_generator"}}
                 )
                 
                 # Extract the tool call from the response
-                tool_call = response.choices[0].message.tool_calls[0]
-                workflow_json_str = tool_call.function.arguments
-                tokens_used = response.usage.total_tokens
+                if response.choices[0].message.tool_calls:
+                    tool_call = response.choices[0].message.tool_calls[0]
+                    workflow_json_str = tool_call.function.arguments
+                else:
+                    # Fallback: try to extract from message content
+                    workflow_json_str = response.choices[0].message.content or ""
+                
+                tokens_used = response.usage.total_tokens if response.usage else 0
                 
                 # Debug: Log the raw response
                 logger.info("Raw AI response", response_length=len(workflow_json_str), response_preview=workflow_json_str[:200])
             
             # Parse the generated JSON
             try:
-                if config.provider == "google" and hasattr(response, 'parsed') and response.parsed:
-                    # Use structured output directly
-                    workflow = response.parsed
-                    logger.info("Using structured output from Google GenAI")
-                else:
-                    # Extract JSON from response (handles markdown blocks)
-                    extracted_json = extract_json_from_response(workflow_json_str)
-                    workflow_data = json.loads(extracted_json)
-                    workflow = N8NWorkflow(**workflow_data)
+                # Extract JSON from response (handles markdown blocks)
+                extracted_json = extract_json_from_response(workflow_json_str)
+                workflow_data = json.loads(extracted_json)
+                workflow = N8NWorkflow(**workflow_data)
             except json.JSONDecodeError as e:
                 logger.error("Failed to parse generated workflow JSON", error=str(e), raw_response=workflow_json_str[:500])
                 raise AIServiceError(f"Generated workflow is not valid JSON: {str(e)}. Raw response: {workflow_json_str[:200]}")
@@ -397,18 +401,22 @@ class AIService:
             
             # Generate edited workflow
             if config.provider == "google":
+                # Use correct Google GenAI SDK syntax
                 response = client.models.generate_content(
                     model=config.model_id,
                     contents=edit_prompt,
                     config=types.GenerateContentConfig(
-                        temperature=0.3,
-                        max_output_tokens=4000,
-                        response_mime_type="application/json",
-                        response_schema=N8NWorkflow
+                        temperature=temperature,
+                        max_output_tokens=max_tokens
                     )
                 )
-                edited_workflow = response.parsed
-                tokens_used = response.usage.total_tokens if hasattr(response, 'usage') else 0
+                edited_workflow_json_str = response.text.strip()
+                tokens_used = response.usage_metadata.total_token_count if hasattr(response, 'usage_metadata') and response.usage_metadata else 0
+                
+                # Parse the JSON response
+                extracted_json = extract_json_from_response(edited_workflow_json_str)
+                edited_workflow_data = json.loads(extracted_json)
+                edited_workflow = N8NWorkflow(**edited_workflow_data)
                 
             elif config.provider == "anthropic":
                 response = client.messages.create(
@@ -432,6 +440,26 @@ class AIService:
                 tokens_used = response.usage.input_tokens + response.usage.output_tokens
                 
             else:  # OpenAI compatible
+                # For OpenAI, we need to provide tools when using tool_choice
+                # Define the workflow editor tool for OpenAI
+                workflow_editor_tool = {
+                    "type": "function",
+                    "function": {
+                        "name": "workflow_editor",
+                        "description": "Edit an N8N workflow JSON based on a description",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "workflow": {
+                                    "type": "object",
+                                    "description": "Complete edited N8N workflow JSON object"
+                                }
+                            },
+                            "required": ["workflow"]
+                        }
+                    }
+                }
+                
                 response = client.chat.completions.create(
                     model=config.model_id,
                     messages=[
@@ -440,16 +468,22 @@ class AIService:
                     ],
                     max_tokens=max_tokens,
                     temperature=temperature,
-                    n=1,
-                    stop=None,
+                    tools=[workflow_editor_tool],
                     tool_choice={"type": "function", "function": {"name": "workflow_editor"}}
                 )
                 
                 # Extract the tool call from the response
-                tool_call = response.choices[0].message.tool_calls[0]
-                edited_workflow_data = json.loads(tool_call.function.arguments)
+                if response.choices[0].message.tool_calls:
+                    tool_call = response.choices[0].message.tool_calls[0]
+                    edited_workflow_data = json.loads(tool_call.function.arguments)
+                else:
+                    # Fallback: try to extract from message content
+                    edited_workflow_json_str = response.choices[0].message.content or ""
+                    extracted_json = extract_json_from_response(edited_workflow_json_str)
+                    edited_workflow_data = json.loads(extracted_json)
+                
                 edited_workflow = N8NWorkflow(**edited_workflow_data)
-                tokens_used = response.usage.total_tokens
+                tokens_used = response.usage.total_tokens if response.usage else 0
             
             generation_time = time.time() - start_time
             

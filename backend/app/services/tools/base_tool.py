@@ -48,8 +48,8 @@ class BaseTool(ABC):
     def _create_success_result(self, tool_call: ToolCall, result: Dict[str, Any]) -> ToolResult:
         """Helper to create successful tool result"""
         return ToolResult(
-            tool_call_id=tool_call.id,
-            tool_name=tool_call.name,
+            tool_call_id=getattr(tool_call, 'id', 'unknown') if tool_call else 'unknown',
+            tool_name=getattr(tool_call, 'name', None) if tool_call else None,
             success=True,
             result=result,
             error=None
@@ -58,8 +58,8 @@ class BaseTool(ABC):
     def _create_error_result(self, tool_call: ToolCall, error: str) -> ToolResult:
         """Helper to create error tool result"""
         return ToolResult(
-            tool_call_id=tool_call.id,
-            tool_name=tool_call.name,
+            tool_call_id=getattr(tool_call, 'id', 'unknown') if tool_call else 'unknown',
+            tool_name=getattr(tool_call, 'name', None) if tool_call else None,
             success=False,
             result={},
             error=error

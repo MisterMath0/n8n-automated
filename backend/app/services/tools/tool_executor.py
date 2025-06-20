@@ -23,7 +23,21 @@ class ToolExecutor:
     async def execute_tool_call(self, tool_call: ToolCall, model=None) -> ToolResult:
         """Execute a single tool call"""
         try:
+            # Validate tool call structure
+            if not tool_call.name:
+                return self._create_error_result(
+                    tool_call, 
+                    "Tool call has no name"
+                )
+            
             tool_name = tool_call.name.value if hasattr(tool_call.name, 'value') else str(tool_call.name)
+            
+            # Additional validation
+            if not tool_name or tool_name.strip() == "":
+                return self._create_error_result(
+                    tool_call, 
+                    "Tool name is empty"
+                )
             
             # Get tool instance
             tool = self.tool_definitions.get_tool_by_name(tool_name)
@@ -97,24 +111,41 @@ class ToolExecutor:
     def parse_google_tool_call(self, function_call) -> ToolCall:
         """Parse tool call from Google response"""
         try:
+            # Debug log the function call structure
+            logger.debug("Parsing Google function call", function_call=str(function_call))
+            
             # Extract function name and args from Google function call
+            if not hasattr(function_call, 'name') or not function_call.name:
+                raise ValueError("Google function call missing name")
+                
             function_name = function_call.name
             function_args = function_call.args if hasattr(function_call, 'args') else {}
             
+            # Validate function name is a valid ToolType
+            try:
+                tool_type = ToolType(function_name)
+            except ValueError:
+                logger.error("Invalid tool name from Google", function_name=function_name)
+                raise ValueError(f"Unknown tool type: {function_name}")
+            
             return ToolCall(
-                name=ToolType(function_name),
+                name=tool_type,
                 parameters=function_args,
                 id=str(uuid.uuid4())  # Generate ID for Google calls
             )
         except Exception as e:
-            logger.error("Failed to parse Google tool call", error=str(e))
+            logger.error("Failed to parse Google tool call", error=str(e), function_call=str(function_call))
             raise ValueError(f"Invalid Google tool call: {str(e)}")
     
     def _create_error_result(self, tool_call: ToolCall, error: str) -> ToolResult:
         """Create error result for tool call"""
+        # Handle cases where tool_call attributes might be None
+        tool_call_id = getattr(tool_call, 'id', None) or "unknown"
+        tool_name = getattr(tool_call, 'name', None) or ToolType.WORKFLOW_GENERATOR
+        
         return ToolResult(
-            tool_call_id=tool_call.id,
-            tool_name=tool_call.name,
+            tool_call_id=tool_call_id,
+            tool_name=tool_name,
             success=False,
             result={},
             error=error
