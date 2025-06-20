@@ -37,15 +37,6 @@ export const WorkflowSidebar = React.memo(function WorkflowSidebar({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const loadingTimeoutRef = useRef<NodeJS.Timeout>();
   
-  // Debug logging
-  useEffect(() => {
-    console.log('WorkflowSidebar render:', {
-      workflowsLength: workflows.length,
-      isLoading,
-      activeTab
-    });
-  }, [workflows.length, isLoading, activeTab]);
-
   // Reset displayed count only when workflows actually change
   const prevWorkflowsLengthRef = useRef(workflows.length);
   useEffect(() => {
