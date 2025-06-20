@@ -3,6 +3,7 @@ from typing import List, Optional, Dict, Any
 from ..models.workflow import N8NWorkflow
 from ..core.config import settings
 from ..core.auth import CurrentUser
+from ..core.config_loader import config_loader
 
 
 class SupabaseService:
@@ -83,15 +84,13 @@ class SupabaseService:
         self,
         user_id: str,
         workflow_id: Optional[str] = None,
-        title: Optional[str] = None,
-        max_context_tokens: int = 8000
+        title: Optional[str] = None
     ) -> Dict[str, Any]:
         conversation_data = {
             "user_id": user_id,
             "workflow_id": workflow_id,
             "title": title,
-            "total_tokens": 0,
-            "max_context_tokens": max_context_tokens
+            "total_tokens": 0
         }
         
         result = self.client.table("conversations").insert(conversation_data).execute()
@@ -129,11 +128,11 @@ class SupabaseService:
         self,
         conversation_id: str,
         user_id: str,
-        max_tokens: Optional[int] = None
+        model_key: str
     ) -> List[Dict[str, Any]]:
         # First verify user owns the conversation
         conv_result = self.client.table("conversations")\
-            .select("id, max_context_tokens")\
+            .select("id")\
             .eq("id", conversation_id)\
             .eq("user_id", user_id)\
             .execute()
@@ -141,8 +140,7 @@ class SupabaseService:
         if not conv_result.data:
             return []
         
-        conversation = conv_result.data[0]
-        context_limit = max_tokens or conversation["max_context_tokens"]
+        context_limit = config_loader.get_model_context_window(model_key)
         
         # Get messages ordered by creation time
         messages_result = self.client.table("messages")\
@@ -177,6 +175,15 @@ class SupabaseService:
             .order("updated_at", desc=True)\
             .execute()
         return result.data
+
+    async def update_conversation_title(self, conversation_id: str, user_id: str, title: str):
+        """Updates the title of a conversation."""
+        result = self.client.table("conversations")\
+            .update({"title": title})\
+            .eq("id", conversation_id)\
+            .eq("user_id", user_id)\
+            .execute()
+        return result.data[0] if result.data else None
 
     async def create_workflow_version(
         self,
