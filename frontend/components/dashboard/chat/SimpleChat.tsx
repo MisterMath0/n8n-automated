@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useWorkflowGeneration, useModels, useChatWithAI } from "@/hooks/api";
+import { useModels, useChatWithAI } from "@/hooks/api";
 import { useToast } from "@/components/providers";
 import { useAuth } from "@/hooks/useAuth";
 import { useConversations } from "@/hooks/useConversations";
-import { AIModel, WorkflowGenerationRequest, ChatMessage, ChatRequest, ChatResponse } from "@/types/api";
+import { AIModel, ChatRequest, ChatResponse } from "@/types/api";
 import { ChatHeader } from "./ChatHeader";
 import { ModelsError } from "./ModelsError";
 import { ChatInput } from "./ChatInput";
@@ -13,15 +13,27 @@ import { MessagesArea } from "./MessagesArea";
 import { Message, SimpleChatProps } from "@/components/dashboard/chat/types";
 import { welcomeMessage, MODEL_NAME_TO_ENUM, DEFAULT_MODEL, SELECTED_MODEL_KEY } from "@/components/dashboard/chat/constants";
 
+function generateUUID(): string {
+  // Use crypto.randomUUID if available, otherwise fallback
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback UUID generation
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
 export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
   const { user } = useAuth();
-  const { generateWorkflow, isGenerating } = useWorkflowGeneration();
   const { models, loading: modelsLoading, error: modelsError } = useModels();
-  const { currentConversation, setCurrentConversation, createConversation, addMessage } = useConversations();
+  const { currentConversation, setCurrentConversation, refetch } = useConversations();
   const toast = useToast();
   const { chatWithAI, isChatting } = useChatWithAI();
   
@@ -34,8 +46,27 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
     }
     return DEFAULT_MODEL;
   });
+  const [isLoadingWorkflow, setIsLoadingWorkflow] = useState(false);
+  const [workflowProgress, setWorkflowProgress] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load conversation messages when conversation changes
+  useEffect(() => {
+    if (currentConversation?.messages && currentConversation.messages.length > 0) {
+      const conversationMessages = currentConversation.messages.map(msg => ({
+        id: msg.id,
+        content: msg.content,
+        sender: msg.role === 'user' ? 'user' : 'ai' as 'user' | 'ai',
+        type: msg.message_type as 'text' | 'workflow' | 'error',
+        workflowData: msg.workflow_data
+      }));
+      
+      setMessages([welcomeMessage, ...conversationMessages]);
+    } else {
+      setMessages([welcomeMessage]);
+    }
+  }, [currentConversation]);
 
   // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
@@ -93,22 +124,17 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isChatting || !user) return;
 
-    let conversation = currentConversation;
-    if (!conversation) {
-      const newConversation = await createConversation();
-      if (newConversation) {
-        conversation = newConversation;
-        setCurrentConversation(newConversation);
-      } else {
-        toast.error("Could not start a new conversation. Please try again.");
-        return;
-      }
-    }
-
     const description = inputValue.trim();
     const userTokens = estimateTokens(description);
 
-    // Add user message to local state and database
+    // Generate conversation ID if we don't have one
+    let conversationId = currentConversation?.id;
+    if (!conversationId) {
+      // Generate a new UUID for the conversation
+      conversationId = generateUUID();
+    }
+
+    // Enhanced user message with better UX
     const userMessage: Message = {
       id: Date.now().toString(),
       content: description,
@@ -118,29 +144,31 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
 
     setMessages(prev => [...prev, userMessage]);
     setInputValue("");
+    setIsLoadingWorkflow(true);
+    setWorkflowProgress('Processing your request...');
 
     try {
-      // Save user message to database
-      await addMessage(
-        conversation.id,
-        description,
-        'user',
-        'text',
-        undefined,
-        userTokens
-      );
+      setWorkflowProgress('Analyzing your requirements...');
 
       const request: ChatRequest = {
         user_message: description,
-        conversation_id: conversation.id,
+        conversation_id: conversationId,
         model: selectedModel,
         temperature: 0.3,
         max_tokens: 4000,
       };
 
+      setWorkflowProgress('Generating AI response...');
       const response: ChatResponse = await chatWithAI(request);
 
-      // Always show the main AI message
+      // If this was a new conversation, refresh to load the newly created one
+      if (!currentConversation) {
+        setTimeout(async () => {
+          await refetch();
+        }, 500);
+      }
+
+      // Always show the main AI message with enhanced formatting
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: response.message,
@@ -148,39 +176,31 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
         type: 'text'
       };
       setMessages(prev => [...prev, aiMessage]);
-      await addMessage(
-        conversation.id,
-        response.message,
-        'assistant',
-        'text',
-        undefined,
-        estimateTokens(response.message)
-      );
 
-      // If workflow is present, show it
+      // Enhanced workflow handling with progress updates
       if (response.workflow) {
+        setWorkflowProgress('Generating workflow visualization...');
+        
         const workflowMessage: Message = {
           id: (Date.now() + 2).toString(),
-          content: `Generated workflow "${response.workflow.name}" with ${response.workflow.nodes.length} nodes in ${response.generation_time.toFixed(2)}s.`,
+          content: `🎯 Generated workflow "${response.workflow.name}" with ${response.workflow.nodes.length} nodes`,
           sender: 'ai',
           type: 'workflow',
           workflowData: response.workflow
         };
         setMessages(prev => [...prev, workflowMessage]);
-        await addMessage(
-          conversation.id,
-          workflowMessage.content,
-          'assistant',
-          'workflow',
-          response.workflow,
-          estimateTokens(workflowMessage.content)
-        );
         onWorkflowGenerated?.(response.workflow);
       }
 
-      // If search_results are present, show them as a single message
+      // Enhanced search results handling
       if (response.search_results && response.search_results.length > 0) {
-        const searchContent = response.search_results.map((r: any, i: number) => `Result ${i + 1}: ${r.title}\n${r.content}\n${r.url ? r.url : ''}`).join('\n\n');
+        setWorkflowProgress('Processing documentation results...');
+        
+        const searchContent = `📚 Found ${response.search_results.length} relevant documentation results:\n\n` +
+          response.search_results.map((r: any, i: number) => 
+            `${i + 1}. **${r.title}**\n${r.content}\n${r.url ? `🔗 ${r.url}` : ''}`
+          ).join('\n\n');
+        
         const searchMessage: Message = {
           id: (Date.now() + 3).toString(),
           content: searchContent,
@@ -188,34 +208,26 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
           type: 'text'
         };
         setMessages(prev => [...prev, searchMessage]);
-        await addMessage(
-          conversation.id,
-          searchContent,
-          'assistant',
-          'text',
-          undefined,
-          estimateTokens(searchContent)
-        );
       }
+
+      // Tool usage info (minimal)
+      if (response.tools_used && response.tools_used.length > 0) {
+        console.log('Tools used:', response.tools_used.join(', '));
+      }
+
     } catch (error) {
-      console.error('🔍 [DEBUG] Chat failed:', error);
+      console.error('🔍 [Enhanced DEBUG] Chat failed:', error);
       const errorMessage: Message = {
         id: (Date.now() + 10).toString(),
-        content: 'Sorry, I encountered an error processing your request. Please try again.',
+        content: '❌ Sorry, I encountered an error processing your request. Please try again.',
         sender: 'ai',
         type: 'error'
       };
       setMessages(prev => [...prev, errorMessage]);
-      if (conversation) {
-        await addMessage(
-          conversation.id,
-          errorMessage.content,
-          'assistant',
-          'error',
-          undefined,
-          estimateTokens(errorMessage.content)
-        );
-      }
+      toast.error('Failed to process request');
+    } finally {
+      setIsLoadingWorkflow(false);
+      setWorkflowProgress('');
     }
   };
 
@@ -265,8 +277,9 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
       <div className="flex-1 overflow-hidden">
         <MessagesArea 
           messages={messages}
-          isGenerating={isChatting}
+          isGenerating={isChatting || isLoadingWorkflow}
           messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
+          workflowProgress={workflowProgress}
         />
       </div>
 
@@ -275,7 +288,7 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
         setInputValue={setInputValue}
         textareaRef={textareaRef as React.RefObject<HTMLTextAreaElement>}
         handleSendMessage={handleSendMessage}
-        isGenerating={isChatting}
+        isGenerating={isChatting || isLoadingWorkflow}
         availableModels={availableModels}
         selectedModel={selectedModel}
         modelsLoading={modelsLoading}
