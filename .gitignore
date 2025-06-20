@@ -64,3 +64,5 @@ yarn-error.log*
 /dist
 /out 
 */data/*
+
+IMPLEMENTATION_CONTINUATION_PROMPT.md
