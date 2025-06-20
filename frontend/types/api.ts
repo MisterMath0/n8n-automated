@@ -138,14 +138,14 @@ export interface APIResponse<T> {
 export type MessageRole = 'user' | 'assistant' | 'system';
 
 export interface ChatMessage {
-  role: MessageRole;
+  role: 'user' | 'assistant';
   content: string;
-  timestamp?: string; // ISO string, optional for frontend
+  timestamp?: string;
 }
 
 export interface ChatRequest {
-  messages: ChatMessage[];
-  conversation_id?: string;
+  user_message: string;
+  conversation_id: string;
   model?: AIModel;
   temperature?: number;
   max_tokens?: number;

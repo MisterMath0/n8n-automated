@@ -21,7 +21,7 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
   const { user } = useAuth();
   const { generateWorkflow, isGenerating } = useWorkflowGeneration();
   const { models, loading: modelsLoading, error: modelsError } = useModels();
-  const { currentConversation, setCurrentConversation, createConversation, addMessage, getContextMessages } = useConversations();
+  const { currentConversation, setCurrentConversation, createConversation, addMessage } = useConversations();
   const toast = useToast();
   const { chatWithAI, isChatting } = useChatWithAI();
   
@@ -34,7 +34,6 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
     }
     return DEFAULT_MODEL;
   });
-  const [maxContextTokens, setMaxContextTokens] = useState(8000);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -47,7 +46,9 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  const availableModels = models.filter(model => MODEL_NAME_TO_ENUM[model.name]);
+  const availableModels = models.filter(model => 
+    Object.values(AIModel).includes(model.model_id)
+  );
   
   // Auto-resize textarea
   const adjustTextareaHeight = useCallback(() => {
@@ -59,27 +60,9 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
     }
   }, []);
 
-  // Initialize conversation when user is available
   useEffect(() => {
-    const initConversation = async () => {
-      if (user && !currentConversation) {
-        try {
-          const conversation = await createConversation(
-            undefined,
-            'New Workflow Chat',
-            maxContextTokens
-          );
-          if (conversation) {
-            setCurrentConversation(conversation);
-          }
-        } catch (error) {
-          console.error('Failed to create conversation:', error);
-        }
-      }
-    };
-
-    initConversation();
-  }, [user, currentConversation, createConversation, setCurrentConversation, maxContextTokens]);
+    adjustTextareaHeight();
+  }, [inputValue, adjustTextareaHeight]);
 
   // Persist model selection
   const handleModelChange = (model: AIModel) => {
@@ -107,12 +90,20 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
     }
   }, [availableModels, selectedModel]);
 
-  useEffect(() => {
-    adjustTextareaHeight();
-  }, [inputValue, adjustTextareaHeight]);
-
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isChatting || !user || !currentConversation) return;
+    if (!inputValue.trim() || isChatting || !user) return;
+
+    let conversation = currentConversation;
+    if (!conversation) {
+      const newConversation = await createConversation();
+      if (newConversation) {
+        conversation = newConversation;
+        setCurrentConversation(newConversation);
+      } else {
+        toast.error("Could not start a new conversation. Please try again.");
+        return;
+      }
+    }
 
     const description = inputValue.trim();
     const userTokens = estimateTokens(description);
@@ -131,7 +122,7 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
     try {
       // Save user message to database
       await addMessage(
-        currentConversation.id,
+        conversation.id,
         description,
         'user',
         'text',
@@ -139,20 +130,9 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
         userTokens
       );
 
-      // Build conversation history for backend
-      const contextMessages = getContextMessages(currentConversation, maxContextTokens);
-      const chatMessages: ChatMessage[] = [
-        ...contextMessages.map((msg: any) => ({
-          role: msg.role || (msg.sender === 'user' ? 'user' : 'assistant'),
-          content: msg.content,
-          timestamp: msg.created_at || undefined
-        })),
-        { role: 'user', content: description }
-      ];
-
       const request: ChatRequest = {
-        messages: chatMessages,
-        conversation_id: currentConversation.id,
+        user_message: description,
+        conversation_id: conversation.id,
         model: selectedModel,
         temperature: 0.3,
         max_tokens: 4000,
@@ -169,7 +149,7 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
       };
       setMessages(prev => [...prev, aiMessage]);
       await addMessage(
-        currentConversation.id,
+        conversation.id,
         response.message,
         'assistant',
         'text',
@@ -181,14 +161,14 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
       if (response.workflow) {
         const workflowMessage: Message = {
           id: (Date.now() + 2).toString(),
-          content: `Generated workflow "${response.workflow.name}" with ${response.workflow.nodes.length} nodes in ${response.generation_time.toFixed(2)}s using ${response.tokens_used || 'N/A'} tokens.`,
+          content: `Generated workflow "${response.workflow.name}" with ${response.workflow.nodes.length} nodes in ${response.generation_time.toFixed(2)}s.`,
           sender: 'ai',
           type: 'workflow',
           workflowData: response.workflow
         };
         setMessages(prev => [...prev, workflowMessage]);
         await addMessage(
-          currentConversation.id,
+          conversation.id,
           workflowMessage.content,
           'assistant',
           'workflow',
@@ -209,7 +189,7 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
         };
         setMessages(prev => [...prev, searchMessage]);
         await addMessage(
-          currentConversation.id,
+          conversation.id,
           searchContent,
           'assistant',
           'text',
@@ -226,9 +206,9 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
         type: 'error'
       };
       setMessages(prev => [...prev, errorMessage]);
-      if (currentConversation) {
+      if (conversation) {
         await addMessage(
-          currentConversation.id,
+          conversation.id,
           errorMessage.content,
           'assistant',
           'error',
@@ -275,8 +255,6 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
       <ChatHeader 
         selectedModelName={getSelectedModelInfo()?.name}
         onClose={onClose}
-        maxContextTokens={maxContextTokens}
-        onMaxContextTokensChange={setMaxContextTokens}
         onModelChange={handleModelChange}
         selectedModel={selectedModel}
         isGenerating={isChatting}

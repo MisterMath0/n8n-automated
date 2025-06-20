@@ -25,7 +25,6 @@ export interface Conversation {
   workflow_id?: string
   title?: string
   total_tokens: number
-  max_context_tokens: number
   created_at: string
   updated_at: string
   messages: ConversationMessage[]
@@ -78,19 +77,15 @@ export function useConversations() {
   }, [user])
 
   const createConversation = useCallback(async (
-    workflowId?: string,
-    title?: string,
-    maxContextTokens: number = 8000
+    workflowId?: string
   ): Promise<Conversation | null> => {
     if (!user) return null
 
     try {
-      const conversationData: ConversationInsert = {
+      const conversationData: Omit<ConversationInsert, 'title' | 'max_context_tokens'> = {
         user_id: user.id,
         workflow_id: workflowId,
-        title,
         total_tokens: 0,
-        max_context_tokens: maxContextTokens
       }
 
       const { data, error } = await supabase

@@ -44,7 +44,7 @@ export function ModelSelector({ selectedModel, availableModels, modelsLoading, i
           <Settings className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72">
+      <DropdownMenuContent align="end" className="w-72 max-h-96 overflow-y-auto">
         {Object.entries(groupedModels).map(([provider, models]) => (
           <div key={provider}>
             <DropdownMenuLabel className="text-xs font-bold uppercase text-muted-foreground">

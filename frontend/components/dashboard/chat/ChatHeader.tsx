@@ -8,8 +8,6 @@ import { useModels } from "@/hooks/api";
 interface ChatHeaderProps {
   selectedModelName?: string;
   onClose: () => void;
-  maxContextTokens?: number;
-  onMaxContextTokensChange?: (tokens: number) => void;
   onModelChange?: (model: AIModel) => void;
   selectedModel: AIModel;
   isGenerating?: boolean;
@@ -18,8 +16,6 @@ interface ChatHeaderProps {
 export function ChatHeader({ 
   selectedModelName, 
   onClose, 
-  maxContextTokens = 8000,
-  onMaxContextTokensChange,
   onModelChange,
   selectedModel,
   isGenerating = false
