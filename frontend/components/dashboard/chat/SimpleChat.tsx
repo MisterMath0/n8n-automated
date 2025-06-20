@@ -1,280 +1,129 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import { useModels, useChatWithAI } from "@/hooks/api";
-import { useToast } from "@/components/providers";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useModels } from "@/hooks/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useConversations } from "@/hooks/useConversations";
-import { AIModel, ChatRequest, ChatResponse } from "@/types/api";
+import { AIModel } from "@/types/api";
 import { ChatHeader } from "./ChatHeader";
 import { ModelsError } from "./ModelsError";
 import { ChatInput } from "./ChatInput";
 import { MessagesArea } from "./MessagesArea";
-import { Message, SimpleChatProps } from "@/components/dashboard/chat/types";
-import { welcomeMessage, MODEL_NAME_TO_ENUM, DEFAULT_MODEL, SELECTED_MODEL_KEY } from "@/components/dashboard/chat/constants";
-
-
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
-}
+import { Message, SimpleChatProps } from "./types";
+import { welcomeMessage, DEFAULT_MODEL, SELECTED_MODEL_KEY } from "./constants";
+import { AuthRequired } from "./components/AuthRequired";
+import { useMessageLoader } from "./hooks/useMessageLoader";
+import { useMessageHandler } from "./hooks/useMessageHandler";
 
 export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
   const { user } = useAuth();
-  const [isNewConversation, setIsNewConversation] = useState(false);
   const { models, loading: modelsLoading, error: modelsError } = useModels();
-  const { currentConversation, setCurrentConversation, createConversation, refetch } = useConversations();
-  const toast = useToast();
-  const { chatWithAI, isChatting } = useChatWithAI();
+  const { currentConversation } = useConversations();
   
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const [inputValue, setInputValue] = useState("");
   const [selectedModel, setSelectedModel] = useState<AIModel>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(SELECTED_MODEL_KEY);
-      return stored ? (stored as AIModel) : DEFAULT_MODEL;
+      return stored && Object.values(AIModel).includes(stored as AIModel) 
+        ? (stored as AIModel) 
+        : DEFAULT_MODEL;
     }
     return DEFAULT_MODEL;
   });
-  const [isLoadingWorkflow, setIsLoadingWorkflow] = useState(false);
-  const [workflowProgress, setWorkflowProgress] = useState<string>('');
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-focus input field when component mounts or conversation changes
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      textareaRef.current?.focus();
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [currentConversation]);
+  // Load messages when conversation changes
+  useMessageLoader({ currentConversation, setMessages });
 
-  // Load conversation messages when conversation changes
-  useEffect(() => {
-    if (currentConversation?.messages && currentConversation.messages.length > 0) {
-      const conversationMessages = currentConversation.messages.map(msg => ({
-        id: msg.id,
-        content: msg.content,
-        sender: msg.role === 'user' ? 'user' : 'ai' as 'user' | 'ai',
-        type: msg.message_type as 'text' | 'workflow' | 'error',
-        workflowData: msg.workflow_data
-      }));
-      
-      setMessages([welcomeMessage, ...conversationMessages]);
-    } else {
-      setMessages([welcomeMessage]);
-    }
-  }, [currentConversation]);
+  // Message handler
+  const { sendMessage, isProcessing, workflowProgress, isChatting } = useMessageHandler({
+    selectedModel,
+    onWorkflowGenerated
+  });
 
-  // Auto-scroll to bottom
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
-
+  // Available models
   const availableModels = models.filter(model => 
     Object.values(AIModel).includes(model.model_id)
   );
-  
+
+  // Auto-focus input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!isChatting && !isProcessing) {
+        textareaRef.current?.focus();
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [isChatting, isProcessing, currentConversation]);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [messages]);
+
   // Auto-resize textarea
-  const adjustTextareaHeight = useCallback(() => {
+  useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      const newHeight = Math.min(textarea.scrollHeight, 250); // Max 120px
+      const newHeight = Math.min(textarea.scrollHeight, 250);
       textarea.style.height = `${newHeight}px`;
     }
-  }, []);
+  }, [inputValue]);
 
-  useEffect(() => {
-    adjustTextareaHeight();
-  }, [inputValue, adjustTextareaHeight]);
-
-  // Persist model selection
-  const handleModelChange = (model: AIModel) => {
+  // Handle model change
+  const handleModelChange = useCallback((model: AIModel) => {
     setSelectedModel(model);
     if (typeof window !== 'undefined') {
       localStorage.setItem(SELECTED_MODEL_KEY, model);
     }
-  };
+  }, []);
 
-  // Auto-select first available model when models load
+  // Auto-select model when models load
   useEffect(() => {
     if (availableModels.length > 0) {
-      // Check if current selected model is available
       const currentModelAvailable = availableModels.some(m => m.model_id === selectedModel);
       if (!currentModelAvailable) {
-        // Try to find Gemini model first
-        const geminiModel = availableModels.find(m => m.model_id === AIModel.GEMINI_2_5_FLASH);
-        if (geminiModel) {
-          handleModelChange(geminiModel.model_id);
-        } else {
-          // Fall back to first available model
-          handleModelChange(availableModels[0].model_id);
-        }
+        const defaultModel = availableModels.find(m => m.model_id === AIModel.GEMINI_2_5_FLASH) || availableModels[0];
+        handleModelChange(defaultModel.model_id);
       }
     }
-  }, [availableModels, selectedModel]);
+  }, [availableModels, selectedModel, handleModelChange]);
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || isChatting || !user) return;
-  
-    const description = inputValue.trim();
-    
-    // Handle conversation creation (keep existing logic)
-    let conversationId = currentConversation?.id;
-    if (!conversationId) {
-      try {
-        const newConversation = await createConversation();
-        if (newConversation) {
-          conversationId = newConversation.id;
-          setCurrentConversation(newConversation);
-          console.log("Created new conversation:", conversationId);
-        } else {
-          toast.error("Failed to create conversation");
-          return;
-        }
-      } catch (error) {
-        console.error("Failed to create conversation:", error);
-        toast.error("Failed to create conversation");
-        return;
-      }
-    }
-  
-    // OPTIMISTIC UPDATE: Add user message immediately
-    const optimisticUserMessage: Message = {
-      id: 'temp-user-' + Date.now(),
-      content: description,
-      sender: 'user',
-      type: 'text'
-    };
-  
-    // Save current state for rollback
-    const previousMessages = [...messages];
-    
-    // Show message immediately + clear input
-    setMessages(prev => [...prev, optimisticUserMessage]);
+  // Handle send message
+  const handleSendMessage = useCallback(async () => {
+    const message = inputValue.trim();
+    if (!message || !user) return;
+
     setInputValue("");
-    setIsLoadingWorkflow(true);
-    setWorkflowProgress('Processing your request...');
-  
-    // Keep focus on input field after sending
-    setTimeout(() => {
-      textareaRef.current?.focus();
-    }, 100);
-  
-    try {
-      setWorkflowProgress('Analyzing your requirements...');
-  
-      const request: ChatRequest = {
-        user_message: description,
-        conversation_id: conversationId,
-        model: selectedModel,
-        temperature: 0.3,
-        max_tokens: 4000,
-      };
-  
-      setWorkflowProgress('Generating AI response...');
-      const response: ChatResponse = await chatWithAI(request);
-      
-      // Remove optimistic message and load real data from database
-      await refetch();
-  
-      // Keep existing workflow handling
-      if (response.workflow) {
-        setWorkflowProgress('Generating workflow visualization...');
-        
-        const workflowMessage: Message = {
-          id: (Date.now() + 2).toString(),
-          content: `🎯 Generated workflow "${response.workflow.name}" with ${response.workflow.nodes.length} nodes`,
-          sender: 'ai',
-          type: 'workflow',
-          workflowData: response.workflow
-        };
-        setMessages(prev => [...prev, workflowMessage]);
-        onWorkflowGenerated?.(response.workflow);
-      }
-  
-      // Keep existing search results handling
-      if (response.search_results && response.search_results.length > 0) {
-        setWorkflowProgress('Processing documentation results...');
-        
-        const searchContent = `📚 Found ${response.search_results.length} relevant documentation results:\n\n` +
-          response.search_results.map((r: any, i: number) => 
-            `${i + 1}. **${r.title}**\n${r.content}\n${r.url ? `🔗 ${r.url}` : ''}`
-          ).join('\n\n');
-        
-        const searchMessage: Message = {
-          id: (Date.now() + 3).toString(),
-          content: searchContent,
-          sender: 'ai',
-          type: 'text'
-        };
-        setMessages(prev => [...prev, searchMessage]);
-      }
-  
-      if (response.tools_used && response.tools_used.length > 0) {
-        console.log('Tools used:', response.tools_used.join(', '));
-      }
-  
-    } catch (error) {
-      console.error('🔍 [Enhanced DEBUG] Chat failed:', error);
-      
-      // ROLLBACK: Restore previous state on error
-      setMessages(previousMessages);
-      setInputValue(description); // Restore user's input
-      
-      const errorMessage: Message = {
-        id: (Date.now() + 10).toString(),
-        content: '❌ Sorry, I encountered an error processing your request. Please try again.',
-        sender: 'ai',
-        type: 'error'
-      };
-      setMessages(prev => [...prev, errorMessage]);
-      toast.error('Failed to process request');
-    } finally {
-      setIsLoadingWorkflow(false);
-      setWorkflowProgress('');
-      setTimeout(() => {
-        textareaRef.current?.focus();
-      }, 100);
+    const success = await sendMessage(message, messages, setMessages);
+    
+    if (!success) {
+      setInputValue(message); // Restore input on error
     }
-  };
+  }, [inputValue, user, sendMessage, messages]);
 
-  const getSelectedModelInfo = () => {
-    return models.find(model => MODEL_NAME_TO_ENUM[model.name] === selectedModel);
-  };
-
-  // Show auth required message if user is not authenticated
+  // Show auth required if no user
   if (!user) {
-    return (
-      <div className="w-96 h-full bg-black/80 border-l border-white/10 flex flex-col items-center justify-center">
-        <div className="text-center p-6">
-          <h3 className="text-white text-lg font-semibold mb-2">Authentication Required</h3>
-          <p className="text-gray-400 text-sm mb-4">
-            Please sign in to start generating workflows and save your conversation history.
-          </p>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    );
+    return <AuthRequired onClose={onClose} />;
   }
+
+  const selectedModelInfo = models.find(m => m.model_id === selectedModel);
 
   return (
     <div className="w-96 h-full bg-black/80 border-l border-white/10 flex flex-col overflow-hidden">
       <ChatHeader 
-        selectedModelName={getSelectedModelInfo()?.name}
+        selectedModelName={selectedModelInfo?.name}
         onClose={onClose}
         onModelChange={handleModelChange}
         selectedModel={selectedModel}
-        isGenerating={isChatting}
+        isGenerating={isChatting || isProcessing}
       />
 
       {modelsError && <ModelsError error={modelsError} />}
@@ -282,8 +131,8 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
       <div className="flex-1 overflow-hidden">
         <MessagesArea 
           messages={messages}
-          isGenerating={isChatting || isLoadingWorkflow}
-          messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
+          isGenerating={isChatting || isProcessing}
+          messagesEndRef={messagesEndRef}
           workflowProgress={workflowProgress}
         />
       </div>
@@ -291,9 +140,9 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
       <ChatInput
         inputValue={inputValue}
         setInputValue={setInputValue}
-        textareaRef={textareaRef as React.RefObject<HTMLTextAreaElement>}
+        textareaRef={textareaRef}
         handleSendMessage={handleSendMessage}
-        isGenerating={isChatting || isLoadingWorkflow}
+        isGenerating={isChatting || isProcessing}
         availableModels={availableModels}
         selectedModel={selectedModel}
         modelsLoading={modelsLoading}
