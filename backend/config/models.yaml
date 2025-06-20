@@ -3,9 +3,8 @@ models:
   gemini-2-5-flash:
     name: "Gemini 2.5 Flash"
     provider: "google"
-    model_id: "gemini-2.5-flash-001"
+    model_id: "gemini-2.0-flash-exp"
     api_key_env: "GOOGLE_API_KEY"
-    base_url: "https://generativelanguage.googleapis.com/v1beta"
     max_tokens: 8192
     cost_per_1k_input_tokens: 0.0  # Free tier
     cost_per_1k_output_tokens: 0.0  # Free tier
@@ -18,9 +17,8 @@ models:
   gemini-1-5-flash:
     name: "Gemini 1.5 Flash"
     provider: "google"
-    model_id: "gemini-1.5-flash-001"
+    model_id: "gemini-1.5-flash"
     api_key_env: "GOOGLE_API_KEY"
-    base_url: "https://generativelanguage.googleapis.com/v1beta"
     max_tokens: 8192
     cost_per_1k_input_tokens: 0.0  # Free tier
     cost_per_1k_output_tokens: 0.0  # Free tier
@@ -33,9 +31,8 @@ models:
   gemini-1-5-pro:
     name: "Gemini 1.5 Pro"
     provider: "google"
-    model_id: "gemini-1.5-pro-001"
+    model_id: "gemini-1.5-pro"
     api_key_env: "GOOGLE_API_KEY"
-    base_url: "https://generativelanguage.googleapis.com/v1beta"
     max_tokens: 8192
     cost_per_1k_input_tokens: 1.25  # Paid tier
     cost_per_1k_output_tokens: 5.0   # Paid tier
@@ -145,3 +142,17 @@ provider_priority:
   - "anthropic"  # High quality
   - "groq"       # Fast inference  
   - "openai"     # Reliable
+
+# Chat-related settings
+chat_settings:
+  default_context_window: 8000  # Default token limit for chat history
+  
+  # Per-model overrides for context window (in tokens)
+  # Allows for different history limits based on model capabilities
+  # For example, smaller models might have a smaller context history
+  # to save costs or improve performance.
+  model_context_windows:
+    "gemini-2-5-flash": 12000
+    "gemini-1-5-pro": 16000
+    "claude-4-sonnet": 10000
+    "gpt-4o": 12000
