@@ -68,6 +68,10 @@ export function useWorkflows() {
     }
   }, [user, toast]);
 
+  useEffect(() => {
+    fetchWorkflows();
+  }, [fetchWorkflows]);
+
   const selectWorkflow = useCallback((workflow: Workflow | null) => {
     setSelectedWorkflow(workflow);
   }, []);
@@ -204,11 +208,6 @@ export function useWorkflows() {
 
     return await workflowStorage.getStats(user.id);
   }, [user]);
-
-  // Load workflows on mount
-  useEffect(() => {
-    fetchWorkflows();
-  }, [fetchWorkflows]);
 
   return {
     workflows,

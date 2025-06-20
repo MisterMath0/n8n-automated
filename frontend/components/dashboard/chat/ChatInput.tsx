@@ -43,7 +43,7 @@ export function ChatInput({
                 handleSendMessage();
               }
             }}
-            placeholder="Ask anything..."
+            placeholder="Describe your workflow or ask anything..."
             disabled={isGenerating || availableModels.length === 0}
             className="min-h-[60px] max-h-[120px] resize-none border-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0 scrollbar-thin"
             rows={1}
@@ -64,11 +64,12 @@ export function ChatInput({
               variant="ghost"
               size="icon"
               className="h-8 w-8 shrink-0"
+              title={inputValue.trim() ? "Send message or generate workflow" : "Type a message to generate"}
             >
               {isGenerating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <div className="h-6 w-6 bg-primary rounded-full flex items-center justify-center">
+                <div className="h-6 w-6 bg-primary rounded-full flex items-center justify-center hover:scale-110 transition-transform">
                   <ArrowUp className="h-3 w-3 text-primary-foreground" />
                 </div>
               )}

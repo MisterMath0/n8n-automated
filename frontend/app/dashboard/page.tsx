@@ -79,16 +79,28 @@ export default function DashboardPage() {
 
   const handleCreateNew = async () => {
     try {
+      // Clear current workflow and selection
+      setCurrentWorkflow(null);
+      selectWorkflow(null);
+      
       // Create a new conversation for workflow generation
       const newConversation = await createConversation();
       if (newConversation) {
         setCurrentConversation(newConversation);
-        setCurrentWorkflow(null);
-        selectWorkflow(null);
+        setIsChatOpen(true);
+        
+        // Add a small delay to ensure chat is open before focusing
+        setTimeout(() => {
+          // The chat component will auto-focus when conversation changes
+        }, 100);
+      } else {
+        // If conversation creation fails, still open chat for new session
         setIsChatOpen(true);
       }
     } catch (error) {
       console.error('Failed to create new conversation:', error);
+      // Still open chat even if conversation creation fails
+      setIsChatOpen(true);
     }
   };
 

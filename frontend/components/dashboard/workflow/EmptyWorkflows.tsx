@@ -23,7 +23,7 @@ export function EmptyWorkflows({ onCreateWorkflow }: EmptyWorkflowsProps) {
       </h3>
       
       <p className="text-sm text-gray-400 mb-6 max-w-xs mx-auto leading-relaxed">
-        Start by creating your first AI-generated workflow or chat with our AI assistant.
+        Start by describing what you want to automate. Our AI will create workflows for you instantly.
       </p>
       
       <div className="space-y-3">
@@ -34,7 +34,7 @@ export function EmptyWorkflows({ onCreateWorkflow }: EmptyWorkflowsProps) {
           className="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 hover:shadow-green-500/25 transition-all"
         >
           <Plus className="w-4 h-4" />
-          Create Workflow
+          Start Generating
         </motion.button>
       </div>
     </motion.div>

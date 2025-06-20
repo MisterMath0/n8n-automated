@@ -60,22 +60,19 @@ export function ModelSelector({ selectedModel, availableModels, modelsLoading, i
                 <DropdownMenuItem
                   key={model.model_id}
                   onClick={() => {
-                    console.log('🔍 [DEBUG] Model changed to:', model.model_id);
+
                     onModelChange(modelEnum);
                   }}
                   className={cn(
-                    "flex flex-col items-start py-3 gap-1",
+                    "flex flex-col items-start py-1 gap-1",
                     selectedModel === modelEnum && "bg-accent"
                   )}
                 >
-                  <div className="flex items-center gap-2 w-full">
+                  <div className="flex items-center gap-1 w-full">
                     <div className="font-medium flex-1">{displayName}</div>
-                    {isFree && <Sparkles className="h-3 w-3 text-green-400" />}
-                    {model.supports_streaming && <Zap className="h-3 w-3 text-yellow-400" />}
+
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {model.description || `Context: ${model.context_window.toLocaleString()} tokens`}
-                  </div>
+
                 </DropdownMenuItem>
               );
             })}

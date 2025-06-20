@@ -51,6 +51,14 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Auto-focus input field when component mounts or conversation changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [currentConversation]);
+
   // Load conversation messages when conversation changes
   useEffect(() => {
     if (currentConversation?.messages && currentConversation.messages.length > 0) {
@@ -147,6 +155,11 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
     setIsLoadingWorkflow(true);
     setWorkflowProgress('Processing your request...');
 
+    // Keep focus on input field after sending
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 100);
+
     try {
       setWorkflowProgress('Analyzing your requirements...');
 
@@ -228,6 +241,10 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
     } finally {
       setIsLoadingWorkflow(false);
       setWorkflowProgress('');
+      // Ensure focus returns to input after completion
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
     }
   };
 
