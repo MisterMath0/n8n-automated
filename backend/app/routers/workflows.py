@@ -26,17 +26,17 @@ async def chat_with_ai(
     """Chat with AI using tool-based system for workflows and documentation search"""
     try:
         response = await ai_service.chat_with_tools(
-            messages=request.messages,
+            user_message=request.user_message,
+            conversation_id=request.conversation_id,
+            user=current_user,
             model=request.model,
             temperature=request.temperature,
-            max_tokens=request.max_tokens,
-            conversation_id=request.conversation_id
+            max_tokens=request.max_tokens
         )
         
         logger.info(
             "Chat completed",
             model=request.model.value,
-            message_count=len(request.messages),
             tools_used=response.tools_used,
             generation_time=response.generation_time,
             workflow_generated=response.workflow is not None,
@@ -45,19 +45,15 @@ async def chat_with_ai(
         )
         
         return response
-        
-    except ValueError as e:
-        logger.error("Invalid input for chat", error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
     except Exception as e:
-        logger.error("Chat failed", error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Chat request failed"
+        logger.error(
+            "Chat failed", 
+            error=str(e), 
+            user_id=current_user.id, 
+            conversation_id=request.conversation_id,
+            user_message=request.user_message
         )
+        return ChatResponse(success=False, error=str(e))
 
 
 @router.post("/search-docs", response_model=DocumentationSearchResponse)

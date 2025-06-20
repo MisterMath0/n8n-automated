@@ -25,9 +25,9 @@ class ToolType(str, Enum):
 
 
 class ChatMessage(BaseModel):
-    role: MessageRole = Field(..., description="Message role")
-    content: str = Field(..., description="Message content")
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    role: str
+    content: str
+    timestamp: Optional[datetime] = None
 
 
 class ToolCall(BaseModel):
@@ -55,8 +55,8 @@ class SearchResult(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    messages: List[ChatMessage] = Field(..., description="Conversation history")
-    conversation_id: Optional[str] = Field(None, description="Optional conversation ID")
+    user_message: str = Field(..., description="The user's latest message.")
+    conversation_id: str = Field(..., description="Conversation ID")
     model: AIModel = Field(default=AIModel.GEMINI_2_5_FLASH)  # Default to free Gemini model
     temperature: float = Field(default=0.3, ge=0.0, le=2.0)
     max_tokens: int = Field(default=4000, ge=1, le=200000)

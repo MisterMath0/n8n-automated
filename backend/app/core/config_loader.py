@@ -1,14 +1,22 @@
 import yaml
 from pathlib import Path
-from typing import Dict, Any
-from ..core.config import AIModelConfig
+from typing import Dict, Any, Optional
+from ..core.config import AIModelConfig, ChatSettingsConfig
 
 class ConfigLoader:
     def __init__(self):
         self.config_dir = Path(__file__).parent.parent.parent / "config"
-        self._models_cache = None
-        self._search_cache = None
-        self._generic_cache = {}
+        self._models_cache: Optional[Dict[str, AIModelConfig]] = None
+        self._chat_settings_cache: Optional[ChatSettingsConfig] = None
+        self._search_cache: Optional[Dict[str, Any]] = None
+        self._generic_cache: Dict[str, Any] = {}
+
+    def _load_yaml_file(self, file_path: Path) -> Dict[str, Any]:
+        """Loads a YAML file."""
+        if not file_path.exists():
+            raise FileNotFoundError(f"Config file not found: {file_path}")
+        with open(file_path, 'r') as f:
+            return yaml.safe_load(f)
 
     def load_config(self, config_name: str) -> Dict[str, Any]:
         """
@@ -18,24 +26,36 @@ class ConfigLoader:
         """
         if config_name in self._generic_cache:
             return self._generic_cache[config_name]
+        
         config_file = self.config_dir / f"{config_name}.yaml"
-        if not config_file.exists():
-            raise FileNotFoundError(f"Config file not found: {config_file}")
-        with open(config_file, 'r') as f:
-            config_data = yaml.safe_load(f)
+        config_data = self._load_yaml_file(config_file)
         self._generic_cache[config_name] = config_data
         return config_data
 
     def load_models(self) -> Dict[str, AIModelConfig]:
         if self._models_cache is None:
             models_file = self.config_dir / "models.yaml"
-            with open(models_file, 'r') as f:
-                data = yaml.safe_load(f)
+            data = self._load_yaml_file(models_file)
             self._models_cache = {
                 key: AIModelConfig(**config) 
-                for key, config in data['models'].items()
+                for key, config in data.get('models', {}).items()
             }
         return self._models_cache
+
+    def load_chat_settings(self) -> ChatSettingsConfig:
+        if self._chat_settings_cache is None:
+            models_file = self.config_dir / "models.yaml"
+            data = self._load_yaml_file(models_file)
+            chat_settings_data = data.get('chat_settings', {})
+            self._chat_settings_cache = ChatSettingsConfig(**chat_settings_data)
+        return self._chat_settings_cache
+
+    def get_model_context_window(self, model_key: str) -> int:
+        """Get context window for a model, with fallback to default."""
+        chat_settings = self.load_chat_settings()
+        return chat_settings.model_context_windows.get(
+            model_key, chat_settings.default_context_window
+        )
 
     def get_model_config(self, model_key: str) -> AIModelConfig:
         models = self.load_models()

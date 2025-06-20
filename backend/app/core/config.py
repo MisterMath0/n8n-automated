@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict
 from enum import Enum
 
 
@@ -22,6 +22,17 @@ class AIModelConfig(BaseModel):
     supports_json_mode: bool = True
     supports_streaming: bool = True
     context_window: int = 128000
+
+
+class ChatSettingsConfig(BaseModel):
+    default_context_window: int = Field(
+        default=8000, 
+        description="Default token limit for chat history context."
+    )
+    model_context_windows: Dict[str, int] = Field(
+        default_factory=dict,
+        description="Per-model overrides for chat history context window in tokens."
+    )
 
 
 class Settings(BaseSettings):
@@ -51,6 +62,7 @@ class Settings(BaseSettings):
     anthropic_api_key: Optional[str] = Field(default=None, alias="ANTHROPIC_API_KEY")
     openai_api_key: Optional[str] = Field(default=None, alias="OPENAI_API_KEY")
     groq_api_key: Optional[str] = Field(default=None, alias="GROQ_API_KEY")
+    google_api_key: Optional[str] = Field(default=None, alias="GOOGLE_API_KEY")
     
     rate_limit_requests_per_minute: int = 60
     rate_limit_burst: int = 10
