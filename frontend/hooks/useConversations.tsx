@@ -319,6 +319,15 @@ export function useConversations() {
     }
   }, [user, loadConversations])
 
+  useEffect(() => {
+    // Update currentConversation when conversations array changes
+    if (currentConversation && conversations.length > 0) {
+      const updatedConversation = conversations.find(conv => conv.id === currentConversation.id);
+      if (updatedConversation && updatedConversation !== currentConversation) {
+        setCurrentConversation(updatedConversation);
+      }
+    }
+  }, [conversations, currentConversation]);
   return {
     conversations,
     currentConversation,

@@ -59,7 +59,7 @@ export function WorkflowSidebar({
     
     if (!hasMore) return;
     
-    setIsLoadingMore(true);
+    setIsLoadingMore(false);
     
     // Simulate loading delay for better UX
     setTimeout(() => {
@@ -186,7 +186,7 @@ export function WorkflowSidebar({
                 </div>
               </div>
             ) : workflows.length === 0 ? (
-              <EmptyWorkflows onCreateWorkflow={onCreateNew} />
+              <EmptyWorkflows onCreateWorkflow={onCreateNew ?? (() => {})} />
             ) : (
               <>
                 <div 

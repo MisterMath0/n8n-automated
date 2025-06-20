@@ -13,18 +13,6 @@ import { MessagesArea } from "./MessagesArea";
 import { Message, SimpleChatProps } from "@/components/dashboard/chat/types";
 import { welcomeMessage, MODEL_NAME_TO_ENUM, DEFAULT_MODEL, SELECTED_MODEL_KEY } from "@/components/dashboard/chat/constants";
 
-function generateUUID(): string {
-  // Use crypto.randomUUID if available, otherwise fallback
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  // Fallback UUID generation
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
 
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
@@ -32,8 +20,9 @@ function estimateTokens(text: string): number {
 
 export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
   const { user } = useAuth();
+  const [isNewConversation, setIsNewConversation] = useState(false);
   const { models, loading: modelsLoading, error: modelsError } = useModels();
-  const { currentConversation, setCurrentConversation, refetch } = useConversations();
+  const { currentConversation, setCurrentConversation, createConversation, refetch } = useConversations();
   const toast = useToast();
   const { chatWithAI, isChatting } = useChatWithAI();
   
@@ -94,7 +83,7 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      const newHeight = Math.min(textarea.scrollHeight, 120); // Max 120px
+      const newHeight = Math.min(textarea.scrollHeight, 250); // Max 120px
       textarea.style.height = `${newHeight}px`;
     }
   }, []);
@@ -131,38 +120,54 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isChatting || !user) return;
-
+  
     const description = inputValue.trim();
-    const userTokens = estimateTokens(description);
-
-    // Generate conversation ID if we don't have one
+    
+    // Handle conversation creation (keep existing logic)
     let conversationId = currentConversation?.id;
     if (!conversationId) {
-      // Generate a new UUID for the conversation
-      conversationId = generateUUID();
+      try {
+        const newConversation = await createConversation();
+        if (newConversation) {
+          conversationId = newConversation.id;
+          setCurrentConversation(newConversation);
+          console.log("Created new conversation:", conversationId);
+        } else {
+          toast.error("Failed to create conversation");
+          return;
+        }
+      } catch (error) {
+        console.error("Failed to create conversation:", error);
+        toast.error("Failed to create conversation");
+        return;
+      }
     }
-
-    // Enhanced user message with better UX
-    const userMessage: Message = {
-      id: Date.now().toString(),
+  
+    // OPTIMISTIC UPDATE: Add user message immediately
+    const optimisticUserMessage: Message = {
+      id: 'temp-user-' + Date.now(),
       content: description,
       sender: 'user',
       type: 'text'
     };
-
-    setMessages(prev => [...prev, userMessage]);
+  
+    // Save current state for rollback
+    const previousMessages = [...messages];
+    
+    // Show message immediately + clear input
+    setMessages(prev => [...prev, optimisticUserMessage]);
     setInputValue("");
     setIsLoadingWorkflow(true);
     setWorkflowProgress('Processing your request...');
-
+  
     // Keep focus on input field after sending
     setTimeout(() => {
       textareaRef.current?.focus();
     }, 100);
-
+  
     try {
       setWorkflowProgress('Analyzing your requirements...');
-
+  
       const request: ChatRequest = {
         user_message: description,
         conversation_id: conversationId,
@@ -170,27 +175,14 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
         temperature: 0.3,
         max_tokens: 4000,
       };
-
+  
       setWorkflowProgress('Generating AI response...');
       const response: ChatResponse = await chatWithAI(request);
-
-      // If this was a new conversation, refresh to load the newly created one
-      if (!currentConversation) {
-        setTimeout(async () => {
-          await refetch();
-        }, 500);
-      }
-
-      // Always show the main AI message with enhanced formatting
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: response.message,
-        sender: 'ai',
-        type: 'text'
-      };
-      setMessages(prev => [...prev, aiMessage]);
-
-      // Enhanced workflow handling with progress updates
+      
+      // Remove optimistic message and load real data from database
+      await refetch();
+  
+      // Keep existing workflow handling
       if (response.workflow) {
         setWorkflowProgress('Generating workflow visualization...');
         
@@ -204,8 +196,8 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
         setMessages(prev => [...prev, workflowMessage]);
         onWorkflowGenerated?.(response.workflow);
       }
-
-      // Enhanced search results handling
+  
+      // Keep existing search results handling
       if (response.search_results && response.search_results.length > 0) {
         setWorkflowProgress('Processing documentation results...');
         
@@ -222,14 +214,18 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
         };
         setMessages(prev => [...prev, searchMessage]);
       }
-
-      // Tool usage info (minimal)
+  
       if (response.tools_used && response.tools_used.length > 0) {
         console.log('Tools used:', response.tools_used.join(', '));
       }
-
+  
     } catch (error) {
       console.error('🔍 [Enhanced DEBUG] Chat failed:', error);
+      
+      // ROLLBACK: Restore previous state on error
+      setMessages(previousMessages);
+      setInputValue(description); // Restore user's input
+      
       const errorMessage: Message = {
         id: (Date.now() + 10).toString(),
         content: '❌ Sorry, I encountered an error processing your request. Please try again.',
@@ -241,17 +237,9 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
     } finally {
       setIsLoadingWorkflow(false);
       setWorkflowProgress('');
-      // Ensure focus returns to input after completion
       setTimeout(() => {
         textareaRef.current?.focus();
       }, 100);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
     }
   };
 

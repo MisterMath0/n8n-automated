@@ -22,7 +22,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         </div>
       )}
       
-      <div className={`max-w-[80%] rounded-lg p-3 ${
+      <div className={`max-w-[80%] rounded-2xl p-3 ${
         message.sender === 'user' 
           ? 'bg-green-600 text-white' 
           : message.type === 'error'
@@ -33,12 +33,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       }`}>
         <p className="text-sm leading-relaxed">{message.content}</p>
       </div>
-      
-      {message.sender === 'user' && (
-        <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-          <User className="w-3 h-3 text-white" />
-        </div>
-      )}
+
     </motion.div>
   );
 }

@@ -66,7 +66,7 @@ export function useWorkflows() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, toast]);
+  }, [user]);
 
   useEffect(() => {
     fetchWorkflows();
@@ -111,7 +111,7 @@ export function useWorkflows() {
       toast.error(errorMessage);
       throw err;
     }
-  }, [user, toast]);
+  }, [user]);
 
   const updateWorkflow = useCallback(async (
     id: string, 
@@ -195,7 +195,7 @@ export function useWorkflows() {
       const errorMessage = err instanceof Error ? err.message : 'Failed to export workflow';
       toast.error(errorMessage);
     }
-  }, [user, toast]);
+  }, [user]);
 
   const getWorkflowStats = useCallback(async () => {
     if (!user) return {
