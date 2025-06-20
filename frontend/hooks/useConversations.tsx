@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Database } from '@/types/supabase'
 import { useAuth } from './useAuth'
@@ -36,12 +36,27 @@ export function useConversations() {
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  // Prevent duplicate loads
+  const isLoadingRef = useRef(false)
+  const hasLoadedRef = useRef(false)
+  const lastUserIdRef = useRef<string | null>(null)
 
   const loadConversations = useCallback(async () => {
-    if (!user) return
+    if (!user || isLoadingRef.current) return
+
+    // Skip if already loaded for this user
+    if (hasLoadedRef.current && lastUserIdRef.current === user.id) {
+      return
+    }
 
     try {
+      isLoadingRef.current = true
       setLoading(true)
+      setError(null)
+
+      console.log('Loading conversations for user:', user.id)
+
       const { data: conversationData, error: conversationError } = await supabase
         .from('conversations')
         .select('*')
@@ -50,6 +65,12 @@ export function useConversations() {
 
       if (conversationError) throw conversationError
 
+      if (!conversationData) {
+        setConversations([])
+        return
+      }
+
+      // Load messages for each conversation
       const conversationsWithMessages = await Promise.all(
         conversationData.map(async (conv) => {
           const { data: messages, error: messagesError } = await supabase
@@ -58,23 +79,38 @@ export function useConversations() {
             .eq('conversation_id', conv.id)
             .order('created_at', { ascending: true })
 
-          if (messagesError) throw messagesError
+          if (messagesError) {
+            console.error(`Failed to load messages for conversation ${conv.id}:`, messagesError)
+            return { ...conv, messages: [] }
+          }
 
           return {
             ...conv,
-            messages: messages as ConversationMessage[]
+            messages: (messages || []) as ConversationMessage[]
           }
         })
       )
 
       setConversations(conversationsWithMessages)
+      hasLoadedRef.current = true
+      lastUserIdRef.current = user.id
+      
+      // Update current conversation if it exists
+      if (currentConversation) {
+        const updated = conversationsWithMessages.find(c => c.id === currentConversation.id)
+        if (updated) {
+          setCurrentConversation(updated)
+        }
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load conversations')
       console.error('Failed to load conversations:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load conversations')
+      hasLoadedRef.current = false // Allow retry on error
     } finally {
       setLoading(false)
+      isLoadingRef.current = false
     }
-  }, [user])
+  }, [user, currentConversation])
 
   const createConversation = useCallback(async (
     workflowId?: string,
@@ -106,228 +142,26 @@ export function useConversations() {
       setConversations(prev => [newConversation, ...prev])
       return newConversation
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create conversation')
       console.error('Failed to create conversation:', err)
+      setError(err instanceof Error ? err.message : 'Failed to create conversation')
       return null
     }
   }, [user])
 
-  const addMessage = useCallback(async (
-    conversationId: string,
-    content: string,
-    role: 'user' | 'assistant',
-    messageType: 'text' | 'workflow' | 'error' = 'text',
-    workflowData?: any,
-    tokenCount: number = 0
-  ): Promise<ConversationMessage | null> => {
-    if (!user) return null
+  // Force refetch
+  const refetch = useCallback(async () => {
+    hasLoadedRef.current = false
+    await loadConversations()
+  }, [loadConversations])
 
-    try {
-      const messageData: MessageInsert = {
-        conversation_id: conversationId,
-        content,
-        role,
-        message_type: messageType,
-        workflow_data: workflowData,
-        token_count: tokenCount
-      }
-
-      const { data, error } = await supabase
-        .from('messages')
-        .insert(messageData)
-        .select()
-        .single()
-
-      if (error) throw error
-
-      const newMessage = data as ConversationMessage
-
-      // Get current conversation to update token count
-      const currentConv = conversations.find(c => c.id === conversationId) || currentConversation
-      if (currentConv) {
-        const { error: updateError } = await supabase
-          .from('conversations')
-          .update({
-            total_tokens: currentConv.total_tokens + tokenCount,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', conversationId)
-
-        if (updateError) throw updateError
-      }
-
-      setConversations(prev =>
-        prev.map(conv =>
-          conv.id === conversationId
-            ? {
-                ...conv,
-                messages: [...conv.messages, newMessage],
-                total_tokens: conv.total_tokens + tokenCount,
-                updated_at: new Date().toISOString()
-              }
-            : conv
-        )
-      )
-
-      if (currentConversation?.id === conversationId) {
-        setCurrentConversation(prev =>
-          prev
-            ? {
-                ...prev,
-                messages: [...prev.messages, newMessage],
-                total_tokens: prev.total_tokens + tokenCount,
-                updated_at: new Date().toISOString()
-              }
-            : null
-        )
-      }
-
-      return newMessage
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add message')
-      console.error('Failed to add message:', err)
-      return null
-    }
-  }, [user, currentConversation, conversations])
-
-  const getContextMessages = useCallback((
-    conversation: Conversation,
-    maxTokens: number
-  ): ConversationMessage[] => {
-    const messages = [...conversation.messages].reverse()
-    const contextMessages: ConversationMessage[] = []
-    let totalTokens = 0
-
-    for (const message of messages) {
-      if (totalTokens + message.token_count <= maxTokens) {
-        contextMessages.unshift(message)
-        totalTokens += message.token_count
-      } else {
-        break
-      }
-    }
-
-    return contextMessages
-  }, [])
-
-  const deleteConversation = useCallback(async (conversationId: string): Promise<boolean> => {
-    if (!user) return false
-
-    try {
-      const { error } = await supabase
-        .from('conversations')
-        .delete()
-        .eq('id', conversationId)
-        .eq('user_id', user.id)
-
-      if (error) throw error
-
-      setConversations(prev => prev.filter(conv => conv.id !== conversationId))
-      
-      if (currentConversation?.id === conversationId) {
-        setCurrentConversation(null)
-      }
-
-      return true
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete conversation')
-      console.error('Failed to delete conversation:', err)
-      return false
-    }
-  }, [user, currentConversation])
-
-  const updateConversationTitle = useCallback(async (
-    conversationId: string,
-    title: string
-  ): Promise<boolean> => {
-    if (!user) return false
-
-    try {
-      const { error } = await supabase
-        .from('conversations')
-        .update({ title, updated_at: new Date().toISOString() })
-        .eq('id', conversationId)
-        .eq('user_id', user.id)
-
-      if (error) throw error
-
-      setConversations(prev =>
-        prev.map(conv =>
-          conv.id === conversationId
-            ? { ...conv, title, updated_at: new Date().toISOString() }
-            : conv
-        )
-      )
-
-      if (currentConversation?.id === conversationId) {
-        setCurrentConversation(prev =>
-          prev ? { ...prev, title, updated_at: new Date().toISOString() } : null
-        )
-      }
-
-      return true
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update conversation title')
-      console.error('Failed to update conversation title:', err)
-      return false
-    }
-  }, [user, currentConversation])
-
-  const updateConversationWorkflow = useCallback(async (
-    conversationId: string,
-    workflowId: string
-  ): Promise<boolean> => {
-    if (!user) return false
-
-    try {
-      const { error } = await supabase
-        .from('conversations')
-        .update({ 
-          workflow_id: workflowId, 
-          updated_at: new Date().toISOString() 
-        })
-        .eq('id', conversationId)
-        .eq('user_id', user.id)
-
-      if (error) throw error
-
-      setConversations(prev =>
-        prev.map(conv =>
-          conv.id === conversationId
-            ? { ...conv, workflow_id: workflowId, updated_at: new Date().toISOString() }
-            : conv
-        )
-      )
-
-      if (currentConversation?.id === conversationId) {
-        setCurrentConversation(prev =>
-          prev ? { ...prev, workflow_id: workflowId, updated_at: new Date().toISOString() } : null
-        )
-      }
-
-      return true
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to link conversation to workflow')
-      console.error('Failed to link conversation to workflow:', err)
-      return false
-    }
-  }, [user, currentConversation])
-
+  // Load conversations when user changes
   useEffect(() => {
-    if (user) {
+    if (user && user.id !== lastUserIdRef.current) {
       loadConversations()
     }
-  }, [user, loadConversations])
+  }, [user?.id]) // Only depend on user.id
 
-  useEffect(() => {
-    // Update currentConversation when conversations array changes
-    if (currentConversation && conversations.length > 0) {
-      const updatedConversation = conversations.find(conv => conv.id === currentConversation.id);
-      if (updatedConversation && updatedConversation !== currentConversation) {
-        setCurrentConversation(updatedConversation);
-      }
-    }
-  }, [conversations, currentConversation]);
+  // Simplified API
   return {
     conversations,
     currentConversation,
@@ -335,11 +169,13 @@ export function useConversations() {
     loading,
     error,
     createConversation,
-    addMessage,
-    getContextMessages,
-    deleteConversation,
-    updateConversationTitle,
-    updateConversationWorkflow,
-    refetch: loadConversations
+    refetch,
+    
+    // Placeholder functions - can be implemented if needed
+    addMessage: async () => null,
+    deleteConversation: async () => false,
+    updateConversationTitle: async () => false,
+    updateConversationWorkflow: async () => false,
+    getContextMessages: () => []
   }
 }

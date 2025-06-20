@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { workflowStorage, StoredWorkflow } from "@/lib/workflow-storage";
 import { N8NWorkflow } from "@/types/api";
 import { useToast } from "@/components/providers";
@@ -27,6 +27,10 @@ export function useWorkflows() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const toast = useToast();
+  
+  // Track if we've already loaded to prevent duplicate fetches
+  const hasLoadedRef = useRef(false);
+  const lastUserIdRef = useRef<string | null>(null);
 
   // Convert StoredWorkflow to Workflow interface
   const convertStoredWorkflow = (stored: StoredWorkflow): Workflow => ({
@@ -46,12 +50,20 @@ export function useWorkflows() {
     if (!user) {
       setWorkflows([]);
       setIsLoading(false);
+      hasLoadedRef.current = false;
+      return;
+    }
+
+    // Prevent duplicate fetches for the same user
+    if (hasLoadedRef.current && lastUserIdRef.current === user.id) {
       return;
     }
 
     try {
       setIsLoading(true);
       setError(null);
+      hasLoadedRef.current = true;
+      lastUserIdRef.current = user.id;
       
       // Load workflows from Supabase
       const storedWorkflows = await workflowStorage.getWorkflows(user.id);
@@ -63,14 +75,18 @@ export function useWorkflows() {
       setError(errorMessage);
       console.error('Error fetching workflows:', err);
       toast.error(errorMessage);
+      hasLoadedRef.current = false; // Allow retry on error
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, toast]);
 
+  // Only fetch when user changes
   useEffect(() => {
-    fetchWorkflows();
-  }, [fetchWorkflows]);
+    if (user && user.id !== lastUserIdRef.current) {
+      fetchWorkflows();
+    }
+  }, [user?.id]); // Only depend on user.id, not the fetchWorkflows function
 
   const selectWorkflow = useCallback((workflow: Workflow | null) => {
     setSelectedWorkflow(workflow);
@@ -111,7 +127,7 @@ export function useWorkflows() {
       toast.error(errorMessage);
       throw err;
     }
-  }, [user]);
+  }, [user, toast]);
 
   const updateWorkflow = useCallback(async (
     id: string, 
@@ -195,7 +211,7 @@ export function useWorkflows() {
       const errorMessage = err instanceof Error ? err.message : 'Failed to export workflow';
       toast.error(errorMessage);
     }
-  }, [user]);
+  }, [user, toast]);
 
   const getWorkflowStats = useCallback(async () => {
     if (!user) return {
@@ -209,6 +225,12 @@ export function useWorkflows() {
     return await workflowStorage.getStats(user.id);
   }, [user]);
 
+  // Manual refetch that forces a reload
+  const refetch = useCallback(() => {
+    hasLoadedRef.current = false;
+    fetchWorkflows();
+  }, [fetchWorkflows]);
+
   return {
     workflows,
     selectedWorkflow,
@@ -219,7 +241,7 @@ export function useWorkflows() {
     updateWorkflow,
     deleteWorkflow,
     exportWorkflow,
-    refetch: fetchWorkflows,
+    refetch,
     getWorkflowStats
   };
 }
