@@ -77,15 +77,17 @@ export function useConversations() {
   }, [user])
 
   const createConversation = useCallback(async (
-    workflowId?: string
+    workflowId?: string,
+    title?: string
   ): Promise<Conversation | null> => {
     if (!user) return null
 
     try {
-      const conversationData: Omit<ConversationInsert, 'title' | 'max_context_tokens'> = {
+      const conversationData: ConversationInsert = {
         user_id: user.id,
         workflow_id: workflowId,
-        total_tokens: 0,
+        title: title || null,
+        total_tokens: 0
       }
 
       const { data, error } = await supabase
@@ -271,6 +273,46 @@ export function useConversations() {
     }
   }, [user, currentConversation])
 
+  const updateConversationWorkflow = useCallback(async (
+    conversationId: string,
+    workflowId: string
+  ): Promise<boolean> => {
+    if (!user) return false
+
+    try {
+      const { error } = await supabase
+        .from('conversations')
+        .update({ 
+          workflow_id: workflowId, 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', conversationId)
+        .eq('user_id', user.id)
+
+      if (error) throw error
+
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === conversationId
+            ? { ...conv, workflow_id: workflowId, updated_at: new Date().toISOString() }
+            : conv
+        )
+      )
+
+      if (currentConversation?.id === conversationId) {
+        setCurrentConversation(prev =>
+          prev ? { ...prev, workflow_id: workflowId, updated_at: new Date().toISOString() } : null
+        )
+      }
+
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to link conversation to workflow')
+      console.error('Failed to link conversation to workflow:', err)
+      return false
+    }
+  }, [user, currentConversation])
+
   useEffect(() => {
     if (user) {
       loadConversations()
@@ -288,6 +330,7 @@ export function useConversations() {
     getContextMessages,
     deleteConversation,
     updateConversationTitle,
+    updateConversationWorkflow,
     refetch: loadConversations
   }
 }

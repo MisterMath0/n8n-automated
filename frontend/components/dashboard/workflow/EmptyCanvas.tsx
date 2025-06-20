@@ -3,7 +3,12 @@
 import { motion } from "framer-motion";
 import { Network, MessageSquare } from "lucide-react";
 
-export function EmptyCanvas() {
+interface EmptyCanvasProps {
+  onOpenChat?: () => void;
+  onCreateNew?: () => void;
+}
+
+export function EmptyCanvas({ onOpenChat, onCreateNew }: EmptyCanvasProps) {
   return (
     <div className="h-full flex items-center justify-center">
       <motion.div
@@ -27,6 +32,7 @@ export function EmptyCanvas() {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            onClick={onOpenChat}
             className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-medium flex items-center gap-2 hover:shadow-green-500/25 transition-all"
           >
             <MessageSquare className="w-4 h-4" />
@@ -36,9 +42,10 @@ export function EmptyCanvas() {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            onClick={onCreateNew}
             className="px-6 py-3 bg-white/10 border border-white/20 text-gray-300 rounded-lg font-medium hover:bg-white/20 transition-all"
           >
-            Browse Templates
+            Generate New
           </motion.button>
         </div>
         

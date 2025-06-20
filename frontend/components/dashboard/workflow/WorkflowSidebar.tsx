@@ -2,9 +2,8 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Search, Plus, FileText, Clock, CheckCircle, Loader2, Download, Trash2, MoreVertical } from "lucide-react";
+import { Plus, FileText, Clock, CheckCircle, Loader2, Download, Trash2, MoreVertical } from "lucide-react";
 import { Workflow } from "@/hooks/useWorkflows";
-import { WorkflowCard } from "./WorkflowCard";
 import { EmptyWorkflows } from "./EmptyWorkflows";
 
 interface WorkflowSidebarProps {
@@ -13,6 +12,7 @@ interface WorkflowSidebarProps {
   onSelectWorkflow: (workflow: Workflow | null) => void;
   onExportWorkflow?: (id: string) => void;
   onDeleteWorkflow?: (id: string) => Promise<void>;
+  onCreateNew?: () => void;
   isLoading: boolean;
 }
 
@@ -24,31 +24,12 @@ export function WorkflowSidebar({
   onSelectWorkflow,
   onExportWorkflow,
   onDeleteWorkflow,
+  onCreateNew,
   isLoading 
 }: WorkflowSidebarProps) {
-  const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<TabType>('workflows');
-  const [sortBy, setSortBy] = useState("lastUpdated");
   const [showActions, setShowActions] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  // Filter workflows based on search
-  const filteredWorkflows = workflows
-    .filter(workflow =>
-      workflow.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      workflow.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'created':
-          return new Date(b.created).getTime() - new Date(a.created).getTime();
-        case 'lastUpdated':
-        default:
-          return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime();
-      }
-    });
 
   const handleExport = async (id: string, event: React.MouseEvent) => {
     event.stopPropagation();
@@ -90,10 +71,6 @@ export function WorkflowSidebar({
           </p>
           <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
             <span>Updated {new Date(workflow.lastUpdated).toLocaleDateString()}</span>
-            <span>•</span>
-            <span className={`capitalize ${workflow.status === 'active' ? 'text-green-400' : 'text-gray-400'}`}>
-              {workflow.status}
-            </span>
           </div>
         </div>
         
@@ -112,7 +89,8 @@ export function WorkflowSidebar({
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="absolute right-0 top-6 w-32 bg-black/90 border border-white/20 rounded-lg py-1 z-50"            >
+              className="absolute right-0 top-6 w-32 bg-black/90 border border-white/20 rounded-lg py-1 z-50"
+            >
               <button
                 onClick={(e) => handleExport(workflow.id, e)}
                 className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-white/10 hover:text-white flex items-center gap-2"
@@ -148,17 +126,11 @@ export function WorkflowSidebar({
               <div className="flex items-center justify-center p-8">
                 <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
               </div>
-            ) : filteredWorkflows.length === 0 ? (
-              searchQuery ? (
-                <div className="p-4 text-center text-gray-400">
-                  <p>No workflows found for "{searchQuery}"</p>
-                </div>
-              ) : (
-                <EmptyWorkflows onCreateWorkflow={() => console.log('Create workflow')} />
-              )
+            ) : workflows.length === 0 ? (
+              <EmptyWorkflows onCreateWorkflow={onCreateNew} />
             ) : (
               <div className="space-y-2 p-2">
-                {filteredWorkflows.map(renderWorkflowCard)}
+                {workflows.map(renderWorkflowCard)}
               </div>
             )}
           </div>
@@ -200,16 +172,13 @@ export function WorkflowSidebar({
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={onCreateNew}
             className="px-3 py-1 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm rounded-lg font-medium flex items-center gap-2 hover:shadow-green-500/25 transition-all"
           >
             <Plus className="w-4 h-4" />
             Generate New
           </motion.button>
         </div>
-
-        <p className="text-gray-400 text-sm mb-4">
-          {workflows.length} saved workflow{workflows.length !== 1 ? 's' : ''}
-        </p>
 
         {/* Tabs */}
         <div className="flex gap-1">
@@ -246,45 +215,14 @@ export function WorkflowSidebar({
         </div>
       </div>
 
-      {/* Search - Only show for workflows tab */}
-      {activeTab === 'workflows' && workflows.length > 0 && (
-        <div className="p-4 border-b border-white/10 space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search workflows..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:border-green-400/50 focus:outline-none focus:ring-1 focus:ring-green-400/20 transition-all text-sm"
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <span>Sort by</span>
-              <select 
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="bg-transparent text-white border-none outline-none cursor-pointer"
-              >
-                <option value="lastUpdated" className="bg-gray-800">last updated</option>
-                <option value="name" className="bg-gray-800">name</option>
-                <option value="created" className="bg-gray-800">created</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Tab Content */}
       {renderTabContent()}
 
       {/* Footer - Only show for workflows */}
-      {activeTab === 'workflows' && filteredWorkflows.length > 0 && (
+      {activeTab === 'workflows' && workflows.length > 0 && (
         <div className="p-4 border-t border-white/10">
           <div className="flex items-center justify-between text-sm text-gray-400">
-            <span>{filteredWorkflows.length} workflow{filteredWorkflows.length !== 1 ? 's' : ''}</span>
+            <span>{workflows.length} saved workflow{workflows.length !== 1 ? 's' : ''}</span>
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-green-500" />
               <span className="text-green-400">Ready to export</span>

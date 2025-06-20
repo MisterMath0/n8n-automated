@@ -106,7 +106,6 @@ export interface Database {
           workflow_id: string | null
           title: string | null
           total_tokens: number
-          max_context_tokens: number
           created_at: string
           updated_at: string
         }
@@ -116,7 +115,6 @@ export interface Database {
           workflow_id?: string | null
           title?: string | null
           total_tokens?: number
-          max_context_tokens?: number
           created_at?: string
           updated_at?: string
         }
@@ -126,7 +124,6 @@ export interface Database {
           workflow_id?: string | null
           title?: string | null
           total_tokens?: number
-          max_context_tokens?: number
           updated_at?: string
         }
       }
