@@ -26,12 +26,21 @@ export function WorkflowUIProvider({ children }: { children: ReactNode }) {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
 
   const selectWorkflow = (workflowId: string) => {
+    console.log('🔍 DEBUG - Workflow selected:', { 
+      oldWorkflowId: selectedWorkflowId,
+      newWorkflowId: workflowId,
+      currentConversationId: activeConversationId
+    });
     setSelectedWorkflowId(workflowId);
     setIsChatOpen(true); // Auto-open chat when selecting workflow
     setActiveConversationId(null); // Reset conversation (will be set by conversations hook)
   };
 
   const createNewWorkflow = () => {
+    console.log('🔍 DEBUG - Creating new workflow:', {
+      oldWorkflowId: selectedWorkflowId,
+      oldConversationId: activeConversationId
+    });
     setSelectedWorkflowId(null);
     setIsChatOpen(true);
     setActiveConversationId(null);

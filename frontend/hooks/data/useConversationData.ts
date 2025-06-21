@@ -13,10 +13,28 @@ export const conversationKeys = {
 
 // Get conversations for a specific workflow
 export function useWorkflowConversations(workflowId: string | null) {
+  const { user } = useAuth();
+  
+  // CRITICAL FIX: Use consistent query keys with optimistic updates
+  const queryKey = workflowId 
+    ? conversationKeys.byWorkflow(workflowId)
+    : conversationKeys.orphan(user?.id || '');
+  
+  console.log('🔍 DEBUG - useWorkflowConversations called:', {
+    workflowId,
+    queryKey,
+    enabled: !!workflowId || !workflowId // Always enabled now
+  });
+  
   return useQuery({
-    queryKey: workflowId ? conversationKeys.byWorkflow(workflowId) : ['conversations', 'empty'],
-    queryFn: () => workflowId ? conversationAPI.listByWorkflow(workflowId) : [],
-    enabled: !!workflowId,
+    queryKey,
+    queryFn: () => {
+      console.log('🔍 DEBUG - Fetching conversations for:', { workflowId, userId: user?.id });
+      return workflowId 
+        ? conversationAPI.listByWorkflow(workflowId)
+        : conversationAPI.listOrphan(user!.id);
+    },
+    enabled: !!user?.id, // Enable when we have user, regardless of workflow
   });
 }
 
@@ -38,17 +56,37 @@ export function useCreateConversation() {
   const toast = useToast();
   
   return useMutation({
-    mutationFn: ({ workflowId }: { workflowId?: string } = {}) =>
-      conversationAPI.create(user!.id, workflowId),
+    mutationFn: ({ workflowId }: { workflowId?: string } = {}) => {
+      console.log('🔍 DEBUG - Creating conversation:', { workflowId, userId: user?.id });
+      return conversationAPI.create(user!.id, workflowId);
+    },
     onSuccess: (data, { workflowId }) => {
-      // Invalidate appropriate conversation list
-      if (workflowId) {
-        queryClient.invalidateQueries({ queryKey: conversationKeys.byWorkflow(workflowId) });
-      } else {
-        queryClient.invalidateQueries({ queryKey: conversationKeys.orphan(user?.id || '') });
-      }
+      console.log('🔍 DEBUG - Conversation created successfully:', {
+        conversationId: data.id,
+        workflowId,
+        note: 'Immediately updating conversation list with new conversation'
+      });
+      
+      // IMMEDIATE CACHE UPDATE (not invalidation):
+      // Directly add the new conversation to the cache to show it immediately
+      const queryKey = workflowId 
+        ? conversationKeys.byWorkflow(workflowId)
+        : conversationKeys.orphan(user?.id || '');
+        
+      queryClient.setQueryData(queryKey, (old: any[] = []) => {
+        // Check if conversation already exists to avoid duplicates
+        const exists = old.find(conv => conv.id === data.id);
+        if (exists) {
+          console.log('🔍 DEBUG - Conversation already in cache, updating it');
+          return old.map(conv => conv.id === data.id ? data : conv);
+        }
+        
+        console.log('🔍 DEBUG - Adding new conversation to cache');
+        return [data, ...old]; // Add to beginning of list
+      });
     },
     onError: (error: Error) => {
+      console.error('🔍 DEBUG - Failed to create conversation:', error);
       toast.error(`Failed to create conversation: ${error.message}`);
     },
   });
