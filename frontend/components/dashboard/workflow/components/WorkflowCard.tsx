@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Trash2, MoreVertical, Loader2 } from 'lucide-react';
+import { Download, Trash2, MoreVertical, Loader2, Clock } from 'lucide-react';
 import { Workflow } from '@/types/workflow';
 
 interface WorkflowCardProps {
@@ -13,6 +13,18 @@ interface WorkflowCardProps {
   onToggleActions: () => void;
   isDeleting: boolean;
 }
+const formatTimeAgo = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) return 'just now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+  if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 604800)} weeks ago`;
+  return `${Math.floor(diffInSeconds / 2592000)} months ago`;
+};
 
 export const WorkflowCard = React.memo<WorkflowCardProps>(({
   workflow,
@@ -44,7 +56,8 @@ export const WorkflowCard = React.memo<WorkflowCardProps>(({
             {workflow.description || `${workflow.nodes?.length || 0} nodes`}
           </p>
           <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-            <span>Updated {new Date(workflow.lastUpdated).toLocaleDateString()}</span>
+            <Clock className="w-3 h-3" />
+            <span>{formatTimeAgo(workflow.lastUpdated)}</span>
           </div>
         </div>
         
