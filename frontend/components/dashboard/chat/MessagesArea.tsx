@@ -4,7 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import { MessageBubble } from "./MessageBubble";
 import { LoadingMessage } from "./LoadingMessage";
 import { ProgressIndicator } from "./ProgressIndicator";
-import { Message } from "./types";
+import { Message } from "./types";                            
 
 interface MessagesAreaProps {
   messages: Message[];

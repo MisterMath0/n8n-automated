@@ -13,7 +13,7 @@ interface ToastContextType {
   error: (message: string) => void;
   warning: (message: string) => void;
   info: (message: string) => void;
-  loading: (message: string) => string;
+  loading: (message: string) => string | number ;
   promise: <T>(
     promise: Promise<T>,
     options: {
@@ -21,7 +21,7 @@ interface ToastContextType {
       success: string | ((data: T) => string);
       error: string | ((error: any) => string);
     }
-  ) => Promise<T>;
+  ) => string | number | { unwrap: () => Promise<T> };
   handleApiError: (error: unknown, fallbackMessage?: string) => void;
   dismiss: (toastId?: string) => void;
 }

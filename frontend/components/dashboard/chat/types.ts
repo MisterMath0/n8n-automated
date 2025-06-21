@@ -4,9 +4,4 @@ export interface Message {
     sender: 'user' | 'assistant';
     type?: 'text' | 'workflow' | 'error';
     workflowData?: any;
-  }
-  
-  export interface SimpleChatProps {
-    onClose: () => void;
-    onWorkflowGenerated?: (workflow: any) => void;
-  }
+}

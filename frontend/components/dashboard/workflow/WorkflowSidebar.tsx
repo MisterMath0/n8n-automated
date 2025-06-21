@@ -35,7 +35,7 @@ export const WorkflowSidebar = React.memo(function WorkflowSidebar({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [displayedCount, setDisplayedCount] = useState(ITEMS_PER_PAGE);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loadingTimeoutRef = useRef<NodeJS.Timeout>();
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   
   // Reset displayed count only when workflows actually change
   const prevWorkflowsLengthRef = useRef(workflows.length);

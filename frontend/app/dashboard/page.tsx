@@ -1,114 +1,52 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { WorkflowCanvas } from "@/components/dashboard/workflow/WorkflowCanvas";
 import { SimpleChat } from "@/components/dashboard/chat/SimpleChat";
 import { WorkflowSidebar } from "@/components/dashboard/workflow/WorkflowSidebar";
 import { UserMenu } from "@/components/UserMenu";
-import { useWorkflows } from "@/hooks/useWorkflows";
-import { useConversations } from "@/hooks/useConversations";
+import { useWorkflows, useWorkflowConversations, useOrphanConversations } from "@/hooks/data";
+import { useWorkflowUI, WorkflowUIProvider } from "@/stores/WorkflowUIContext";
 import { N8NWorkflow } from "@/types/api";
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
 
-export default function DashboardPage() {
-  const { 
-    workflows, 
-    selectedWorkflow, 
-    selectWorkflow, 
-    isLoading, 
-    saveGeneratedWorkflow, 
-    exportWorkflow, 
-    deleteWorkflow 
-  } = useWorkflows();
-  
+function DashboardContent() {
+  // UI state management
   const {
-    conversations,
-    currentConversation,
-    setCurrentConversation,
-    createConversation,
-    updateConversationWorkflow
-  } = useConversations();
-  
-  const [isChatOpen, setIsChatOpen] = useState(true);
-  const [currentWorkflow, setCurrentWorkflow] = useState<N8NWorkflow | null>(null);
+    selectedWorkflowId,
+    isChatOpen,
+    activeConversationId,
+    setActiveConversationId,
+    selectWorkflow,
+    createNewWorkflow,
+    setIsChatOpen,
+  } = useWorkflowUI();
 
-  // Load conversation messages when a workflow is selected
+  // Server state management
+  const { data: workflows = [], isLoading } = useWorkflows();
+  const { data: workflowConversations = [] } = useWorkflowConversations(selectedWorkflowId);
+  const { data: orphanConversations = [] } = useOrphanConversations();
+
+  // Get selected workflow and conversations based on UI state
+  const selectedWorkflow = workflows.find(w => w.id === selectedWorkflowId) || null;
+  const conversations = selectedWorkflowId ? workflowConversations : orphanConversations;
+
+  // Auto-select first conversation when conversations load
   useEffect(() => {
-    if (selectedWorkflow?.id && conversations.length > 0) {
-      // Find conversation associated with this workflow
-      const workflowConversation = conversations.find(conv => 
-        conv.workflow_id === selectedWorkflow.id
-      );
-      
-      console.log('Loading conversation for workflow:', selectedWorkflow.id);
-      console.log('Found conversation:', workflowConversation?.id);
-      console.log('Available conversations:', conversations.map(c => ({ id: c.id, workflow_id: c.workflow_id })));
-      
-      if (workflowConversation && workflowConversation.id !== currentConversation?.id) {
-        setCurrentConversation(workflowConversation);
-      }
+    if (conversations.length > 0 && !activeConversationId) {
+      setActiveConversationId(conversations[0].id);
     }
-  }, [selectedWorkflow, conversations, setCurrentConversation, currentConversation]);
+  }, [conversations, activeConversationId, setActiveConversationId]);
 
-  const handleWorkflowGenerated = async (workflow: N8NWorkflow) => {
-    setCurrentWorkflow(workflow);
-    
-    try {
-      const savedWorkflow = await saveGeneratedWorkflow(
-        workflow, 
-        workflow.name,
-        `Generated workflow with ${workflow.nodes.length} nodes`,
-        undefined, 
-        undefined, 
-        undefined
-      );
-      
-      // Link the current conversation to the saved workflow
-      if (currentConversation && savedWorkflow.id) {
-        await updateConversationWorkflow(currentConversation.id, savedWorkflow.id);
-      }
-      
-      // Select the newly generated workflow
-      selectWorkflow(savedWorkflow);
-      
-    } catch (error) {
-      console.error('Failed to save generated workflow:', error);
-    }
-  };
-
-  const handleCreateNew = async () => {
-    try {
-      // Clear current workflow and selection
-      setCurrentWorkflow(null);
-      selectWorkflow(null);
-      
-      // Create a new conversation for workflow generation
-      const newConversation = await createConversation();
-      if (newConversation) {
-        setCurrentConversation(newConversation);
-        setIsChatOpen(true);
-        
-        // Add a small delay to ensure chat is open before focusing
-        setTimeout(() => {
-          // The chat component will auto-focus when conversation changes
-        }, 100);
-      } else {
-        // If conversation creation fails, still open chat for new session
-        setIsChatOpen(true);
-      }
-    } catch (error) {
-      console.error('Failed to create new conversation:', error);
-      // Still open chat even if conversation creation fails
-      setIsChatOpen(true);
-    }
+  const handleWorkflowGenerated = (workflow: N8NWorkflow) => {
+    // Workflow generation is now handled entirely by the chat component
+    // This will trigger React Query mutations and automatic UI updates
+    console.log('Workflow generated:', workflow.name);
   };
 
   const handleOpenChat = () => {
     setIsChatOpen(true);
-    if (!currentConversation) {
-      handleCreateNew();
-    }
   };
 
   return (
@@ -134,26 +72,25 @@ export default function DashboardPage() {
             <WorkflowSidebar 
               workflows={workflows}
               selectedWorkflow={selectedWorkflow}
-              onSelectWorkflow={selectWorkflow}
-              onExportWorkflow={exportWorkflow}
-              onDeleteWorkflow={deleteWorkflow}
-              onCreateNew={handleCreateNew}
+              onSelectWorkflow={(workflow) => selectWorkflow(workflow.id)}
+              onCreateNew={createNewWorkflow}
               isLoading={isLoading}
             />
             
             <div className="flex-1 flex overflow-hidden">
               <WorkflowCanvas 
-                workflow={currentWorkflow || selectedWorkflow}
+                workflow={selectedWorkflow}
                 isLoading={isLoading}
-                onWorkflowUpdate={(updatedWorkflow) => {
-                  setCurrentWorkflow(updatedWorkflow.workflow || null);
-                }}
                 onOpenChat={handleOpenChat}
-                onCreateNew={handleCreateNew}
+                onCreateNew={createNewWorkflow}
               />
               
               {isChatOpen && (
                 <SimpleChat 
+                  workflowId={selectedWorkflowId}
+                  conversationId={activeConversationId}
+                  conversations={conversations}
+                  onConversationChange={setActiveConversationId}
                   onClose={() => setIsChatOpen(false)}
                   onWorkflowGenerated={handleWorkflowGenerated}
                 />
@@ -172,5 +109,13 @@ export default function DashboardPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <WorkflowUIProvider>
+      <DashboardContent />
+    </WorkflowUIProvider>
   );
 }

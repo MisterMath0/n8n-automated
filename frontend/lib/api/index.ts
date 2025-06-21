@@ -1,9 +1,7 @@
-// Main API entry point
-// Provides a clean interface for the entire application
-
+// Export API client and error classes
 export { apiClient, APIClient } from './client';
-export { API_CONFIG, API_ROUTES, ENDPOINT_TIMEOUTS } from './config';
-export * from './services';
+export { APIClientError, NetworkError, TimeoutError } from './client';
+export type { RequestConfig } from './client';
 
-// Re-export types for convenience
-export type * from '@/types/api';
+// Export configuration
+export { API_CONFIG, ENDPOINT_TIMEOUTS } from './config';

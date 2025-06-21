@@ -3,7 +3,6 @@
 import { Bot, X } from "lucide-react";
 import { AIModel } from "@/types/api";
 import { ModelSelector } from "./ModelSelector";
-import { useModels } from "@/hooks/api";
 
 interface ChatHeaderProps {
   selectedModelName?: string;
@@ -20,8 +19,6 @@ export function ChatHeader({
   selectedModel,
   isGenerating = false
 }: ChatHeaderProps) {
-  const { models, loading: modelsLoading } = useModels();
-
   return (
     <div>
       <div className="p-4 border-b border-white/10 flex items-center justify-between">
@@ -39,13 +36,6 @@ export function ChatHeader({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <ModelSelector
-            selectedModel={selectedModel}
-            availableModels={models}
-            modelsLoading={modelsLoading}
-            isGenerating={isGenerating}
-            onModelChange={onModelChange || (() => {})}
-          />
           <button
             onClick={onClose}
             className="p-1 text-gray-400 hover:text-white transition-colors"

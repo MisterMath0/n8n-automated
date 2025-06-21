@@ -146,6 +146,7 @@ export interface ChatMessage {
 export interface ChatRequest {
   user_message: string;
   conversation_id: string;
+  workflow_id?: string;  // Add workflow context
   model?: AIModel;
   temperature?: number;
   max_tokens?: number;

@@ -1,26 +1,45 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { useModels } from "@/hooks/api";
 import { useAuth } from "@/hooks/useAuth";
-import { useConversations } from "@/hooks/useConversations";
-import { AIModel } from "@/types/api";
+import { useChat, useCreateConversation, useLinkConversationToWorkflow, useCreateWorkflow } from "@/hooks/data";
+import { AIModel, ChatRequest } from "@/types/api";
 import { ChatHeader } from "./ChatHeader";
 import { ModelsError } from "./ModelsError";
 import { ChatInput } from "./ChatInput";
 import { MessagesArea } from "./MessagesArea";
-import { Message, SimpleChatProps } from "./types";
-import { welcomeMessage, DEFAULT_MODEL, SELECTED_MODEL_KEY } from "./constants";
+import { Message } from "./types";
+import { welcomeMessage, DEFAULT_MODEL, SELECTED_MODEL_KEY } from "../../../types/constants";
 import { AuthRequired } from "./components/AuthRequired";
-import { useMessageLoader } from "./hooks/useMessageLoader";
-import { useMessageHandler } from "./hooks/useMessageHandler";
+import { useToast } from "@/components/providers";
 
-export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
+interface SimpleChatProps {
+  workflowId: string | null;
+  conversationId: string | null;
+  conversations: any[];
+  onConversationChange: (id: string) => void;
+  onClose: () => void;
+  onWorkflowGenerated?: (workflow: any) => void;
+}
+
+export function SimpleChat({ 
+  workflowId, 
+  conversationId, 
+  conversations, 
+  onConversationChange, 
+  onClose, 
+  onWorkflowGenerated 
+}: SimpleChatProps) {
   const { user } = useAuth();
-  const { models, loading: modelsLoading, error: modelsError } = useModels();
-  const { currentConversation } = useConversations();
+  const toast = useToast();
   
-  const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
+  // Chat functionality
+  const { availableModels, modelsLoading, modelsError, sendMessage, isSending } = useChat();
+  const createConversation = useCreateConversation();
+  const linkToWorkflow = useLinkConversationToWorkflow();
+  const createWorkflow = useCreateWorkflow();
+  
+  // Local UI state
   const [inputValue, setInputValue] = useState("");
   const [selectedModel, setSelectedModel] = useState<AIModel>(() => {
     if (typeof window !== 'undefined') {
@@ -35,29 +54,27 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load messages when conversation changes
-  useMessageLoader({ currentConversation, setMessages });
-
-  // Message handler
-  const { sendMessage, isProcessing, workflowProgress, isChatting } = useMessageHandler({
-    selectedModel,
-    onWorkflowGenerated
-  });
-
-  // Available models
-  const availableModels = models.filter(model => 
-    Object.values(AIModel).includes(model.model_id)
-  );
+  // Get current conversation and messages
+  const currentConversation = conversations.find(c => c.id === conversationId);
+  const messages = currentConversation?.messages 
+    ? [welcomeMessage, ...currentConversation.messages.map((msg: any) => ({
+        id: msg.id,
+        content: msg.content,
+        sender: msg.role === 'user' ? 'user' : 'assistant' as 'user' | 'assistant',
+        type: (msg.message_type || 'text') as 'text' | 'workflow' | 'error',
+        workflowData: msg.workflow_data
+      }))]
+    : [welcomeMessage];
 
   // Auto-focus input
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (!isChatting && !isProcessing) {
+      if (!isSending) {
         textareaRef.current?.focus();
       }
     }, 100);
     return () => clearTimeout(timer);
-  }, [isChatting, isProcessing, currentConversation]);
+  }, [isSending, conversationId]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -99,22 +116,77 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
   // Handle send message
   const handleSendMessage = useCallback(async () => {
     const message = inputValue.trim();
-    if (!message || !user) return;
+    if (!message || !user || isSending) return;
+
+    let activeConversationId = conversationId;
+
+    // Create conversation if none exists
+    if (!activeConversationId) {
+      try {
+        const newConversation = await createConversation.mutateAsync({ workflowId: workflowId || undefined });
+        activeConversationId = newConversation.id;
+        onConversationChange(activeConversationId);
+      } catch (error) {
+        toast.error('Failed to create conversation');
+        return;
+      }
+    }
 
     setInputValue("");
-    const success = await sendMessage(message, messages, setMessages);
     
-    if (!success) {
+    try {
+      const request: ChatRequest = {
+        user_message: message,
+        conversation_id: activeConversationId,
+        workflow_id: workflowId,
+        model: selectedModel,
+        temperature: 0.3,
+        max_tokens: 4000,
+      };
+
+      const response = await new Promise<any>((resolve, reject) => {
+        sendMessage(request, {
+          onSuccess: resolve,
+          onError: reject,
+        });
+      });
+
+      // Handle workflow generation
+      if (response.workflow && !workflowId) {
+        try {
+          const savedWorkflow = await createWorkflow.mutateAsync({
+            id: response.workflow.id,
+            name: response.workflow.name,
+            description: `Generated workflow with ${response.workflow.nodes.length} nodes`,
+            workflow_data: response.workflow,
+            owner_id: user.id,
+            status: 'active',
+          });
+
+          // Link conversation to new workflow
+          await linkToWorkflow.mutateAsync({
+            conversationId: activeConversationId,
+            workflowId: savedWorkflow.id,
+          });
+
+          onWorkflowGenerated?.(savedWorkflow);
+        } catch (error) {
+          console.error('Failed to save workflow:', error);
+          toast.error('Workflow generated but failed to save');
+        }
+      }
+    } catch (error) {
       setInputValue(message); // Restore input on error
+      toast.error('Failed to send message');
     }
-  }, [inputValue, user, sendMessage, messages]);
+  }, [inputValue, user, isSending, conversationId, workflowId, selectedModel, createConversation, sendMessage, createWorkflow, linkToWorkflow, onConversationChange, onWorkflowGenerated, toast]);
 
   // Show auth required if no user
   if (!user) {
     return <AuthRequired onClose={onClose} />;
   }
 
-  const selectedModelInfo = models.find(m => m.model_id === selectedModel);
+  const selectedModelInfo = availableModels.find(m => m.model_id === selectedModel);
 
   return (
     <div className="w-96 h-full bg-black/80 border-l border-white/10 flex flex-col overflow-hidden">
@@ -123,17 +195,17 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
         onClose={onClose}
         onModelChange={handleModelChange}
         selectedModel={selectedModel}
-        isGenerating={isChatting || isProcessing}
+        isGenerating={isSending}
       />
 
-      {modelsError && <ModelsError error={modelsError} />}
+      {modelsError && <ModelsError error={modelsError.message || String(modelsError)} />}
 
       <div className="flex-1 overflow-hidden">
         <MessagesArea 
           messages={messages}
-          isGenerating={isChatting || isProcessing}
+          isGenerating={isSending}
           messagesEndRef={messagesEndRef}
-          workflowProgress={workflowProgress}
+          workflowProgress={isSending ? 'Processing your request...' : ''}
         />
       </div>
 
@@ -142,7 +214,7 @@ export function SimpleChat({ onClose, onWorkflowGenerated }: SimpleChatProps) {
         setInputValue={setInputValue}
         textareaRef={textareaRef}
         handleSendMessage={handleSendMessage}
-        isGenerating={isChatting || isProcessing}
+        isGenerating={isSending}
         availableModels={availableModels}
         selectedModel={selectedModel}
         modelsLoading={modelsLoading}

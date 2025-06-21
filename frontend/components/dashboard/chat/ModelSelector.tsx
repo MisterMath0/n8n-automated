@@ -12,7 +12,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { MODEL_ENUM_TO_NAME } from "./constants";
+import { MODEL_ENUM_TO_NAME } from "../../../types/constants";
 
 interface ModelSelectorProps {
   selectedModel: AIModel;
