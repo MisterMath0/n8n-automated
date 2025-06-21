@@ -20,6 +20,9 @@ services:
       - app-network
     volumes:
       - ./backend/logs:/app/logs
+      - ./backend/data:/app/data
+      - ./backend/config:/app/config
+      - ./backend/scripts:/app/scripts
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
