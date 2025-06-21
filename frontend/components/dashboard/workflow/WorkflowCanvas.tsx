@@ -16,12 +16,19 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Workflow } from '@/types/workflow';
+import { N8NWorkflow, N8NNode } from '@/types/api';
 import { WorkflowToolbar } from './WorkflowToolbar';
 import { WorkflowActions } from './WorkflowActions';
 import { EmptyCanvas } from './EmptyCanvas';
-import { convertN8NToReactFlow, autoLayoutNodes, getWorkflowCenter } from '@/lib/utils/workflowConverter';
+import { convertN8NToReactFlow, autoLayoutNodesWithConnections, getWorkflowCenter, getWorkflowBounds, validateWorkflow } from '@/lib/utils/workflowConverter';
 import { useToast } from '@/components/providers';
 import { Loader2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { N8nNode } from './nodes/N8nNode';
+import { isTriggerNode } from '@/lib/utils/node-styling';
+
+const nodeTypes = {
+  n8nNode: N8nNode,
+};
 
 interface WorkflowCanvasProps {
   workflow: Workflow | null;
@@ -106,18 +113,24 @@ function WorkflowCanvasContent({ workflow, isLoading, onWorkflowUpdate, onOpenCh
         setWorkflowLoadError(null);
         const { nodes: flowNodes, edges: flowEdges } = convertN8NToReactFlow(workflow.workflow);
         
-        // If nodes don't have positions, auto-layout them
+        // Use the enhanced layout algorithm that considers connections
         const nodesWithLayout = flowNodes.some(node => !node.position.x && !node.position.y) 
-          ? autoLayoutNodes(flowNodes)
+          ? autoLayoutNodesWithConnections(flowNodes, flowEdges)
           : flowNodes;
         
         setNodes(nodesWithLayout);
         setEdges(flowEdges);
 
-        // Production-ready view centering with delay for proper rendering
+        // Enhanced view centering with proper bounds calculation
         setTimeout(() => {
           if (nodesWithLayout.length > 0) {
-            fitView({ padding: 0.2, duration: 800 });
+            const bounds = getWorkflowBounds(nodesWithLayout);
+            fitView({ 
+              padding: 0.1, 
+              duration: 800,
+              minZoom: 0.1, // Allow much more zoom out
+              maxZoom: 1.5,
+            });
           }
         }, 100);
         
@@ -155,19 +168,19 @@ function WorkflowCanvasContent({ workflow, isLoading, onWorkflowUpdate, onOpenCh
       // Production-ready workflow validation logic
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Production-ready validation checks
-      const hasHttpRequest = nodes.some(node => node.data.nodeType?.includes('httpRequest'));
-      const hasOutputNode = nodes.some(node => 
-        node.data.nodeType?.includes('webhook') || 
-        node.data.nodeType?.includes('respond') ||
-        node.data.nodeType?.includes('set')
-      );
+      // Enhanced validation using the new system
+      const validationResult = validateWorkflow(nodes);
       
-      if (!hasHttpRequest && !hasOutputNode) {
+      if (!validationResult.isValid) {
         setValidationStatus('invalid');
-        setValidationMessage('Workflow needs at least one HTTP request or output node');
+        setValidationMessage(validationResult.errors[0] || 'Workflow validation failed');
         toast.error('Workflow validation failed');
         return;
+      }
+      
+      // Show warnings if any
+      if (validationResult.warnings.length > 0) {
+        console.warn('Workflow warnings:', validationResult.warnings);
       }
       
       setValidationStatus('valid');
@@ -206,7 +219,7 @@ function WorkflowCanvasContent({ workflow, isLoading, onWorkflowUpdate, onOpenCh
         ...originalWorkflow,
         // Production-ready node position updates
         nodes: nodes.map(node => {
-          const originalNode = originalWorkflow.nodes.find(n => n.id === node.id);
+          const originalNode = originalWorkflow.nodes.find((n: N8NNode) => n.id === node.id);
           return {
             ...originalNode,
             position: [node.position.x, node.position.y] as [number, number],
@@ -258,7 +271,7 @@ function WorkflowCanvasContent({ workflow, isLoading, onWorkflowUpdate, onOpenCh
     console.log('Workflows are auto-saved automatically');
   };
 
-  // Optimized ReactFlow props for better performance
+  // Enhanced ReactFlow props for better left-right flow performance
   const reactFlowProps = useMemo(() => ({
     nodes,
     edges,
@@ -270,8 +283,14 @@ function WorkflowCanvasContent({ workflow, isLoading, onWorkflowUpdate, onOpenCh
     nodesConnectable: true,
     elementsSelectable: true,
     snapToGrid: true,
-    snapGrid: [15, 15] as [number, number],
+    snapGrid: [20, 20] as [number, number],
     fitView: false, // We handle this manually for better control
+    minZoom: 0.05, // Allow extreme zoom out
+    maxZoom: 2,
+    defaultViewport: { x: 0, y: 0, zoom: 0.8 },
+    // Better connection settings for left-right flow
+    connectionLineType: 'smoothstep' as const,
+    connectionMode: 'loose' as const,
   }), [nodes, edges, onNodesChange, onEdgesChange, onConnect]);
 
   if (workflowLoadError) {
@@ -308,11 +327,35 @@ function WorkflowCanvasContent({ workflow, isLoading, onWorkflowUpdate, onOpenCh
       <div className="h-full pt-14">
         <LoadingOverlay isVisible={isLoading || false} message="Loading workflow..." />
         
-        <ReactFlow {...reactFlowProps} proOptions={{ hideAttribution: true }}>
+        <ReactFlow 
+          {...reactFlowProps} 
+          nodeTypes={nodeTypes}
+          proOptions={{ hideAttribution: true }}
+          connectionLineStyle={{ 
+            stroke: '#ffffff60', 
+            strokeWidth: 3,
+            strokeDasharray: '5,5'
+          }}
+          defaultEdgeOptions={{
+            style: { 
+              stroke: '#ffffff80', 
+              strokeWidth: 2,
+              filter: 'drop-shadow(0 0 6px rgba(255, 255, 255, 0.4))',
+            },
+            type: 'smoothstep',
+            animated: true,
+            markerEnd: {
+              type: 'arrow',
+              color: '#ffffff80',
+              width: 16,
+              height: 16,
+            },
+          }}
+        >
           <Background 
             variant={BackgroundVariant.Dots} 
-            gap={20} 
-            size={1} 
+            gap={24} 
+            size={1.5} 
             color="#333333"
           />
           <Controls 
