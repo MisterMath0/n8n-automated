@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, Trash2, MoreVertical, Loader2 } from 'lucide-react';
-import { Workflow } from '@/hooks/useWorkflows';
+import { Workflow } from '@/types/workflow';
 
 interface WorkflowCardProps {
   workflow: Workflow;

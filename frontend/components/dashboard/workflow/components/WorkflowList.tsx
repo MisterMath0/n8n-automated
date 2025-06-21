@@ -1,7 +1,7 @@
 import React from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
-import { Workflow } from '@/hooks/useWorkflows';
+import { Workflow } from '@/types/workflow';
 import { WorkflowCard } from './WorkflowCard';
 import { EmptyWorkflows } from '../EmptyWorkflows';
 

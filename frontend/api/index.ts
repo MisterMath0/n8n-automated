@@ -1,11 +1,12 @@
 import { supabase } from '@/lib/supabase';
 import { ChatRequest, ChatResponse } from '@/types/api';
 import { API_CONFIG } from '@/lib/api/config';
+import { transformWorkflowForUI, Workflow } from '@/types/workflow';
 
 // Direct Supabase API calls - simple and clean
 export const workflowAPI = {
   // Get all workflows for a user
-  list: async (userId: string) => {
+  list: async (userId: string): Promise<Workflow[]> => {
     const { data, error } = await supabase
       .from('workflows')
       .select('*')
@@ -13,11 +14,13 @@ export const workflowAPI = {
       .order('updated_at', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    
+    // Transform database rows to UI workflows
+    return (data || []).map(transformWorkflowForUI);
   },
 
   // Get single workflow
-  get: async (workflowId: string, userId: string) => {
+  get: async (workflowId: string, userId: string): Promise<Workflow> => {
     const { data, error } = await supabase
       .from('workflows')
       .select('*')
@@ -26,11 +29,13 @@ export const workflowAPI = {
       .single();
     
     if (error) throw error;
-    return data;
+    
+    // Transform database row to UI workflow  
+    return transformWorkflowForUI(data);
   },
 
   // Create workflow
-  create: async (workflowData: any) => {
+  create: async (workflowData: any): Promise<Workflow> => {
     const { data, error } = await supabase
       .from('workflows')
       .insert(workflowData)
@@ -38,11 +43,11 @@ export const workflowAPI = {
       .single();
     
     if (error) throw error;
-    return data;
+    return transformWorkflowForUI(data);
   },
 
   // Update workflow
-  update: async (workflowId: string, userId: string, updates: any) => {
+  update: async (workflowId: string, userId: string, updates: any): Promise<Workflow> => {
     const { data, error } = await supabase
       .from('workflows')
       .update(updates)
@@ -52,7 +57,7 @@ export const workflowAPI = {
       .single();
     
     if (error) throw error;
-    return data;
+    return transformWorkflowForUI(data);
   },
 
   // Delete workflow

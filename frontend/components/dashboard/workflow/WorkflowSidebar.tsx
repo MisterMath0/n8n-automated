@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Plus, CheckCircle } from "lucide-react";
-import { Workflow } from "@/hooks/useWorkflows";
+import { Workflow } from "@/types/workflow";
 import { WorkflowList } from "./components/WorkflowList";
 import { TabContent } from "./components/TabContent";
 

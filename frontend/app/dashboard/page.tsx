@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { WorkflowCanvas } from "@/components/dashboard/workflow/WorkflowCanvas";
 import { SimpleChat } from "@/components/dashboard/chat/SimpleChat";
 import { WorkflowSidebar } from "@/components/dashboard/workflow/WorkflowSidebar";
 import { UserMenu } from "@/components/UserMenu";
-import { useWorkflows, useWorkflowConversations, useOrphanConversations } from "@/hooks/data";
+import { useWorkflows, useWorkflowConversations, useOrphanConversations, useDeleteWorkflow } from "@/hooks/data";
 import { useWorkflowUI, WorkflowUIProvider } from "@/stores/WorkflowUIContext";
+import { useToast } from "@/components/providers";
 import { N8NWorkflow } from "@/types/api";
+import { Workflow } from "@/types/workflow";
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
 
@@ -17,6 +19,7 @@ function DashboardContent() {
     selectedWorkflowId,
     isChatOpen,
     activeConversationId,
+    setSelectedWorkflowId,
     setActiveConversationId,
     selectWorkflow,
     createNewWorkflow,
@@ -27,6 +30,8 @@ function DashboardContent() {
   const { data: workflows = [], isLoading } = useWorkflows();
   const { data: workflowConversations = [] } = useWorkflowConversations(selectedWorkflowId);
   const { data: orphanConversations = [] } = useOrphanConversations();
+  const deleteWorkflow = useDeleteWorkflow();
+  const toast = useToast();
 
   // Get selected workflow and conversations based on UI state
   const selectedWorkflow = workflows.find(w => w.id === selectedWorkflowId) || null;
@@ -48,6 +53,45 @@ function DashboardContent() {
   const handleOpenChat = () => {
     setIsChatOpen(true);
   };
+
+  // Add export handler
+  const handleExportWorkflow = useCallback(async (workflowId: string) => {
+    const workflow = workflows.find(w => w.id === workflowId);
+    if (!workflow?.workflow) {
+      toast.error('Workflow not found');
+      return;
+    }
+    
+    try {
+      const blob = new Blob([JSON.stringify(workflow.workflow, null, 2)], {
+        type: 'application/json'
+      });
+      
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${workflow.name.replace(/\s+/g, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      toast.success('Workflow exported successfully!');
+    } catch (error) {
+      toast.error('Failed to export workflow');
+    }
+  }, [workflows, toast]);
+  
+  // Add delete handler
+  const handleDeleteWorkflow = useCallback(async (workflowId: string) => {
+    try {
+      await deleteWorkflow.mutateAsync(workflowId);
+      // If deleted workflow was selected, clear selection
+      if (selectedWorkflowId === workflowId) {
+        setSelectedWorkflowId(null);
+      }
+    } catch (error) {
+      // Error handling is done in the mutation
+    }
+  }, [deleteWorkflow, selectedWorkflowId, setSelectedWorkflowId]);
 
   return (
     <div className="h-screen bg-black overflow-hidden">
@@ -73,6 +117,8 @@ function DashboardContent() {
               workflows={workflows}
               selectedWorkflow={selectedWorkflow}
               onSelectWorkflow={(workflow) => selectWorkflow(workflow.id)}
+              onExportWorkflow={handleExportWorkflow}
+              onDeleteWorkflow={handleDeleteWorkflow}
               onCreateNew={createNewWorkflow}
               isLoading={isLoading}
             />

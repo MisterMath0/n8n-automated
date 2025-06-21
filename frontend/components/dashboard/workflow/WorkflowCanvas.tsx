@@ -15,7 +15,7 @@ import ReactFlow, {
   ReactFlowProvider,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Workflow } from '@/hooks/useWorkflows';
+import { Workflow } from '@/types/workflow';
 import { WorkflowToolbar } from './WorkflowToolbar';
 import { WorkflowActions } from './WorkflowActions';
 import { EmptyCanvas } from './EmptyCanvas';
