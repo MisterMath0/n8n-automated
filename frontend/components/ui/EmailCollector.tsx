@@ -30,7 +30,7 @@ export function EmailCollector({ isOpen, onClose }: EmailCollectorProps) {
 
     try {
       // TODO: Replace with your actual API endpoint
-      const response = await fetch("/api/beta-signup", {
+      const response = await fetch("/v1/beta-signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

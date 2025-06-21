@@ -38,7 +38,7 @@ export const messagesAPI = {
   // Get welcome message for new conversations
   getWelcomeMessage: async (): Promise<MessageResponse> => {
     const authHeaders = await messagesAPI.getAuthHeaders();
-    const url = `${API_CONFIG.BASE_URL}/api/v1/messages/welcome`;
+    const url = `${API_CONFIG.BASE_URL}/v1/messages/welcome`;
     
     const response = await fetch(url, {
       headers: {
@@ -57,7 +57,7 @@ export const messagesAPI = {
   // Get capabilities message
   getCapabilities: async (): Promise<MessageResponse> => {
     const authHeaders = await messagesAPI.getAuthHeaders();
-    const url = `${API_CONFIG.BASE_URL}/api/v1/messages/capabilities`;
+    const url = `${API_CONFIG.BASE_URL}/v1/messages/capabilities`;
     
     const response = await fetch(url, {
       headers: {
@@ -76,7 +76,7 @@ export const messagesAPI = {
   // Get response templates for different scenarios
   getResponseTemplates: async (): Promise<ResponseTemplates> => {
     const authHeaders = await messagesAPI.getAuthHeaders();
-    const url = `${API_CONFIG.BASE_URL}/api/v1/messages/templates`;
+    const url = `${API_CONFIG.BASE_URL}/v1/messages/templates`;
     
     const response = await fetch(url, {
       headers: {
@@ -95,7 +95,7 @@ export const messagesAPI = {
   // Get system prompts for different contexts
   getSystemPrompts: async (): Promise<SystemPrompts> => {
     const authHeaders = await messagesAPI.getAuthHeaders();
-    const url = `${API_CONFIG.BASE_URL}/api/v1/messages/system-prompts`;
+    const url = `${API_CONFIG.BASE_URL}/v1/messages/system-prompts`;
     
     const response = await fetch(url, {
       headers: {
@@ -122,7 +122,7 @@ export const messagesAPI = {
     if (workflowId) params.append('workflow_id', workflowId);
     if (userName) params.append('user_name', userName);
     
-    const url = `${API_CONFIG.BASE_URL}/api/v1/messages/contextual?${params}`;
+    const url = `${API_CONFIG.BASE_URL}/v1/messages/contextual?${params}`;
     
     const response = await fetch(url, {
       headers: {
@@ -141,7 +141,7 @@ export const messagesAPI = {
   // Health check for messages service
   checkHealth: async () => {
     const authHeaders = await messagesAPI.getAuthHeaders();
-    const url = `${API_CONFIG.BASE_URL}/api/v1/messages/health`;
+    const url = `${API_CONFIG.BASE_URL}/v1/messages/health`;
     
     const response = await fetch(url, {
       headers: {

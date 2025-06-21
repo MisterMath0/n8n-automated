@@ -13,7 +13,7 @@ import structlog
 logger = structlog.get_logger()
 
 router = APIRouter(
-    prefix="/api/v1/messages",
+    prefix="/v1/messages",
     tags=["messages"]
 )
 
