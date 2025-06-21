@@ -47,7 +47,6 @@ export function SimpleChat({
   
   // Local UI state
   const [inputValue, setInputValue] = useState("");
-  const [pendingMessage, setPendingMessage] = useState<Message | null>(null);
   const [selectedModel, setSelectedModel] = useState<AIModel>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(SELECTED_MODEL_KEY);
@@ -64,7 +63,7 @@ export function SimpleChat({
   // Get current conversation and messages
   const currentConversation = conversations.find(c => c.id === conversationId);
   
-  // Build messages array with backend welcome message and pending message
+  // Build messages array with backend welcome message
   const messages = React.useMemo(() => {
     const conversationMessages = currentConversation?.messages?.map((msg: any) => ({
       id: msg.id,
@@ -74,20 +73,13 @@ export function SimpleChat({
       workflowData: msg.workflow_data
     })) || [];
     
-    let allMessages = [...conversationMessages];
-    
-    // Add pending message if it exists
-    if (pendingMessage) {
-      allMessages.push(pendingMessage);
-    }
-    
     // Always include welcome message at the beginning if we have one
     if (welcomeMessage) {
-      return [welcomeMessage, ...allMessages];
+      return [welcomeMessage, ...conversationMessages];
     }
     
-    return allMessages;
-  }, [currentConversation, welcomeMessage, pendingMessage]);
+    return conversationMessages;
+  }, [currentConversation, welcomeMessage]);
 
   // Auto-focus input
   useEffect(() => {
@@ -162,16 +154,7 @@ export function SimpleChat({
       }
     }
 
-    // Create pending message for optimistic UI
-    const pendingMsg: Message = {
-      id: `pending-${Date.now()}`,
-      content: message,
-      sender: 'user',
-      type: 'text'
-    };
-    
-    // Show pending message immediately
-    setPendingMessage(pendingMsg);
+    // Clear input immediately - optimistic update will show the message
     setInputValue("");
     
     try {
@@ -184,18 +167,11 @@ export function SimpleChat({
         max_tokens: 4000,
       };
 
+      // Send message - React Query optimistic updates handle UI
       const response = await new Promise<any>((resolve, reject) => {
         sendMessage(request, {
-          onSuccess: (data) => {
-            // Clear pending message when we get a response
-            setPendingMessage(null);
-            resolve(data);
-          },
-          onError: (error) => {
-            // Clear pending message on error too
-            setPendingMessage(null);
-            reject(error);
-          },
+          onSuccess: resolve,
+          onError: reject,
         });
       });
 
@@ -261,7 +237,7 @@ export function SimpleChat({
         }
       }
     } catch (error) {
-      // On error, restore the input and clear pending message (already done above)
+      // On error, restore the input (optimistic update already rolled back by React Query)
       setInputValue(message);
       toast.error('Failed to send message');
     }

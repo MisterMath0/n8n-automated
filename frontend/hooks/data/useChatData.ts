@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { chatAPI } from '@/api';
 import { ChatRequest } from '@/types/api';
 import { useToast } from '@/components/providers';
+import { useAuth } from '@/hooks/useAuth';
 import { conversationKeys } from './useConversationData';
 
 // Query keys for chat
@@ -23,6 +24,7 @@ export function useModels() {
 export function useSendMessage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { user } = useAuth();
   
   return useMutation({
     mutationFn: chatAPI.sendMessage,
@@ -32,12 +34,13 @@ export function useSendMessage() {
         queryKey: conversationKeys.all 
       });
       
+      // Determine correct query key based on workflow
+      const queryKey = request.workflow_id 
+        ? conversationKeys.byWorkflow(request.workflow_id)
+        : conversationKeys.orphan(user?.id || '');
+      
       // Get previous conversations for rollback
-      const previousConversations = queryClient.getQueryData(
-        request.workflow_id 
-          ? conversationKeys.byWorkflow(request.workflow_id)
-          : conversationKeys.orphan()
-      );
+      const previousConversations = queryClient.getQueryData(queryKey);
       
       // Create optimistic user message
       const optimisticMessage = {
@@ -51,10 +54,6 @@ export function useSendMessage() {
       };
       
       // Optimistically update the conversation cache
-      const queryKey = request.workflow_id 
-        ? conversationKeys.byWorkflow(request.workflow_id)
-        : conversationKeys.orphan();
-        
       queryClient.setQueryData(queryKey, (old: any[]) => {
         if (!old) return old;
         
@@ -91,15 +90,11 @@ export function useSendMessage() {
     onSettled: (response, error, request) => {
       // Always refetch to get the real server state
       // This will replace optimistic updates with real data
-      if (request.workflow_id) {
-        queryClient.invalidateQueries({ 
-          queryKey: conversationKeys.byWorkflow(request.workflow_id) 
-        });
-      } else {
-        queryClient.invalidateQueries({ 
-          queryKey: conversationKeys.orphan() 
-        });
-      }
+      const queryKey = request.workflow_id 
+        ? conversationKeys.byWorkflow(request.workflow_id)
+        : conversationKeys.orphan(user?.id || '');
+        
+      queryClient.invalidateQueries({ queryKey });
     },
   });
 }
