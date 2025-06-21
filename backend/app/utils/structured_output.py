@@ -477,7 +477,5 @@ def get_schema_for_provider(provider: str) -> Dict[str, Any]:
     Returns:
         Provider-optimized schema dictionary
     """
-    if provider == "google":
-        return create_gemini_n8n_workflow_schema()
-    else:
-        return create_n8n_workflow_schema()
+    # All providers now use the same schema since Google uses function calling
+    return create_n8n_workflow_schema()

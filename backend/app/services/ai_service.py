@@ -17,8 +17,8 @@ from .supabase_service import supabase_service
 from ..core.auth import CurrentUser
 from ..utils.structured_output import (
     create_n8n_workflow_schema,
-    get_schema_for_provider,
     parse_workflow_with_recovery,
+    validate_and_fix_workflow_data,
 )
 
 logger = structlog.get_logger()
@@ -331,25 +331,49 @@ class AIService:
             
             # Generate workflow JSON using the appropriate provider
             if config.provider == "google":
-                # Use structured output with schema for Google GenAI
-                workflow_schema = get_schema_for_provider("google")
+                # Use function calling for Google GenAI (more reliable than response_schema)
+                workflow_tool = {
+                    "function_declarations": [{
+                        "name": "generate_workflow",
+                        "description": "Generate an N8N workflow JSON structure",
+                        "parameters": create_n8n_workflow_schema()  # Use existing OpenAI schema
+                    }]
+                }
                 
-                logger.info("Using Google GenAI structured output for workflow generation")
+                logger.info("Using Google GenAI function calling for workflow generation")
                 
                 response = client.models.generate_content(
                     model=config.model_id,
                     contents=full_prompt,
-                    config=types.GenerateContentConfig(
+                    generation_config=types.GenerationConfig(
                         temperature=temperature,
-                        max_output_tokens=max_tokens,
-                        response_mime_type="application/json",
-                        response_schema=workflow_schema
+                        max_output_tokens=max_tokens
+                    ),
+                    tools=[workflow_tool],
+                    tool_config=types.ToolConfig(
+                        function_calling_config=types.FunctionCallingConfig(
+                            mode=types.FunctionCallingConfig.Mode.ANY,
+                            allowed_function_names=["workflow_generator"]
+                        )
                     )
                 )
-                workflow_json_str = response.text.strip()
+                
+                # Extract workflow data from function call
+                if (response.candidates and 
+                    response.candidates[0].content.parts and 
+                    response.candidates[0].content.parts[0].function_call):
+                    function_call = response.candidates[0].content.parts[0].function_call
+                    workflow_data = dict(function_call.args)
+                    
+                    # Apply validation and fix common issues
+                    workflow_data = validate_and_fix_workflow_data(workflow_data)
+                    workflow_json_str = json.dumps(workflow_data)
+                else:
+                    raise AIServiceError("Gemini did not return expected function call")
+                
                 tokens_used = response.usage_metadata.total_token_count if hasattr(response, 'usage_metadata') and response.usage_metadata else 0
                 
-                logger.info("Google GenAI structured output response", response_length=len(workflow_json_str), response_preview=workflow_json_str[:200])
+                logger.info("Google GenAI function calling response processed", workflow_data_keys=list(workflow_data.keys()) if workflow_data else [], tokens_used=tokens_used)
                 
             elif config.provider == "anthropic":
                 # Use structured output with tool calls for Anthropic
@@ -469,24 +493,45 @@ class AIService:
             
             # Generate edited workflow
             if config.provider == "google":
-                # Use structured output with schema for Google GenAI
-                workflow_schema = create_n8n_workflow_schema()
+                # Use function calling for Google GenAI (more reliable than response_schema)
+                workflow_tool = {
+                    "function_declarations": [{
+                        "name": "edit_workflow",
+                        "description": "Edit an N8N workflow JSON structure",
+                        "parameters": create_n8n_workflow_schema()
+                    }]
+                }
                 
                 response = client.models.generate_content(
                     model=config.model_id,
                     contents=edit_prompt,
-                    config=types.GenerateContentConfig(
+                    generation_config=types.GenerationConfig(
                         temperature=temperature,
-                        max_output_tokens=max_tokens,
-                        response_mime_type="application/json",
-                        response_schema=workflow_schema
+                        max_output_tokens=max_tokens
+                    ),
+                    tools=[workflow_tool],
+                    tool_config=types.ToolConfig(
+                        function_calling_config=types.FunctionCallingConfig(
+                            mode=types.FunctionCallingConfig.Mode.ANY,
+                            allowed_function_names=["edit_workflow"]
+                        )
                     )
                 )
-                edited_workflow_json_str = response.text.strip()
-                tokens_used = response.usage_metadata.total_token_count if hasattr(response, 'usage_metadata') and response.usage_metadata else 0
                 
-                # Parse the JSON response with recovery
-                edited_workflow = parse_workflow_with_recovery(edited_workflow_json_str)
+                # Extract workflow data from function call
+                if (response.candidates and 
+                    response.candidates[0].content.parts and 
+                    response.candidates[0].content.parts[0].function_call):
+                    function_call = response.candidates[0].content.parts[0].function_call
+                    workflow_data = dict(function_call.args)
+                    
+                    # Apply validation and fix common issues
+                    workflow_data = validate_and_fix_workflow_data(workflow_data)
+                    edited_workflow = N8NWorkflow(**workflow_data)
+                else:
+                    raise AIServiceError("Gemini did not return expected function call")
+                
+                tokens_used = response.usage_metadata.total_token_count if hasattr(response, 'usage_metadata') and response.usage_metadata else 0
                 
             elif config.provider == "anthropic":
                 # Use structured output with tool calls for Anthropic
