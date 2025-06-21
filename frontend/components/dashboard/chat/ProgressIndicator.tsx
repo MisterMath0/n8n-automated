@@ -32,10 +32,6 @@ export function ProgressIndicator({ message }: ProgressIndicatorProps) {
       exit={{ opacity: 0, y: -10 }}
       className="flex items-start gap-3 max-w-[80%]"
     >
-      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
-        <span className="text-white text-xs font-semibold">AI</span>
-      </div>
-      
       <div className="flex-1">
         <motion.div 
           className="bg-gray-800/80 backdrop-blur border border-gray-700/50 rounded-2xl px-4 py-3"

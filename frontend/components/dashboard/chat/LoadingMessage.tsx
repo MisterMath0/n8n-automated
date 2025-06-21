@@ -10,9 +10,6 @@ export function LoadingMessage() {
       animate={{ opacity: 1, y: 0 }}
       className="flex gap-3"
     >
-      <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
-        <Bot className="w-3 h-3 text-white" />
-      </div>
       <div className="bg-white/5 border border-white/10 rounded-lg p-3">
         <div className="flex items-center gap-2 text-gray-300">
           <Loader2 className="w-4 h-4 animate-spin" />

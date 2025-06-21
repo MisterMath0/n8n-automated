@@ -44,11 +44,18 @@ function DashboardContent() {
     }
   }, [conversations, activeConversationId, setActiveConversationId]);
 
-  const handleWorkflowGenerated = (workflow: N8NWorkflow) => {
-    // Workflow generation is now handled entirely by the chat component
-    // This will trigger React Query mutations and automatic UI updates
-    console.log('Workflow generated:', workflow.name);
-  };
+  const handleWorkflowGenerated = useCallback((workflow: Workflow) => {
+    // Handle both new workflow generation and updates
+    if (workflow.id === selectedWorkflowId) {
+      // If this is an update to the currently selected workflow,
+      // React Query will automatically invalidate and refetch
+      console.log('Current workflow updated:', workflow.name);
+    } else {
+      // If this is a new workflow, select it
+      selectWorkflow(workflow.id);
+      console.log('New workflow generated and selected:', workflow.name);
+    }
+  }, [selectedWorkflowId, selectWorkflow]);
 
   const handleOpenChat = () => {
     setIsChatOpen(true);

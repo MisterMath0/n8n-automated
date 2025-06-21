@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useChat, useCreateConversation, useLinkConversationToWorkflow, useCreateWorkflow } from "@/hooks/data";
+import { useChat, useCreateConversation, useLinkConversationToWorkflow, useCreateWorkflow, useUpdateWorkflow } from "@/hooks/data";
 import { AIModel, ChatRequest } from "@/types/api";
 import { ChatHeader } from "./ChatHeader";
 import { ModelsError } from "./ModelsError";
@@ -38,6 +38,7 @@ export function SimpleChat({
   const createConversation = useCreateConversation();
   const linkToWorkflow = useLinkConversationToWorkflow();
   const createWorkflow = useCreateWorkflow();
+  const updateWorkflow = useUpdateWorkflow();
   
   // Local UI state
   const [inputValue, setInputValue] = useState("");
@@ -151,35 +152,55 @@ export function SimpleChat({
         });
       });
 
-      // Handle workflow generation
-      if (response.workflow && !workflowId) {
+      // Handle workflow generation/updates
+      if (response.workflow) {
         try {
-          const savedWorkflow = await createWorkflow.mutateAsync({
-            id: response.workflow.id,
-            name: response.workflow.name,
-            description: `Generated workflow with ${response.workflow.nodes.length} nodes`,
-            workflow_data: response.workflow,
-            owner_id: user.id,
-            status: 'active',
-          });
+          if (!workflowId) {
+            // NEW WORKFLOW: Create new workflow in database
+            const savedWorkflow = await createWorkflow.mutateAsync({
+              id: response.workflow.id,
+              name: response.workflow.name,
+              description: `Generated workflow with ${response.workflow.nodes.length} nodes`,
+              workflow_data: response.workflow,
+              owner_id: user.id,
+              status: 'active',
+            });
 
-          // Link conversation to new workflow
-          await linkToWorkflow.mutateAsync({
-            conversationId: activeConversationId,
-            workflowId: savedWorkflow.id,
-          });
+            // Link conversation to new workflow
+            await linkToWorkflow.mutateAsync({
+              conversationId: activeConversationId,
+              workflowId: savedWorkflow.id,
+            });
 
-          onWorkflowGenerated?.(savedWorkflow);
+            onWorkflowGenerated?.(savedWorkflow);
+            toast.success(`New workflow "${savedWorkflow.name}" created successfully!`);
+          } else {
+            // EXISTING WORKFLOW: Update existing workflow in database
+            const updatedWorkflow = await updateWorkflow.mutateAsync({
+              workflowId: workflowId,
+              updates: {
+                workflow_data: response.workflow,
+                updated_at: new Date().toISOString(),
+                // Create version history entry if version control system exists
+                ...(response.changes_made && {
+                  description: `Updated: ${response.changes_made.join(', ')}`,
+                }),
+              },
+            });
+
+            onWorkflowGenerated?.(updatedWorkflow);
+            toast.success(`Workflow "${updatedWorkflow.name}" updated successfully!`);
+          }
         } catch (error) {
-          console.error('Failed to save workflow:', error);
-          toast.error('Workflow generated but failed to save');
+          console.error('Failed to save/update workflow:', error);
+          toast.error(workflowId ? 'Workflow updated but failed to save changes' : 'Workflow generated but failed to save');
         }
       }
     } catch (error) {
       setInputValue(message); // Restore input on error
       toast.error('Failed to send message');
     }
-  }, [inputValue, user, isSending, conversationId, workflowId, selectedModel, createConversation, sendMessage, createWorkflow, linkToWorkflow, onConversationChange, onWorkflowGenerated, toast]);
+  }, [inputValue, user, isSending, conversationId, workflowId, selectedModel, createConversation, sendMessage, createWorkflow, updateWorkflow, linkToWorkflow, onConversationChange, onWorkflowGenerated, toast]);
 
   // Show auth required if no user
   if (!user) {

@@ -46,11 +46,54 @@ export const workflowAPI = {
     return transformWorkflowForUI(data);
   },
 
-  // Update workflow
+  // Update workflow with version control
   update: async (workflowId: string, userId: string, updates: any): Promise<Workflow> => {
+    // First, get the current workflow for version control
+    const { data: currentWorkflow, error: fetchError } = await supabase
+      .from('workflows')
+      .select('*')
+      .eq('id', workflowId)
+      .eq('owner_id', userId)
+      .single();
+    
+    if (fetchError) throw fetchError;
+    
+    // Create version entry before updating
+    if (currentWorkflow && updates.workflow_data) {
+      // Get current version number
+      const { data: versions, error: versionError } = await supabase
+        .from('workflow_versions')
+        .select('version_number')
+        .eq('workflow_id', workflowId)
+        .order('version_number', { ascending: false })
+        .limit(1);
+      
+      const nextVersion = versions && versions.length > 0 ? versions[0].version_number + 1 : 1;
+      
+      // Create version entry
+      const { error: createVersionError } = await supabase
+        .from('workflow_versions')
+        .insert({
+          workflow_id: workflowId,
+          version_number: nextVersion,
+          workflow_data: currentWorkflow.workflow_data,
+          changes_summary: updates.description ? [updates.description] : ['Workflow updated via chat'],
+          created_by: userId,
+        });
+      
+      if (createVersionError) {
+        console.warn('Failed to create version entry:', createVersionError);
+        // Don't throw - continue with update even if versioning fails
+      }
+    }
+    
+    // Update the workflow
     const { data, error } = await supabase
       .from('workflows')
-      .update(updates)
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', workflowId)
       .eq('owner_id', userId)
       .select()
