@@ -65,7 +65,7 @@ search:
   # Search Behavior
   search_behavior:
     # Default number of results to return if not specified
-    default_top_k: 10
+    default_top_k: 15
     
     # Maximum number of results that can be requested
     max_top_k: 30

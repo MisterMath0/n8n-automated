@@ -154,9 +154,15 @@ class AIService:
         if workflow_id:
             try:
                 workflow_context = await supabase_service.get_workflow(workflow_id, user.id)
-                logger.info("Retrieved workflow context", workflow_id=workflow_id, workflow_name=workflow_context.get('name', 'Unknown'))
+                logger.info("Retrieved workflow context", 
+                           workflow_id=workflow_id, 
+                           workflow_found=workflow_context is not None,
+                           workflow_name=workflow_context.get('name', 'Unknown') if workflow_context else None,
+                           has_workflow_data=bool(workflow_context.get('workflow_data')) if workflow_context else False,
+                           workflow_data_keys=list(workflow_context.get('workflow_data', {}).keys()) if workflow_context and workflow_context.get('workflow_data') else [])
             except Exception as e:
-                logger.warning("Failed to retrieve workflow context", workflow_id=workflow_id, error=str(e))
+                logger.error("Failed to retrieve workflow context", workflow_id=workflow_id, error=str(e))
+                workflow_context = None
         
         # 2. Get conversation history
         history_messages = await supabase_service.get_conversation_messages(
@@ -205,8 +211,15 @@ class AIService:
                                 You are helping the user modify, understand, or extend this specific n8n workflow."""
             }
             all_messages = [workflow_system_message] + history_messages + [{"role": "user", "content": user_message}]
+            logger.info("Added workflow context to messages", 
+                       workflow_name=workflow_context.get('name'),
+                       system_message_length=len(workflow_system_message['content']),
+                       total_messages=len(all_messages))
         else:
             all_messages = history_messages + [{"role": "user", "content": user_message}]
+            logger.warning("No workflow context available - AI will not know about workflow", 
+                          workflow_id=workflow_id,
+                          reason="workflow_context is None")
 
         # 5. Save user message to database BEFORE processing
         try:

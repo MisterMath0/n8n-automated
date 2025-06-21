@@ -4,6 +4,10 @@ from ..models.workflow import N8NWorkflow
 from ..core.config import settings
 from ..core.auth import CurrentUser
 from ..core.config_loader import config_loader
+import structlog
+import json
+
+logger = structlog.get_logger()
 
 
 class SupabaseService:
@@ -51,12 +55,29 @@ class SupabaseService:
         return result.data
 
     async def get_workflow(self, workflow_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+        logger.info("Getting workflow from database", workflow_id=workflow_id, user_id=user_id)
+        
         result = self.client.table("workflows")\
             .select("*")\
             .eq("id", workflow_id)\
             .eq("owner_id", user_id)\
             .execute()
-        return result.data[0] if result.data else None
+        
+        workflow = result.data[0] if result.data else None
+        
+        if workflow:
+            logger.info("Workflow found in database",
+                       workflow_id=workflow_id,
+                       workflow_name=workflow.get('name'),
+                       has_workflow_data=bool(workflow.get('workflow_data')),
+                       workflow_data_type=type(workflow.get('workflow_data')).__name__ if workflow.get('workflow_data') else 'None')
+        else:
+            logger.warning("Workflow not found in database", 
+                          workflow_id=workflow_id, 
+                          user_id=user_id,
+                          query_result_count=len(result.data) if result.data else 0)
+        
+        return workflow
 
     async def update_workflow(
         self, 
@@ -96,7 +117,52 @@ class SupabaseService:
         }
         
         result = self.client.table("conversations").insert(conversation_data).execute()
-        return result.data[0] if result.data else None
+        conversation = result.data[0] if result.data else None
+        
+        # QUICK FIX: If conversation has workflow_id, add workflow context as system message
+        if conversation and workflow_id:
+            try:
+                logger.info("Adding workflow context to new conversation", 
+                           conversation_id=conversation_id, workflow_id=workflow_id)
+                
+                # Get the workflow data
+                workflow = await self.get_workflow(workflow_id, user_id)
+                if workflow and workflow.get('workflow_data'):
+                    # Add system message with workflow context
+                    workflow_context_message = f"""CURRENT WORKFLOW CONTEXT:
+                    
+Name: {workflow.get('name', 'Untitled')}
+Description: {workflow.get('description', 'No description')}
+Nodes: {len(workflow.get('workflow_data', {}).get('nodes', []))} nodes
+Last Updated: {workflow.get('updated_at')}
+
+Workflow Structure:
+{json.dumps(workflow.get('workflow_data'), indent=2)}
+
+You are helping the user modify, understand, or extend this specific n8n workflow."""
+                    
+                    await self.add_message(
+                        conversation_id=conversation_id,
+                        content=workflow_context_message,
+                        role="system",
+                        message_type="text",
+                        workflow_data=workflow.get('workflow_data'),
+                        token_count=len(workflow_context_message.split())
+                    )
+                    
+                    logger.info("Added workflow context system message", 
+                               conversation_id=conversation_id,
+                               workflow_name=workflow.get('name'),
+                               message_length=len(workflow_context_message))
+                else:
+                    logger.warning("Workflow found but no workflow_data", 
+                                  workflow_id=workflow_id, has_workflow=bool(workflow))
+            except Exception as e:
+                logger.error("Failed to add workflow context to conversation", 
+                           error=str(e), conversation_id=conversation_id, workflow_id=workflow_id)
+                # Don't fail conversation creation if this fails
+        
+        return conversation
 
     async def add_message(
         self,
