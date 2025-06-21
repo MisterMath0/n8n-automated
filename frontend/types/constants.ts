@@ -24,11 +24,12 @@ export const MODEL_ENUM_TO_NAME: Record<AIModel, string> = {
   [AIModel.CLAUDE_4_SONNET]: "Claude 4 Sonnet",
   [AIModel.CLAUDE_4_OPUS]: "Claude 4 Opus",
   // OpenAI/Groq Models
-  [AIModel.GPT_4O]: "GPT-4o",
-  [AIModel.O3]: "OpenAI o3",
+  [AIModel.GPT_4_1]: "GPT-4.1",
+  [AIModel.GPT_4_1_MINI]: "GPT-4.1 Mini",
+  [AIModel.GPT_4_1_NANO]: "GPT-4.1 Nano",
   // Llama Models
-  [AIModel.LLAMA_3_3_70B]: "Llama 3.3 70B",
-  [AIModel.LLAMA_3_1_8B]: "Llama 3.1 8B",
+  //[AIModel.LLAMA_3_3_70B]: "Llama 3.3 70B",
+  //[AIModel.LLAMA_3_1_8B]: "Llama 3.1 8B",
 };
 
 // Map model names to enums (reverse mapping)

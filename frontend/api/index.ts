@@ -148,7 +148,7 @@ export const conversationAPI = {
 
 export const chatAPI = {
   // Get auth headers from Supabase
-  getAuthHeaders: async () => {
+  getAuthHeaders: async (): Promise<Record<string, string>> => {
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session?.access_token) {
@@ -164,8 +164,6 @@ export const chatAPI = {
   sendMessage: async (request: ChatRequest): Promise<ChatResponse> => {
     const authHeaders = await chatAPI.getAuthHeaders();
     const url = `${API_CONFIG.BASE_URL}/api/v1/workflows/chat`;
-    console.log('🔍 Sending message to:', url);
-    console.log('🔍 Auth headers:', authHeaders);
     
     const response = await fetch(url, {
       method: 'POST',
@@ -178,7 +176,6 @@ export const chatAPI = {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('🔍 Chat error response:', errorText);
       throw new Error(`Failed to send message: ${response.status} ${response.statusText}`);
     }
 
@@ -189,7 +186,6 @@ export const chatAPI = {
   getModels: async () => {
     const authHeaders = await chatAPI.getAuthHeaders();
     const url = `${API_CONFIG.BASE_URL}/api/v1/workflows/models`;
-    console.log('🔍 Fetching models from:', url);
     
     try {
       const response = await fetch(url, {
@@ -198,16 +194,13 @@ export const chatAPI = {
           ...authHeaders,  // Add authentication!
         },
       });
-      console.log('🔍 Models response status:', response.status);
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('🔍 Models error response:', errorText);
         throw new Error(`Failed to fetch models: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('🔍 Models data:', data);
       return data;
     } catch (error) {
       console.error('🔍 Models fetch error:', error);

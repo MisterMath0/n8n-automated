@@ -19,12 +19,13 @@ export enum AIModel {
   CLAUDE_4_OPUS = "claude-4-opus",
   
   // OpenAI models
-  GPT_4O = "gpt-4o",
-  O3 = "o3",
-  
+  GPT_4_1 = "gpt-4-1",
+  GPT_4_1_MINI = "gpt-4-1-mini",
+  GPT_4_1_NANO = "gpt-4-1-nano",
+
   // Groq models
-  LLAMA_3_3_70B = "llama-3-3-70b",
-  LLAMA_3_1_8B = "llama-3-1-8b"
+  //LLAMA_3_3_70B = "llama-3-3-70b",
+  //LLAMA_3_1_8B = "llama-3-1-8b"
 }
 
 export interface N8NNode {
