@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { ChatRequest, ChatResponse } from '@/types/api';
+import { API_CONFIG } from '@/lib/api/config';
 
 // Direct Supabase API calls - simple and clean
 export const workflowAPI = {
@@ -146,19 +147,39 @@ export const conversationAPI = {
 };
 
 export const chatAPI = {
+  // Get auth headers from Supabase
+  getAuthHeaders: async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session?.access_token) {
+      return {
+        'Authorization': `Bearer ${session.access_token}`
+      };
+    }
+    
+    return {};
+  },
+
   // Send message to AI (direct fetch to backend)
   sendMessage: async (request: ChatRequest): Promise<ChatResponse> => {
-    const response = await fetch('/api/v1/workflows/chat', {
+    const authHeaders = await chatAPI.getAuthHeaders();
+    const url = `${API_CONFIG.BASE_URL}/api/v1/workflows/chat`;
+    console.log('🔍 Sending message to:', url);
+    console.log('🔍 Auth headers:', authHeaders);
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,  // Add authentication!
       },
       body: JSON.stringify(request),
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to send message');
+      const errorText = await response.text();
+      console.error('🔍 Chat error response:', errorText);
+      throw new Error(`Failed to send message: ${response.status} ${response.statusText}`);
     }
 
     return response.json();
@@ -166,12 +187,31 @@ export const chatAPI = {
 
   // Get available models
   getModels: async () => {
-    const response = await fetch('/api/v1/workflows/models');
+    const authHeaders = await chatAPI.getAuthHeaders();
+    const url = `${API_CONFIG.BASE_URL}/api/v1/workflows/models`;
+    console.log('🔍 Fetching models from:', url);
     
-    if (!response.ok) {
-      throw new Error('Failed to fetch models');
-    }
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,  // Add authentication!
+        },
+      });
+      console.log('🔍 Models response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🔍 Models error response:', errorText);
+        throw new Error(`Failed to fetch models: ${response.status} ${response.statusText}`);
+      }
 
-    return response.json();
+      const data = await response.json();
+      console.log('🔍 Models data:', data);
+      return data;
+    } catch (error) {
+      console.error('🔍 Models fetch error:', error);
+      throw error;
+    }
   },
 };
