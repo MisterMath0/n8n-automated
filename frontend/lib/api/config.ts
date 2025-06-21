@@ -9,11 +9,11 @@ export const API_CONFIG = {
 // API Routes
 export const API_ROUTES = {
   WORKFLOWS: {
-    GENERATE: '/api/v1/workflows/generate',
-    EDIT: '/api/v1/workflows/edit',
-    MODELS: '/api/v1/workflows/models',
-    HEALTH: '/api/v1/workflows/health',
-    CHAT: '/api/v1/workflows/chat',
+    GENERATE: '/v1/workflows/generate',
+    EDIT: '/v1/workflows/edit',
+    MODELS: '/v1/workflows/models',
+    HEALTH: '/v1/workflows/health',
+    CHAT: '/v1/workflows/chat',
   },
 } as const;
 

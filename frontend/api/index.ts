@@ -219,7 +219,7 @@ export const chatAPI = {
   // Send message to AI (direct fetch to backend)
   sendMessage: async (request: ChatRequest): Promise<ChatResponse> => {
     const authHeaders = await chatAPI.getAuthHeaders();
-    const url = `${API_CONFIG.BASE_URL}/api/v1/workflows/chat`;
+    const url = `${API_CONFIG.BASE_URL}/v1/workflows/chat`;
     
     const response = await fetch(url, {
       method: 'POST',
@@ -241,7 +241,7 @@ export const chatAPI = {
   // Get available models
   getModels: async () => {
     const authHeaders = await chatAPI.getAuthHeaders();
-    const url = `${API_CONFIG.BASE_URL}/api/v1/workflows/models`;
+    const url = `${API_CONFIG.BASE_URL}/v1/workflows/models`;
     
     try {
       const response = await fetch(url, {
