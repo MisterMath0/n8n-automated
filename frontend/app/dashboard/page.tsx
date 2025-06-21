@@ -10,7 +10,7 @@ import { useWorkflowUI, WorkflowUIProvider } from "@/stores/WorkflowUIContext";
 import { useToast } from "@/components/providers";
 import { N8NWorkflow } from "@/types/api";
 import { Workflow } from "@/types/workflow";
-import { Sparkles } from "lucide-react";
+import { Bot, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 function DashboardContent() {
@@ -37,12 +37,10 @@ function DashboardContent() {
   const selectedWorkflow = workflows.find(w => w.id === selectedWorkflowId) || null;
   const conversations = selectedWorkflowId ? workflowConversations : orphanConversations;
 
-  // Auto-select first conversation when conversations load
-  useEffect(() => {
-    if (conversations.length > 0 && !activeConversationId) {
-      setActiveConversationId(conversations[0].id);
-    }
-  }, [conversations, activeConversationId, setActiveConversationId]);
+  // REMOVED: Auto-select first conversation when conversations load
+  // This caused random conversation loading which was confusing for users.
+  // Now users start with a clean state and manually select conversations or create new ones.
+  // The welcome message will be shown when no conversation is selected.
 
   const handleWorkflowGenerated = useCallback((workflow: Workflow) => {
     // Handle both new workflow generation and updates
@@ -155,7 +153,7 @@ function DashboardContent() {
                 onClick={handleOpenChat}
                 className="fixed right-4 bottom-4 w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg hover:shadow-green-500/25 transition-all z-50"
               >
-                <span className="text-white font-bold">AI</span>
+                <Bot className="w-5 h-5 text-white" />
               </button>
             )}
           </div>

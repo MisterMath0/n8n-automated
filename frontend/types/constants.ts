@@ -1,12 +1,5 @@
 import { AIModel } from "@/types/api";
-import { Message } from "../components/dashboard/chat/types";
-
-export const welcomeMessage: Message = {
-  id: '1',
-  content: "Hi! Describe any automation you want to create and I'll generate a complete n8n workflow for you.",
-  sender: 'assistant',
-  type: 'text'
-};
+// Welcome message removed - now served from backend via messagesAPI
 
 // Default model (Gemini 2.5 Flash)
 export const DEFAULT_MODEL = AIModel.GPT_4_1_MINI;

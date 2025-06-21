@@ -6,7 +6,7 @@ import structlog
 from .core.config import settings
 from .core.logging import setup_logging
 from .core.dependencies import validate_api_keys
-from .routers import workflows
+from .routers import workflows, messages
 
 
 @asynccontextmanager
@@ -45,6 +45,7 @@ app.add_middleware(
 )
 
 app.include_router(workflows.router)
+app.include_router(messages.router)
 
 
 @app.get("/")

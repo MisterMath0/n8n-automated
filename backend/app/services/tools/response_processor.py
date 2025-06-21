@@ -1,6 +1,8 @@
 from typing import Dict, Any, Optional, List
 import uuid
 import structlog
+import yaml
+from pathlib import Path
 
 from ...models.conversation import ChatResponse, SearchResult, ToolResult, ToolType
 from ...models.workflow import N8NWorkflow, AIModel
@@ -17,6 +19,22 @@ class ResponseProcessor:
     - Tool-enhanced responses  
     - Error responses
     """
+    
+    def __init__(self):
+        """Initialize response processor with prompts config"""
+        self._prompts_config = None
+    
+    def _load_prompts_config(self) -> Dict[str, Any]:
+        """Load prompts configuration from YAML file"""
+        if self._prompts_config is None:
+            try:
+                config_path = Path(__file__).parent.parent.parent.parent / "config" / "prompts.yaml"
+                with open(config_path, 'r', encoding='utf-8') as file:
+                    self._prompts_config = yaml.safe_load(file)
+            except Exception as e:
+                logger.error("Failed to load prompts configuration", error=str(e))
+                self._prompts_config = {}
+        return self._prompts_config
     
     def create_chat_response(
         self,
@@ -74,12 +92,25 @@ class ResponseProcessor:
             if tool_result.tool_name == ToolType.WORKFLOW_GENERATOR:
                 workflow = self._extract_workflow(tool_result)
                 if workflow:
-                    nodes_count = len(workflow.nodes)
-                    gen_time = tool_result.result.get("generation_time", 0)
-                    message_parts.append(
-                        f"I've generated a workflow '{workflow.name}' with {nodes_count} nodes "
-                        f"(generated in {gen_time:.2f}s)."
-                    )
+                    # Use template from prompts.yaml
+                    config = self._load_prompts_config()
+                    template = config.get("responses", {}).get("workflow_generated", "")
+                    
+                    if template:
+                        # Format template with workflow data
+                        nodes_count = len(workflow.nodes)
+                        formatted_message = template.format(
+                            workflow_name=workflow.name,
+                            node_count=nodes_count,
+                            workflow_description=getattr(workflow, 'description', f"A workflow with {nodes_count} nodes")
+                        )
+                        message_parts.append(formatted_message)
+                    else:
+                        # Fallback if template not found
+                        nodes_count = len(workflow.nodes)
+                        message_parts.append(
+                            f"I've generated a workflow for you: '{workflow.name}' with {nodes_count} nodes."
+                        )
                 else:
                     message_parts.append("I generated a workflow but encountered an issue processing it.")
             

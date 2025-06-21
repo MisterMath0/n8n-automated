@@ -9,7 +9,9 @@ import { ModelsError } from "./ModelsError";
 import { ChatInput } from "./ChatInput";
 import { MessagesArea } from "./MessagesArea";
 import { Message } from "./types";
-import { welcomeMessage, DEFAULT_MODEL, SELECTED_MODEL_KEY } from "../../../types/constants";
+import { DEFAULT_MODEL, SELECTED_MODEL_KEY } from "../../../types/constants";
+import { useReadyWelcomeMessage } from "@/hooks/data";
+import { ConversationHistoryAccordion } from "./ConversationHistoryAccordion";
 import { AuthRequired } from "./components/AuthRequired";
 import { useToast } from "@/components/providers";
 
@@ -40,8 +42,12 @@ export function SimpleChat({
   const createWorkflow = useCreateWorkflow();
   const updateWorkflow = useUpdateWorkflow();
   
+  // Messages from backend
+  const { message: welcomeMessage, isLoading: isLoadingWelcome, error: welcomeError } = useReadyWelcomeMessage();
+  
   // Local UI state
   const [inputValue, setInputValue] = useState("");
+  const [pendingMessage, setPendingMessage] = useState<Message | null>(null);
   const [selectedModel, setSelectedModel] = useState<AIModel>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(SELECTED_MODEL_KEY);
@@ -57,15 +63,31 @@ export function SimpleChat({
 
   // Get current conversation and messages
   const currentConversation = conversations.find(c => c.id === conversationId);
-  const messages = currentConversation?.messages 
-    ? [welcomeMessage, ...currentConversation.messages.map((msg: any) => ({
-        id: msg.id,
-        content: msg.content,
-        sender: msg.role === 'user' ? 'user' : 'assistant' as 'user' | 'assistant',
-        type: (msg.message_type || 'text') as 'text' | 'workflow' | 'error',
-        workflowData: msg.workflow_data
-      }))]
-    : [welcomeMessage];
+  
+  // Build messages array with backend welcome message and pending message
+  const messages = React.useMemo(() => {
+    const conversationMessages = currentConversation?.messages?.map((msg: any) => ({
+      id: msg.id,
+      content: msg.content,
+      sender: msg.role === 'user' ? 'user' : 'assistant' as 'user' | 'assistant',
+      type: (msg.message_type || 'text') as 'text' | 'workflow' | 'error',
+      workflowData: msg.workflow_data
+    })) || [];
+    
+    let allMessages = [...conversationMessages];
+    
+    // Add pending message if it exists
+    if (pendingMessage) {
+      allMessages.push(pendingMessage);
+    }
+    
+    // Always include welcome message at the beginning if we have one
+    if (welcomeMessage) {
+      return [welcomeMessage, ...allMessages];
+    }
+    
+    return allMessages;
+  }, [currentConversation, welcomeMessage, pendingMessage]);
 
   // Auto-focus input
   useEffect(() => {
@@ -103,6 +125,13 @@ export function SimpleChat({
     }
   }, []);
 
+  // Handle create new conversation - just clear UI, don't create in DB yet
+  const handleCreateNewConversation = useCallback(() => {
+    // Just clear the conversation selection to show welcome state
+    onConversationChange('');
+    toast.success('Ready for new conversation');
+  }, [onConversationChange, toast]);
+
   // Auto-select model when models load
   useEffect(() => {
     if (availableModels.length > 0) {
@@ -133,6 +162,16 @@ export function SimpleChat({
       }
     }
 
+    // Create pending message for optimistic UI
+    const pendingMsg: Message = {
+      id: `pending-${Date.now()}`,
+      content: message,
+      sender: 'user',
+      type: 'text'
+    };
+    
+    // Show pending message immediately
+    setPendingMessage(pendingMsg);
     setInputValue("");
     
     try {
@@ -147,12 +186,20 @@ export function SimpleChat({
 
       const response = await new Promise<any>((resolve, reject) => {
         sendMessage(request, {
-          onSuccess: resolve,
-          onError: reject,
+          onSuccess: (data) => {
+            // Clear pending message when we get a response
+            setPendingMessage(null);
+            resolve(data);
+          },
+          onError: (error) => {
+            // Clear pending message on error too
+            setPendingMessage(null);
+            reject(error);
+          },
         });
       });
 
-      // Handle workflow generation/updates
+      // Handle workflow generation/updates in separate try-catch to prevent breaking chat
       if (response.workflow) {
         try {
           if (!workflowId) {
@@ -172,8 +219,14 @@ export function SimpleChat({
               workflowId: savedWorkflow.id,
             });
 
-            onWorkflowGenerated?.(savedWorkflow);
-            toast.success(`New workflow "${savedWorkflow.name}" created successfully!`);
+            // Call workflow generated callback safely
+            try {
+              onWorkflowGenerated?.(savedWorkflow);
+              toast.success(`New workflow "${savedWorkflow.name}" created successfully!`);
+            } catch (callbackError) {
+              console.warn('Workflow generated callback failed:', callbackError);
+              toast.success(`New workflow "${savedWorkflow.name}" created!`);
+            }
           } else {
             // EXISTING WORKFLOW: Update existing workflow in database
             const updatedWorkflow = await updateWorkflow.mutateAsync({
@@ -188,16 +241,28 @@ export function SimpleChat({
               },
             });
 
-            onWorkflowGenerated?.(updatedWorkflow);
-            toast.success(`Workflow "${updatedWorkflow.name}" updated successfully!`);
+            // Call workflow generated callback safely
+            try {
+              onWorkflowGenerated?.(updatedWorkflow);
+              toast.success(`Workflow "${updatedWorkflow.name}" updated successfully!`);
+            } catch (callbackError) {
+              console.warn('Workflow updated callback failed:', callbackError);
+              toast.success(`Workflow "${updatedWorkflow.name}" updated!`);
+            }
           }
-        } catch (error) {
-          console.error('Failed to save/update workflow:', error);
-          toast.error(workflowId ? 'Workflow updated but failed to save changes' : 'Workflow generated but failed to save');
+        } catch (workflowError) {
+          // Don't let workflow save errors break the chat - just show warning
+          console.error('Failed to save/update workflow:', workflowError);
+          const errorMsg = workflowId 
+            ? 'Workflow updated but failed to save changes to database' 
+            : 'Workflow generated but failed to save to database';
+          toast.error(errorMsg);
+          // Chat should still work for subsequent messages
         }
       }
     } catch (error) {
-      setInputValue(message); // Restore input on error
+      // On error, restore the input and clear pending message (already done above)
+      setInputValue(message);
       toast.error('Failed to send message');
     }
   }, [inputValue, user, isSending, conversationId, workflowId, selectedModel, createConversation, sendMessage, createWorkflow, updateWorkflow, linkToWorkflow, onConversationChange, onWorkflowGenerated, toast]);
@@ -240,6 +305,14 @@ export function SimpleChat({
         selectedModel={selectedModel}
         modelsLoading={modelsLoading}
         onModelChange={handleModelChange}
+      />
+      
+      <ConversationHistoryAccordion
+        conversations={conversations}
+        activeConversationId={conversationId}
+        workflowId={workflowId}
+        onConversationSelect={onConversationChange}
+        onCreateNew={handleCreateNewConversation}
       />
     </div>
   );

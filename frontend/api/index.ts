@@ -194,6 +194,9 @@ export const conversationAPI = {
   },
 };
 
+// Import messages API
+export { messagesAPI } from './messages';
+
 export const chatAPI = {
   // Get auth headers from Supabase
   getAuthHeaders: async (): Promise<Record<string, string>> => {

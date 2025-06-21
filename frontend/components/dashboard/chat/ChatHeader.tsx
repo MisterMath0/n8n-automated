@@ -27,7 +27,7 @@ export function ChatHeader({
             <Bot className="w-5 h-5 text-white" />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-white font-medium">AI Assistant</span>
+            <span className="text-white font-medium">Assistant</span>
             {selectedModelName && (
               <div className="text-xs text-gray-400">
                 {selectedModelName}
