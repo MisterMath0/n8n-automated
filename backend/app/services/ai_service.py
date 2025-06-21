@@ -149,29 +149,39 @@ class AIService:
         user_message: str,
         conversation_id: str,
         user: CurrentUser,
+        workflow_id: Optional[str] = None,  # Add workflow context!
         model: AIModel = AIModel.GEMINI_2_5_FLASH,  # Default to free Gemini model
         temperature: float = 0.3,
         max_tokens: int = 4000
     ) -> ChatResponse:
         """Tool-based chat with workflow generation and documentation search"""
-        # 1. Get conversation history
+        # 1. Get workflow context if workflow_id is provided
+        workflow_context = None
+        if workflow_id:
+            try:
+                workflow_context = await supabase_service.get_workflow(workflow_id, user.id)
+                logger.info("Retrieved workflow context", workflow_id=workflow_id, workflow_name=workflow_context.get('name', 'Unknown'))
+            except Exception as e:
+                logger.warning("Failed to retrieve workflow context", workflow_id=workflow_id, error=str(e))
+        
+        # 2. Get conversation history
         history_messages = await supabase_service.get_conversation_messages(
             conversation_id=conversation_id,
             user_id=user.id,
             model_key=model.value
         )
 
-        # 2. If no history exists, create the conversation first
+        # 3. If no history exists, create the conversation first
         if not history_messages:
             try:
                 # Create the conversation in the database
                 await supabase_service.create_conversation(
                     user_id=user.id,
                     conversation_id=conversation_id,  # Pass the conversation ID
-                    workflow_id=None,
+                    workflow_id=workflow_id,  # Link to workflow if provided
                     title=None  # Will be set below
                 )
-                logger.info("Created new conversation", conversation_id=conversation_id, user_id=user.id)
+                logger.info("Created new conversation", conversation_id=conversation_id, user_id=user.id, workflow_id=workflow_id)
             except Exception as e:
                 logger.warning("Failed to create conversation (may already exist)", error=str(e), conversation_id=conversation_id)
                 # Continue anyway - the conversation might already exist or there could be a race condition
@@ -185,10 +195,26 @@ class AIService:
                 logger.error("Failed to set conversation title", error=str(e), conversation_id=conversation_id)
                 # Continue anyway - this is not critical
         
-        # 3. Add new user message to history
-        all_messages = history_messages + [{"role": "user", "content": user_message}]
+        # 4. Add workflow context to message history if available
+        if workflow_context:
+            workflow_system_message = {
+                "role": "system", 
+                "content": f"""CURRENT WORKFLOW CONTEXT:
+Name: {workflow_context.get('name', 'Untitled')}
+Description: {workflow_context.get('description', 'No description')}
+Nodes: {len(workflow_context.get('workflow_data', {}).get('nodes', []))} nodes
+Last Updated: {workflow_context.get('updated_at')}
 
-        # 4. Save user message to database BEFORE processing
+Workflow Structure:
+{json.dumps(workflow_context.get('workflow_data'), indent=2)}
+
+You are helping the user modify, understand, or extend this specific n8n workflow."""
+            }
+            all_messages = [workflow_system_message] + history_messages + [{"role": "user", "content": user_message}]
+        else:
+            all_messages = history_messages + [{"role": "user", "content": user_message}]
+
+        # 5. Save user message to database BEFORE processing
         try:
             user_token_count = len(user_message.split())  # Simple token estimation
             await supabase_service.add_message(
@@ -204,7 +230,7 @@ class AIService:
             logger.error("Failed to save user message", error=str(e), conversation_id=conversation_id)
             # Continue anyway - chat can still work without saving
 
-        # 5. Call tool-based chat service
+        # 6. Call tool-based chat service
         response = await self.tool_chat_service.chat(
             messages=[ChatMessage(**msg) for msg in all_messages],
             model=model,
@@ -213,7 +239,7 @@ class AIService:
             conversation_id=conversation_id
         )
 
-        # 6. Save AI response to database AFTER processing
+        # 7. Save AI response to database AFTER processing
         try:
             ai_token_count = response.tokens_used or len(response.message.split())  # Use actual or estimate
             

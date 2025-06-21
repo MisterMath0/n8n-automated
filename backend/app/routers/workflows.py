@@ -29,6 +29,7 @@ async def chat_with_ai(
             user_message=request.user_message,
             conversation_id=request.conversation_id,
             user=current_user,
+            workflow_id=request.workflow_id,  # Pass workflow context!
             model=request.model,
             temperature=request.temperature,
             max_tokens=request.max_tokens

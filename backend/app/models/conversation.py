@@ -57,6 +57,7 @@ class SearchResult(BaseModel):
 class ChatRequest(BaseModel):
     user_message: str = Field(..., description="The user's latest message.")
     conversation_id: str = Field(..., description="Conversation ID")
+    workflow_id: Optional[str] = Field(None, description="Current workflow ID for context")
     model: AIModel = Field(default=AIModel.GEMINI_2_5_FLASH)  # Default to free Gemini model
     temperature: float = Field(default=0.3, ge=0.0, le=2.0)
     max_tokens: int = Field(default=4000, ge=1, le=200000)
