@@ -54,8 +54,6 @@ export function ModelSelector({ selectedModel, availableModels, modelsLoading, i
               const modelEnum = model.model_id;
               const displayName = MODEL_ENUM_TO_NAME[modelEnum] || model.name;
               
-              const isFree = model.cost_per_1k_input_tokens === 0;
-              
               return (
                 <DropdownMenuItem
                   key={model.model_id}
