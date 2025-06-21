@@ -55,7 +55,7 @@ async def root():
         "version": settings.app_version,
         "environment": settings.environment.value,
         "docs": "/docs",
-        "health": "/api/v1/workflows/health"
+        "health": "/v1/workflows/health"
     }
 
 

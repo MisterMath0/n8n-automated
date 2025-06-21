@@ -52,7 +52,7 @@ python test_generation.py
 
 ### Generate Workflow
 ```bash
-POST /api/v1/workflows/generate
+POST /v1/workflows/generate
 ```
 
 Example:
@@ -66,17 +66,17 @@ Example:
 
 ### Edit Workflow
 ```bash
-POST /api/v1/workflows/edit
+POST /v1/workflows/edit
 ```
 
 ### Get Available Models
 ```bash
-GET /api/v1/workflows/models
+GET /v1/workflows/models
 ```
 
 ### Health Check
 ```bash
-GET /api/v1/workflows/health
+GET /v1/workflows/health
 ```
 
 ## Architecture

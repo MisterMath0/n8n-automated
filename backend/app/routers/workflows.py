@@ -15,7 +15,7 @@ from ..core.config_loader import config_loader
 from ..core.auth import get_current_user, CurrentUser
 
 logger = structlog.get_logger()
-router = APIRouter(prefix="/api/v1/workflows", tags=["workflows"])
+router = APIRouter(prefix="/v1/workflows", tags=["workflows"])
 
 
 @router.post("/chat", response_model=ChatResponse)
