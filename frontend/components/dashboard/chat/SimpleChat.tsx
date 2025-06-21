@@ -63,31 +63,12 @@ export function SimpleChat({
   // Get current conversation and messages
   const currentConversation = conversations.find(c => c.id === conversationId);
   
-  // DEBUG: Check if conversations have workflow associations
-  useEffect(() => {
-    if (conversations.length > 0) {
-      console.log('🔍 DEBUG - Conversations for workflow:', {
-        workflowId,
-        conversations: conversations.map(c => ({
-          id: c.id,
-          workflow_id: c.workflow_id,
-          hasWorkflowAssociation: !!c.workflow_id,
-          isLinkedToCurrentWorkflow: c.workflow_id === workflowId
-        }))
-      });
-    }
-  }, [conversations, workflowId]);
   
   // Auto-select first conversation for workflow if none is selected
   // This ensures users don't lose workflow association
   useEffect(() => {
     if (workflowId && conversations.length > 0 && !conversationId) {
       const firstConversation = conversations[0];
-      console.log('🔍 DEBUG - Auto-selecting first conversation for workflow:', {
-        workflowId,
-        conversationId: firstConversation.id,
-        totalConversations: conversations.length
-      });
       onConversationChange(firstConversation.id);
     }
   }, [workflowId, conversations, conversationId, onConversationChange]);
@@ -142,17 +123,8 @@ export function SimpleChat({
   const [previousWorkflowId, setPreviousWorkflowId] = useState(workflowId);
   useEffect(() => {
     if (workflowId !== previousWorkflowId) {
-      console.log('🔍 DEBUG - Workflow changed during chat:', {
-        from: previousWorkflowId,
-        to: workflowId,
-        isSending,
-        currentConversationId: conversationId
-      });
-      
       // ISSUE #2 FIX: Handle workflow changes during message processing
       if (isSending) {
-        console.warn('⚠️ ISSUE #2 DETECTED - Workflow switched during message processing');
-        console.log('🔧 APPLYING FIX: Updating chat context to new workflow');
         
         // Strategy: Don't cancel the message, but clear conversation selection
         // This will make the chat show the correct workflow context
@@ -196,13 +168,6 @@ export function SimpleChat({
     const message = inputValue.trim();
     if (!message || !user || isSending) return;
 
-    console.log('🔍 DEBUG - Send message started:', { 
-      workflowId, 
-      conversationId, 
-      message: message.substring(0, 50) + '...',
-      isSending 
-    });
-
     let activeConversationId = conversationId;
 
     // VALIDATION: Ensure conversation and workflow context are consistent
@@ -222,15 +187,9 @@ export function SimpleChat({
 
     // Create conversation if none exists
     if (!activeConversationId) {
-      console.log('🔍 DEBUG - Creating new conversation for workflow:', workflowId);
       try {
         const newConversation = await createConversation.mutateAsync({ workflowId: workflowId || undefined });
         activeConversationId = newConversation.id;
-        console.log('🔍 DEBUG - New conversation created and selected:', { 
-          conversationId: activeConversationId, 
-          workflowId,
-          note: 'Conversation should now appear in list and be active'
-        });
         
         // CRITICAL: Ensure the conversation is selected in the UI
         onConversationChange(activeConversationId);
@@ -264,15 +223,6 @@ export function SimpleChat({
         temperature: 0.3,
         max_tokens: 4000,
       };
-
-      console.log('🔍 DEBUG - Sending message with request:', {
-        conversationId: request.conversation_id,
-        workflowId: request.workflow_id,
-        model: request.model,
-        hasWorkflowAssociation: !!request.workflow_id,
-        currentConversationWorkflowId: currentConversation?.workflow_id,
-        conversationMatchesWorkflow: currentConversation?.workflow_id === workflowId
-      });
 
       // Send message - React Query optimistic updates handle UI
       const response = await new Promise<any>((resolve, reject) => {

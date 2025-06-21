@@ -166,6 +166,7 @@ export const conversationAPI = {
 
   // Create conversation
   create: async (userId: string, workflowId?: string) => {
+    
     const { data, error } = await supabase
       .from('conversations')
       .insert({
@@ -176,7 +177,11 @@ export const conversationAPI = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('🔍 DEBUG - Failed to create conversation:', error);
+      throw error;
+    }
+    
     return data;
   },
 

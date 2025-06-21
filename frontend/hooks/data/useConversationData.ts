@@ -20,16 +20,10 @@ export function useWorkflowConversations(workflowId: string | null) {
     ? conversationKeys.byWorkflow(workflowId)
     : conversationKeys.orphan(user?.id || '');
   
-  console.log('🔍 DEBUG - useWorkflowConversations called:', {
-    workflowId,
-    queryKey,
-    enabled: !!workflowId || !workflowId // Always enabled now
-  });
   
   return useQuery({
     queryKey,
     queryFn: () => {
-      console.log('🔍 DEBUG - Fetching conversations for:', { workflowId, userId: user?.id });
       return workflowId 
         ? conversationAPI.listByWorkflow(workflowId)
         : conversationAPI.listOrphan(user!.id);
@@ -57,15 +51,9 @@ export function useCreateConversation() {
   
   return useMutation({
     mutationFn: ({ workflowId }: { workflowId?: string } = {}) => {
-      console.log('🔍 DEBUG - Creating conversation:', { workflowId, userId: user?.id });
       return conversationAPI.create(user!.id, workflowId);
     },
     onSuccess: (data, { workflowId }) => {
-      console.log('🔍 DEBUG - Conversation created successfully:', {
-        conversationId: data.id,
-        workflowId,
-        note: 'Immediately updating conversation list with new conversation'
-      });
       
       // IMMEDIATE CACHE UPDATE (not invalidation):
       // Directly add the new conversation to the cache to show it immediately
@@ -77,11 +65,9 @@ export function useCreateConversation() {
         // Check if conversation already exists to avoid duplicates
         const exists = old.find(conv => conv.id === data.id);
         if (exists) {
-          console.log('🔍 DEBUG - Conversation already in cache, updating it');
           return old.map(conv => conv.id === data.id ? data : conv);
         }
         
-        console.log('🔍 DEBUG - Adding new conversation to cache');
         return [data, ...old]; // Add to beginning of list
       });
     },

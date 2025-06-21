@@ -40,21 +40,9 @@ export function useSendMessage() {
         ? conversationKeys.byWorkflow(request.workflow_id)
         : conversationKeys.orphan(user?.id || '');
       
-      console.log('🔍 DEBUG - Optimistic update with proper cancellation:', {
-        queryKey,
-        workflowId: request.workflow_id,
-        conversationId: request.conversation_id,
-        userId: user?.id,
-        note: 'Queries cancelled to prevent race conditions'
-      });
-      
       // Get previous conversations for rollback
       const previousConversations = queryClient.getQueryData(queryKey);
       
-      console.log('🔍 DEBUG - Previous conversations found:', {
-        count: Array.isArray(previousConversations) ? previousConversations.length : 'not array',
-        hasData: !!previousConversations
-      });
       
       // Create optimistic user message
       const optimisticMessage = {
@@ -71,7 +59,6 @@ export function useSendMessage() {
       queryClient.setQueryData(queryKey, (old: any[]) => {
         // IMPROVED: Handle case where conversations might not be loaded yet
         if (!old) {
-          console.log('🔍 DEBUG - No conversations in cache yet, creating new array with conversation');
           // Create a minimal conversation object for the optimistic update
           const newConversation = {
             id: request.conversation_id,
@@ -88,7 +75,6 @@ export function useSendMessage() {
         const conversationExists = old.find(c => c.id === request.conversation_id);
         
         if (!conversationExists) {
-          console.log('🔍 DEBUG - Conversation not in cache, adding it with optimistic message');
           // Add the conversation to the cache with the optimistic message
           const newConversation = {
             id: request.conversation_id,
@@ -113,7 +99,6 @@ export function useSendMessage() {
           return conversation;
         });
         
-        console.log('🔍 DEBUG - Updated existing conversation with optimistic message');
         return updatedConversations;
       });
       
@@ -142,25 +127,15 @@ export function useSendMessage() {
         ? conversationKeys.byWorkflow(request.workflow_id)
         : conversationKeys.orphan(user?.id || '');
       
-      console.log('🔍 DEBUG - Message mutation settled, checking for invalidation:', {
-        queryKey,
-        workflowId: request.workflow_id,
-        error: error?.message,
-        success: !error
-      });
       
       // ADVANCED: Don't invalidate if other mutations are running
       // This prevents race conditions during concurrent operations
       const mutationCount = queryClient.isMutating();
       
       if (mutationCount > 1) {
-        console.log('🔍 DEBUG - Other mutations running, skipping invalidation to prevent race conditions:', {
-          mutationCount
-        });
         return;
       }
       
-      console.log('🔍 DEBUG - Safe to invalidate, no other mutations running');
       queryClient.invalidateQueries({ queryKey });
     },
   });
