@@ -81,7 +81,7 @@ class BM25DocumentationSearch:
     def search(
         self,
         query: str,
-        top_k: int = None,
+        top_k: Optional[int] = None,
         filters: Optional[Dict[str, Any]] = None,
         include_highlights: bool = True
     ) -> Tuple[List[SearchResult], SearchStats]:

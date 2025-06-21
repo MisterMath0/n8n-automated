@@ -4,7 +4,7 @@ A production-grade FastAPI backend for generating and editing N8N workflows usin
 
 ## Features
 
-- **Multi-AI Provider Support**: Claude 4, OpenAI GPT-4o/o3, Groq Llama models
+- **Multi-AI Provider Support**: Claude 4, OpenAI GPT-4.1/o3, Groq Llama models
 - **Modern Architecture**: Clean separation of concerns, configuration-driven
 - **Production Ready**: Proper error handling, logging, validation
 - **Type Safe**: Full Pydantic models and type hints
@@ -117,8 +117,7 @@ Runtime configuration and API keys.
 - Claude 4 Opus (highest quality)
 
 ### OpenAI
-- GPT-4o (multimodal)
-- o3 (reasoning)
+- GPT-4.1 series (multimodal)
 
 ### Groq
 - Llama 3.3 70B (fast inference)

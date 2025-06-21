@@ -72,34 +72,49 @@ models:
     default_temperature: 0.3
 
   # OpenAI models
-  gpt-4o:
-    name: "GPT-4o"
+  gpt-4-1:
+    name: "GPT-4.1"
     provider: "openai"
-    model_id: "gpt-4o"
+    model_id: "gpt-4-1"
     base_url: "https://api.openai.com/v1"
     api_key_env: "OPENAI_API_KEY"
-    max_tokens: 128000
-    cost_per_1k_input_tokens: 2.5
-    cost_per_1k_output_tokens: 10.0
+    max_tokens: 32768
+    cost_per_1k_input_tokens: 2.0 # Assumed per 1M tokens
+    cost_per_1k_output_tokens: 8.0 # Assumed per 1M tokens
     supports_json_mode: true
     supports_streaming: true
     supports_tools: true
-    context_window: 128000
+    context_window: 1047576
     default_temperature: 0.3
 
-  o3:
-    name: "OpenAI o3"
+  gpt-4-1-mini:
+    name: "GPT-4.1 mini"
     provider: "openai"
-    model_id: "o3"
+    model_id: "gpt-4.1-mini"
     base_url: "https://api.openai.com/v1"
     api_key_env: "OPENAI_API_KEY"
-    max_tokens: 128000
-    cost_per_1k_input_tokens: 10.0
-    cost_per_1k_output_tokens: 40.0
+    max_tokens: 32768
+    cost_per_1k_input_tokens: 0.40 # Assumed per 1M tokens
+    cost_per_1k_output_tokens: 1.60 # Assumed per 1M tokens
     supports_json_mode: true
     supports_streaming: true
     supports_tools: true
-    context_window: 128000
+    context_window: 1047576
+    default_temperature: 0.3
+  
+  gpt-4-1-nano:
+    name: "GPT-4.1 nano"
+    provider: "openai"
+    model_id: "gpt-4.1-nano"
+    base_url: "https://api.openai.com/v1"
+    api_key_env: "OPENAI_API_KEY"
+    max_tokens: 32768
+    cost_per_1k_input_tokens: 0.10 # Assumed per 1M tokens
+    cost_per_1k_output_tokens: 0.40 # Assumed per 1M tokens
+    supports_json_mode: true
+    supports_streaming: true
+    supports_tools: true
+    context_window: 1047576
     default_temperature: 0.3
 
   # Groq models
@@ -139,13 +154,13 @@ default_model: "gemini-2-5-flash"  # Free, high-performance model with 1M contex
 # Provider priority (for fallback)
 provider_priority:
   - "google"     # Free tier, high context
+  - "openai"     # Reliable
   - "anthropic"  # High quality
   - "groq"       # Fast inference  
-  - "openai"     # Reliable
 
 # Chat-related settings
 chat_settings:
-  default_context_window: 8000  # Default token limit for chat history
+  default_context_window: 32000  # Default token limit for chat history
   
   # Per-model overrides for context window (in tokens)
   # Allows for different history limits based on model capabilities
@@ -155,4 +170,4 @@ chat_settings:
     "gemini-2-5-flash": 12000
     "gemini-1-5-pro": 16000
     "claude-4-sonnet": 10000
-    "gpt-4o": 12000
+    "gpt-4.1": 12000

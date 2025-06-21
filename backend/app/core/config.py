@@ -26,7 +26,7 @@ class AIModelConfig(BaseModel):
 
 class ChatSettingsConfig(BaseModel):
     default_context_window: int = Field(
-        default=8000, 
+        default=32000, 
         description="Default token limit for chat history context."
     )
     model_context_windows: Dict[str, int] = Field(

@@ -1,8 +1,6 @@
-import uuid
 import time
-import asyncio
 import json
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Dict, Any, Optional, List
 
 import openai
 import anthropic
@@ -10,27 +8,23 @@ import structlog
 from google import genai
 from google.genai import types
 
-from ..models.workflow import AIModel, N8NWorkflow, N8NNode, N8NConnection
+from ..models.workflow import AIModel, N8NWorkflow
 from ..models.conversation import ChatMessage, ChatResponse
 from ..core.config import settings
 from ..core.config_loader import config_loader
 from .tools import ToolBasedChatService
 from .supabase_service import supabase_service
-from ..core.auth import get_current_user, CurrentUser
+from ..core.auth import CurrentUser
 from ..utils.structured_output import (
     create_n8n_workflow_schema,
+    get_schema_for_provider,
     parse_workflow_with_recovery,
-    extract_json_from_response
 )
 
 logger = structlog.get_logger()
 
-
 class AIServiceError(Exception):
     pass
-
-
-
 
 
 class AIService:
@@ -198,17 +192,17 @@ class AIService:
         # 4. Add workflow context to message history if available
         if workflow_context:
             workflow_system_message = {
-                "role": "system", 
-                "content": f"""CURRENT WORKFLOW CONTEXT:
-Name: {workflow_context.get('name', 'Untitled')}
-Description: {workflow_context.get('description', 'No description')}
-Nodes: {len(workflow_context.get('workflow_data', {}).get('nodes', []))} nodes
-Last Updated: {workflow_context.get('updated_at')}
+                                "role": "system", 
+                                "content": f"""CURRENT WORKFLOW CONTEXT:
+                                Name: {workflow_context.get('name', 'Untitled')}
+                                Description: {workflow_context.get('description', 'No description')}
+                                Nodes: {len(workflow_context.get('workflow_data', {}).get('nodes', []))} nodes
+                                Last Updated: {workflow_context.get('updated_at')}
 
-Workflow Structure:
-{json.dumps(workflow_context.get('workflow_data'), indent=2)}
+                                Workflow Structure:
+                                {json.dumps(workflow_context.get('workflow_data'), indent=2)}
 
-You are helping the user modify, understand, or extend this specific n8n workflow."""
+                                You are helping the user modify, understand, or extend this specific n8n workflow."""
             }
             all_messages = [workflow_system_message] + history_messages + [{"role": "user", "content": user_message}]
         else:
@@ -338,7 +332,7 @@ You are helping the user modify, understand, or extend this specific n8n workflo
             # Generate workflow JSON using the appropriate provider
             if config.provider == "google":
                 # Use structured output with schema for Google GenAI
-                workflow_schema = create_n8n_workflow_schema()
+                workflow_schema = get_schema_for_provider("google")
                 
                 logger.info("Using Google GenAI structured output for workflow generation")
                 

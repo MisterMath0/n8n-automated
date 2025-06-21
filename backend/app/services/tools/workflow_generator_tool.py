@@ -77,7 +77,7 @@ class WorkflowGeneratorTool(BaseTool):
                 description=enhanced_description,
                 model=model,
                 temperature=0.3,
-                max_tokens=4000
+                max_tokens=8000
             )
             
             logger.info(
@@ -110,7 +110,6 @@ class WorkflowGeneratorTool(BaseTool):
         # Get ALL relevant results
         search_results, stats = self.search_service.search(
             f"{description} nodes integrations parameters examples",
-            top_k=100,  # Get even more!
             include_highlights=True
         )
         

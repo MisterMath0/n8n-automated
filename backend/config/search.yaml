@@ -68,7 +68,7 @@ search:
     default_top_k: 10
     
     # Maximum number of results that can be requested
-    max_top_k: 50
+    max_top_k: 30
     
     # Minimum score threshold for results
     # Results with scores below this are filtered out
