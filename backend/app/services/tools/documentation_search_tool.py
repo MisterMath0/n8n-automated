@@ -4,6 +4,7 @@ import structlog
 from .base_tool import BaseTool
 from ...models.conversation import ToolCall, ToolResult, SearchResult
 from ..doc_search_service import get_search_service
+from ...core.config_loader import config_loader
 
 logger = structlog.get_logger()
 
@@ -26,7 +27,6 @@ class DocumentationSearchTool(BaseTool):
     
     @property
     def description(self) -> str:
-        from ...core.config_loader import config_loader
         prompts_config = config_loader.load_config("prompts")
         return prompts_config["tools"]["documentation_search"]["description"]
     
