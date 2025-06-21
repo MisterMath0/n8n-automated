@@ -48,28 +48,18 @@ tools:
 
       CRITICAL REQUIREMENTS:
       1. Return ONLY valid JSON - no markdown, explanations, or extra text
-      2. Use proper N8N node types (e.g., "n8n-nodes-base.webhook", "n8n-nodes-base.slack")
+      2. Use proper N8N node types up to date from the documentation (e.g., "n8n-nodes-base.webhook", "n8n-nodes-base.slack")
       3. Generate unique node names and UUIDs for IDs
-      4. Connect nodes using the "connections" object with node NAMES
+      4. MUST Connect nodes using the "connections" object with node NAMES
       5. Set realistic positions [x, y] for visual layout
       6. Include required parameters for each node type
+      6. Pre-fill data mappings, system prompts, and other data types according to the documentation
 
       COMMON NODE TYPES:
       - Triggers: n8n-nodes-base.webhook, n8n-nodes-base.manualTrigger
       - Actions: n8n-nodes-base.slack, n8n-nodes-base.gmail, n8n-nodes-base.httpRequest
       - Core: n8n-nodes-base.set, n8n-nodes-base.if, n8n-nodes-base.merge
       - Code: n8n-nodes-base.code
-
-      CONNECTION STRUCTURE:
-      "connections": {
-        "Source Node Name": {
-          "main": [
-            [
-              {"node": "Target Node Name", "type": "main", "index": 0}
-            ]
-          ]
-        }
-      }
 
   documentation_search:
     description: |
