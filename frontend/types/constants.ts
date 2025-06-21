@@ -9,7 +9,7 @@ export const welcomeMessage: Message = {
 };
 
 // Default model (Gemini 2.5 Flash)
-export const DEFAULT_MODEL = AIModel.GEMINI_2_5_FLASH;
+export const DEFAULT_MODEL = AIModel.GPT_4_1_MINI;
 
 // Local storage key for selected model
 export const SELECTED_MODEL_KEY = 'n8n_selected_model';
