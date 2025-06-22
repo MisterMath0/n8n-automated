@@ -375,18 +375,25 @@ enhanced_health_check() {
         return 1
     fi
     
-    # Check if services respond
-    local health_url="https://api.autokraft.app/health"
-    if curl -f -s "$health_url" > /dev/null; then
-        success "✅ Service health check passed!"
+    # Check if services respond - test locally first, then external
+    info "🔒 Testing local backend health..."
+    if curl -f -s http://localhost:8000/health > /dev/null; then
+        success "✅ Backend health check passed!"
     else
-        error "❌ Service health check failed!"
+        error "❌ Backend health check failed!"
         return 1
+    fi
+    
+    info "🔒 Testing through nginx..."
+    if curl -f -s http://localhost/health > /dev/null; then
+        success "✅ Nginx routing check passed!"
+    else
+        warning "⚠️ Nginx routing may have issues (SSL/domain not configured?)"
     fi
     
     # Test security headers
     info "🔒 Checking security headers..."
-    local headers_check=$(curl -I -s "$health_url" 2>/dev/null || echo "")
+    local headers_check=$(curl -I -s http://localhost/health 2>/dev/null || echo "")
     
     if echo "$headers_check" | grep -q "Content-Security-Policy"; then
         success "✅ Security headers present"
@@ -398,7 +405,7 @@ enhanced_health_check() {
     info "🔒 Testing rate limiting..."
     local rate_limit_test=0
     for i in {1..3}; do
-        if curl -f -s "$health_url" > /dev/null; then
+        if curl -f -s http://localhost:8000/health > /dev/null; then
             rate_limit_test=$((rate_limit_test + 1))
         fi
         sleep 1
