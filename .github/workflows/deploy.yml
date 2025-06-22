@@ -22,7 +22,7 @@ env:
   SERVER_HOST: 91.99.108.18
   SERVER_USER: root
   PROJECT_PATH: /root/n8n-automated
-  HEALTH_CHECK_URL: https://n8n.automizeagency.com/health
+  HEALTH_CHECK_URL: https://api.autokraft.app/health
 
 jobs:
   # Test job - runs on every PR and push
@@ -88,7 +88,7 @@ jobs:
     
     environment:
       name: production
-      url: https://n8n.automizeagency.com
+      url: https://autokraft.app
     
     steps:
     - name: Checkout code
@@ -148,7 +148,7 @@ jobs:
       run: |
         if [ "${{ job.status }}" == "success" ]; then
           echo "🎉 Deployment successful!"
-          echo "🌐 Site: https://n8n.automizeagency.com"
+          echo "🌐 Site: https://autokraft.app"
         else
           echo "❌ Deployment failed!"
         fi
@@ -161,7 +161,7 @@ jobs:
     
     environment:
       name: ${{ github.event.inputs.environment }}
-      url: https://n8n.automizeagency.com
+      url: https://autokraft.app
     
     steps:
     - name: Checkout code

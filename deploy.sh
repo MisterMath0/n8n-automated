@@ -58,8 +58,8 @@ info_mode() {
     info "🌐 Service Availability Test:"
     
     local endpoints=(
-        "https://n8n.automizeagency.com:Health Check"
-        "https://n8n.automizeagency.com/api:API Endpoint"
+        "https://api.autokraft.app:Health Check"
+        "https://api.autokraft.app:API Endpoint"
     )
     
     for endpoint_info in "${endpoints[@]}"; do
@@ -328,9 +328,9 @@ show_status() {
     echo ""
     
     log "🌐 Service URLs:"
-    echo "Frontend: https://n8n.automizeagency.com"
-    echo "Backend API: https://n8n.automizeagency.com/api"
-    echo "Health Check: https://n8n.automizeagency.com/health"
+    echo "Frontend: https://autokraft.app"
+    echo "Backend API: https://api.autokraft.app"
+    echo "Health Check: https://api.autokraft.app/health"
     echo ""
     
     # Show security status
@@ -383,7 +383,7 @@ enhanced_health_check() {
     fi
     
     # Check if services respond
-    local health_url="https://n8n.automizeagency.com/health"
+    local health_url="https://api.autokraft.app/health"
     if curl -f -s "$health_url" > /dev/null; then
         success "✅ Service health check passed!"
     else
