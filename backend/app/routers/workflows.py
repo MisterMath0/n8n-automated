@@ -22,7 +22,7 @@ router = APIRouter(prefix="/v1/workflows", tags=["workflows"])
 
 
 @router.post("/chat", response_model=ChatResponse)
-@limiter.limit("10/minute")
+@limiter.limit("60/minute")  # 1 request per second average
 async def chat_with_ai(
     http_request: Request,
     request: ChatRequest,
@@ -70,7 +70,7 @@ async def chat_with_ai(
 
 
 @router.post("/search-docs", response_model=DocumentationSearchResponse)
-@limiter.limit("30/minute")
+@limiter.limit("120/minute")  # 2 requests per second average
 async def search_documentation(
     http_request: Request,
     request: DocumentationSearchRequest,
@@ -134,7 +134,7 @@ async def search_documentation(
 
 
 @router.get("/models")
-@limiter.limit("60/minute")
+@limiter.limit("300/minute")  # 5 requests per second
 async def get_available_models(request: Request):
     """Get available AI models"""
     try:
@@ -198,7 +198,7 @@ async def health_check(request: Request):
 
 
 @router.patch("/conversations/{conversation_id}/workflow")
-@limiter.limit("20/minute")
+@limiter.limit("60/minute")  # 1 request per second
 async def update_conversation_workflow(
     request: Request,
     conversation_id: str,

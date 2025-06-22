@@ -53,7 +53,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 if settings.is_production:
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["autokraft.app", "*.autokraft.app"]
+        allowed_hosts=["autokraft.app", "*.autokraft.app", "localhost", "127.0.0.1"]
     )
 
 app.add_middleware(
