@@ -121,21 +121,15 @@ export function useSendMessage() {
       // No need to manually update cache here
     },
     onSettled: (response, error, request) => {
-      // Always refetch to get the real server state
-      // This will replace optimistic updates with real data
+      // ✅ FIX: TkDodo's recommended pattern - Always invalidate
+      // Let React Query handle race conditions internally
+      // The flawed mutationCount logic caused race conditions
       const queryKey = request.workflow_id 
         ? conversationKeys.byWorkflow(request.workflow_id)
         : conversationKeys.orphan(user?.id || '');
       
-      
-      // ADVANCED: Don't invalidate if other mutations are running
-      // This prevents race conditions during concurrent operations
-      const mutationCount = queryClient.isMutating();
-      
-      if (mutationCount > 1) {
-        return;
-      }
-      
+      // Always invalidate to get the real server state
+      // React Query will handle concurrent invalidations properly
       queryClient.invalidateQueries({ queryKey });
     },
   });

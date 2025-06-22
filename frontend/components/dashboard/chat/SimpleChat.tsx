@@ -75,13 +75,15 @@ export function SimpleChat({
   
   // Build messages array with backend welcome message
   const messages = React.useMemo(() => {
-    const conversationMessages = currentConversation?.messages?.map((msg: any) => ({
-      id: msg.id,
-      content: msg.content,
-      sender: msg.role === 'user' ? 'user' : 'assistant' as 'user' | 'assistant',
-      type: (msg.message_type || 'text') as 'text' | 'workflow' | 'error',
-      workflowData: msg.workflow_data
-    })) || [];
+    const conversationMessages = currentConversation?.messages
+      ?.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) // ✅ BACKUP: Ensure chronological order
+      ?.map((msg: any) => ({
+        id: msg.id,
+        content: msg.content,
+        sender: msg.role === 'user' ? 'user' : 'assistant' as 'user' | 'assistant',
+        type: (msg.message_type || 'text') as 'text' | 'workflow' | 'error',
+        workflowData: msg.workflow_data
+      })) || [];
     
     // Always include welcome message at the beginning if we have one
     if (welcomeMessage) {
@@ -123,19 +125,18 @@ export function SimpleChat({
   const [previousWorkflowId, setPreviousWorkflowId] = useState(workflowId);
   useEffect(() => {
     if (workflowId !== previousWorkflowId) {
-      // ISSUE #2 FIX: Handle workflow changes during message processing
-      if (isSending) {
-        
-        // Strategy: Don't cancel the message, but clear conversation selection
-        // This will make the chat show the correct workflow context
-        // The ongoing message will complete in the background
-        onConversationChange(''); // Clear conversation to show workflow change
+      // ✅ FIX: Only handle workflow changes when NOT sending messages
+      // Prevent breaking the message flow during active sending
+      if (!isSending) {
+        // Safe to switch workflows when not actively sending
         toast.info(`Switched to ${workflowId ? 'workflow' : 'new workflow'} context`);
       }
+      // Note: If switching during send, let the message complete normally
+      // The conversation will be properly associated with the correct workflow
       
       setPreviousWorkflowId(workflowId);
     }
-  }, [workflowId, previousWorkflowId, isSending, conversationId, onConversationChange, toast]);
+  }, [workflowId, previousWorkflowId, isSending, toast]);
 
   // Handle model change
   const handleModelChange = useCallback((model: AIModel) => {

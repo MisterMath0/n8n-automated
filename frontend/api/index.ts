@@ -134,10 +134,20 @@ export const conversationAPI = {
         )
       `)
       .eq('workflow_id', workflowId)
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: false })
+      .order('created_at', { foreignTable: 'messages', ascending: true }); // ✅ FIX: Order nested messages chronologically
     
     if (error) throw error;
-    return data || [];
+    
+    // ✅ BACKUP: Client-side sorting as fallback
+    const sortedData = (data || []).map(conversation => ({
+      ...conversation,
+      messages: (conversation.messages || []).sort(
+        (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      )
+    }));
+    
+    return sortedData;
   },
 
   // Get conversations without workflow (for new workflow generation)
@@ -158,10 +168,20 @@ export const conversationAPI = {
       `)
       .eq('user_id', userId)
       .is('workflow_id', null)
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: false })
+      .order('created_at', { foreignTable: 'messages', ascending: true }); // ✅ FIX: Order nested messages chronologically
     
     if (error) throw error;
-    return data || [];
+    
+    // ✅ BACKUP: Client-side sorting as fallback
+    const sortedData = (data || []).map(conversation => ({
+      ...conversation,
+      messages: (conversation.messages || []).sort(
+        (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      )
+    }));
+    
+    return sortedData;
   },
 
   // Create conversation
