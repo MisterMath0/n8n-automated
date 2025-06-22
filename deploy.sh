@@ -1,139 +1,7 @@
-# NEW: Info mode - read-only status check (no sudo required)
-info_mode() {
-    info "📊 N8N Automated - System Information (Read-Only Mode)"
-    echo ""
-    
-    # Basic system info
-    info "🖥️  System Information:"
-    echo "Date: $(date)"
-    echo "User: $(whoami)"
-    echo "Directory: $(pwd)"
-    echo ""
-    
-    # Check if Docker is available
-    if command -v docker &> /dev/null; then
-        success "✅ Docker: Available"
-        
-        # Check if docker-compose is available
-        if command -v docker-compose &> /dev/null || docker compose version &> /dev/null; then
-            success "✅ Docker Compose: Available"
-            
-            # Try to get container status (may fail without sudo, that's ok)
-            info "🐳 Container Status:"
-            if docker compose ps 2>/dev/null; then
-                echo ""
-            else
-                warning "⚠️  Cannot access container status (requires sudo for full details)"
-                echo ""
-            fi
-        else
-            error "❌ Docker Compose: Not available"
-        fi
-    else
-        error "❌ Docker: Not available"
-    fi
-    
-    # Check if .env file exists
-    info "📁 Configuration Files:"
-    if [ -f "backend/.env" ]; then
-        success "✅ backend/.env: Present"
-    else
-        error "❌ backend/.env: Missing"
-    fi
-    
-    if [ -f "docker-compose.yml" ]; then
-        success "✅ docker-compose.yml: Present"
-    else
-        error "❌ docker-compose.yml: Missing"
-    fi
-    
-    if [ -f "deployment/nginx.conf" ]; then
-        success "✅ deployment/nginx.conf: Present"
-    else
-        warning "⚠️  deployment/nginx.conf: Missing"
-    fi
-    echo ""
-    
-    # Test service availability (public endpoints)
-    info "🌐 Service Availability Test:"
-    
-    local endpoints=(
-        "https://api.autokraft.app:Health Check"
-        "https://api.autokraft.app:API Endpoint"
-    )
-    
-    for endpoint_info in "${endpoints[@]}"; do
-        local url=$(echo "$endpoint_info" | cut -d: -f1)
-        local name=$(echo "$endpoint_info" | cut -d: -f2)
-        
-        if curl -f -s --max-time 5 "$url" > /dev/null 2>&1; then
-            success "✅ $name: Online"
-        else
-            error "❌ $name: Offline or unreachable"
-        fi
-    done
-    echo ""
-    
-    # Security configuration check (read-only)
-    info "🔒 Security Configuration (Basic Check):"
-    
-    if [ -f "backend/.env" ]; then
-        if grep -q "SECRET_KEY=" backend/.env && ! grep -q "change-this-in-production\|CHANGE_THIS_IMMEDIATELY" backend/.env; then
-            success "✅ JWT Secret: Configured"
-        else
-            error "❌ JWT Secret: Default or missing"
-        fi
-        
-        if grep -q "CORS_ORIGINS=" backend/.env && ! grep -q "\*" backend/.env; then
-            success "✅ CORS: Restricted"
-        else
-            error "❌ CORS: Permissive or misconfigured"
-        fi
-        
-        local required_vars=("SUPABASE_URL" "SUPABASE_SERVICE_ROLE_KEY" "SUPABASE_JWT_SECRET")
-        local missing_vars=0
-        for var in "${required_vars[@]}"; do
-            if ! grep -q "^${var}=" backend/.env || grep -q "^${var}=your_" backend/.env; then
-                missing_vars=$((missing_vars + 1))
-            fi
-        done
-        
-        if [ $missing_vars -eq 0 ]; then
-            success "✅ Required Environment Variables: Configured"
-        else
-            error "❌ Required Environment Variables: $missing_vars missing or have default values"
-        fi
-    else
-        error "❌ Cannot check security configuration: .env file missing"
-    fi
-    
-    if [ -f "deployment/nginx.conf" ] && grep -q "Content-Security-Policy" deployment/nginx.conf; then
-        success "✅ Security Headers: Configured"
-    else
-        warning "⚠️  Security Headers: Not configured or nginx.conf missing"
-    fi
-    echo ""
-    
-    # Usage information
-    info "💡 Usage Information:"
-    echo "For deployment operations, use: sudo ./deploy.sh [option]"
-    echo "For detailed help: ./deploy.sh --help"
-    echo "To run security check only: sudo ./deploy.sh --security-check"
-    echo ""
-}#!/bin/bash
+#!/bin/bash
 
 # deploy.sh - Secure Server Management Script
 # Usage: ./deploy.sh [option]
-# Options:
-#   -d    Deploy (rebuild and restart containers with security checks)
-#   -r    Restart containers
-#   -u    Update (pull changes and deploy)
-#   -x    Stop containers
-#   -s    Show status
-#   -l    Show logs
-#   -c    Cleanup unused Docker resources
-#   -h    Health check
-#   --security-check    Run security validation only
 
 set -e
 
@@ -197,7 +65,132 @@ navigate_to_project() {
     fi
 }
 
-# NEW: Security validation function
+# Info mode - read-only status check (no sudo required)
+info_mode() {
+    info "📊 AutoKraft - System Information (Read-Only Mode)"
+    echo ""
+    
+    # Basic system info
+    info "🖥️  System Information:"
+    echo "Date: $(date)"
+    echo "User: $(whoami)"
+    echo "Directory: $(pwd)"
+    echo ""
+    
+    # Check if Docker is available
+    if command -v docker &> /dev/null; then
+        success "✅ Docker: Available"
+        
+        # Check if docker-compose is available
+        if command -v docker-compose &> /dev/null || docker compose version &> /dev/null; then
+            success "✅ Docker Compose: Available"
+            
+            # Try to get container status (may fail without sudo, that's ok)
+            info "🐳 Container Status:"
+            if docker compose ps 2>/dev/null; then
+                echo ""
+            else
+                warning "⚠️  Cannot access container status (requires sudo for full details)"
+                echo ""
+            fi
+        else
+            error "❌ Docker Compose: Not available"
+        fi
+    else
+        error "❌ Docker: Not available"
+    fi
+    
+    # Check if .env file exists
+    info "📁 Configuration Files:"
+    if [ -f "backend/.env" ]; then
+        success "✅ backend/.env: Present"
+    else
+        error "❌ backend/.env: Missing"
+    fi
+    
+    if [ -f "docker-compose.yml" ]; then
+        success "✅ docker-compose.yml: Present"
+    else
+        error "❌ docker-compose.yml: Missing"
+    fi
+    
+    if [ -f "deployment/nginx.conf" ]; then
+        success "✅ deployment/nginx.conf: Present"
+    else
+        warning "⚠️  deployment/nginx.conf: Missing"
+    fi
+    echo ""
+    
+    # Test service availability (public endpoints)
+    info "🌐 Service Availability Test:"
+    
+    local endpoints=(
+        "https://autokraft.app:Main Site"
+        "https://api.autokraft.app:API Endpoint"
+        "https://api.autokraft.app/health:Health Check"
+    )
+    
+    for endpoint_info in "${endpoints[@]}"; do
+        local url=$(echo "$endpoint_info" | cut -d: -f1-2)
+        local name=$(echo "$endpoint_info" | cut -d: -f3)
+        
+        if curl -f -s --max-time 5 "$url" > /dev/null 2>&1; then
+            success "✅ $name: Online"
+        else
+            error "❌ $name: Offline or unreachable"
+        fi
+    done
+    echo ""
+    
+    # Security configuration check (read-only)
+    info "🔒 Security Configuration (Basic Check):"
+    
+    if [ -f "backend/.env" ]; then
+        if grep -q "SECRET_KEY=" backend/.env && ! grep -q "change-this-in-production\|CHANGE_THIS_IMMEDIATELY" backend/.env; then
+            success "✅ JWT Secret: Configured"
+        else
+            error "❌ JWT Secret: Default or missing"
+        fi
+        
+        if grep -q "CORS_ORIGINS=" backend/.env && ! grep -q "\*" backend/.env; then
+            success "✅ CORS: Restricted"
+        else
+            error "❌ CORS: Permissive or misconfigured"
+        fi
+        
+        local required_vars=("SUPABASE_URL" "SUPABASE_SERVICE_ROLE_KEY" "SUPABASE_JWT_SECRET")
+        local missing_vars=0
+        for var in "${required_vars[@]}"; do
+            if ! grep -q "^${var}=" backend/.env || grep -q "^${var}=your_" backend/.env; then
+                missing_vars=$((missing_vars + 1))
+            fi
+        done
+        
+        if [ $missing_vars -eq 0 ]; then
+            success "✅ Required Environment Variables: Configured"
+        else
+            error "❌ Required Environment Variables: $missing_vars missing or have default values"
+        fi
+    else
+        error "❌ Cannot check security configuration: .env file missing"
+    fi
+    
+    if [ -f "deployment/nginx.conf" ] && grep -q "Content-Security-Policy" deployment/nginx.conf; then
+        success "✅ Security Headers: Configured"
+    else
+        warning "⚠️  Security Headers: Not configured or nginx.conf missing"
+    fi
+    echo ""
+    
+    # Usage information
+    info "💡 Usage Information:"
+    echo "For deployment operations, use: sudo ./deploy.sh [option]"
+    echo "For detailed help: ./deploy.sh --help"
+    echo "To run security check only: sudo ./deploy.sh --security-check"
+    echo ""
+}
+
+# Security validation function
 security_check() {
     log "🔒 Running security validation..."
     
@@ -428,7 +421,7 @@ health_check() {
 
 # Show help
 show_help() {
-    echo "deploy.sh - N8N Automated Secure Server Management"
+    echo "deploy.sh - AutoKraft Secure Server Management"
     echo ""
     echo "Usage: ./deploy.sh [option]"
     echo ""
