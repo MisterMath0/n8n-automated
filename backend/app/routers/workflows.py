@@ -24,25 +24,25 @@ router = APIRouter(prefix="/v1/workflows", tags=["workflows"])
 @router.post("/chat", response_model=ChatResponse)
 @limiter.limit("200/minute")  # 3+ requests per second for testing
 async def chat_with_ai(
-    http_request: Request,
-    request: ChatRequest,
+    request: Request,
+    chat_request: ChatRequest,
     current_user: CurrentUser = Depends(get_current_user)
 ):
     """Chat with AI using tool-based system for workflows and documentation search"""
     try:
         response = await ai_service.chat_with_tools(
-            user_message=request.user_message,
-            conversation_id=request.conversation_id,
+            user_message=chat_request.user_message,
+            conversation_id=chat_request.conversation_id,
             user=current_user,
-            workflow_id=request.workflow_id,  # Pass workflow context!
-            model=request.model,
-            temperature=request.temperature,
-            max_tokens=request.max_tokens
+            workflow_id=chat_request.workflow_id,  # Pass workflow context!
+            model=chat_request.model,
+            temperature=chat_request.temperature,
+            max_tokens=chat_request.max_tokens
         )
         
         logger.info(
             "Chat completed",
-            model=request.model.value,
+            model=chat_request.model.value,
             tools_used=response.tools_used,
             generation_time=response.generation_time,
             workflow_generated=response.workflow is not None,
@@ -56,15 +56,15 @@ async def chat_with_ai(
             "Chat failed", 
             error=str(e), 
             user_id=current_user.id, 
-            conversation_id=request.conversation_id,
-            user_message_length=len(request.user_message)  # Log length, not content
+            conversation_id=chat_request.conversation_id,
+            user_message_length=len(chat_request.user_message)  # Log length, not content
         )
         return ChatResponse(
             success=False, 
             error="An internal error occurred while processing your request. Please try again.",
-            conversation_id=request.conversation_id,
+            conversation_id=chat_request.conversation_id,
             generation_time=0.0,
-            model_used=request.model,
+            model_used=chat_request.model,
             message=""
         )
 
@@ -81,12 +81,12 @@ async def search_documentation(
         search_service = get_search_service()
         
         filters = {}
-        if request.section_type:
-            filters["section_type"] = request.section_type
+        if search_request.section_type:
+            filters["section_type"] = search_request.section_type
         
         results, stats = search_service.search(
-            query=request.query,
-            top_k=request.top_k,
+            query=search_request.query,
+            top_k=search_request.top_k,
             filters=filters if filters else None,
             include_highlights=True
         )
@@ -105,7 +105,7 @@ async def search_documentation(
         
         logger.info(
             "Documentation search completed",
-            query=request.query,
+            query=search_request.query,
             results_found=len(results),
             search_time_ms=stats.search_time_ms,
             user_id=current_user.id if current_user else None
@@ -114,7 +114,7 @@ async def search_documentation(
         return DocumentationSearchResponse(
             success=True,
             results=search_results,
-            query=request.query,
+            query=search_request.query,
             total_results=stats.total_results,
             search_time_ms=stats.search_time_ms
         )
