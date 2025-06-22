@@ -1,7 +1,11 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import structlog
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from .core.config import settings
 from .core.logging import setup_logging
@@ -29,12 +33,28 @@ async def lifespan(app: FastAPI):
     logger.info("API shutting down")
 
 
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(
     title=settings.app_name,
     description="Generate and edit N8N workflows using AI",
     version=settings.app_version,
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs" if settings.is_development else None,  # Disable docs in production
+    redoc_url="/redoc" if settings.is_development else None  # Disable redoc in production
 )
+
+# Add rate limiter to app state
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Add trusted host middleware for production
+if settings.is_production:
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=["n8n.automizeagency.com", "*.automizeagency.com"]
+    )
 
 app.add_middleware(
     CORSMiddleware,
@@ -49,7 +69,8 @@ app.include_router(messages.router)
 
 
 @app.get("/")
-async def root():
+@limiter.limit("30/minute")
+async def root(request: Request):
     return {
         "name": settings.app_name,
         "version": settings.app_version,
@@ -60,7 +81,8 @@ async def root():
 
 
 @app.get("/health")
-async def health():
+@limiter.limit("60/minute")
+async def health(request: Request):
     return {
         "status": "healthy",
         "version": settings.app_version,

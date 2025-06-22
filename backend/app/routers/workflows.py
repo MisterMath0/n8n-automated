@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Body
+from fastapi import APIRouter, HTTPException, status, Depends, Body, Request
 from typing import List
 import structlog
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from ..models.workflow import AIModel, AIProvider
 from ..models.conversation import (
@@ -15,11 +17,14 @@ from ..core.config_loader import config_loader
 from ..core.auth import get_current_user, CurrentUser
 
 logger = structlog.get_logger()
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/v1/workflows", tags=["workflows"])
 
 
 @router.post("/chat", response_model=ChatResponse)
+@limiter.limit("10/minute")
 async def chat_with_ai(
+    http_request: Request,
     request: ChatRequest,
     current_user: CurrentUser = Depends(get_current_user)
 ):
@@ -52,13 +57,22 @@ async def chat_with_ai(
             error=str(e), 
             user_id=current_user.id, 
             conversation_id=request.conversation_id,
-            user_message=request.user_message
+            user_message_length=len(request.user_message)  # Log length, not content
         )
-        return ChatResponse(success=False, error=str(e))
+        return ChatResponse(
+            success=False, 
+            error="An internal error occurred while processing your request. Please try again.",
+            conversation_id=request.conversation_id,
+            generation_time=0.0,
+            model_used=request.model,
+            message=""
+        )
 
 
 @router.post("/search-docs", response_model=DocumentationSearchResponse)
+@limiter.limit("30/minute")
 async def search_documentation(
+    http_request: Request,
     request: DocumentationSearchRequest,
     current_user: CurrentUser = Depends(get_current_user)
 ):
@@ -112,15 +126,16 @@ async def search_documentation(
             detail=str(e)
         )
     except Exception as e:
-        logger.error("Documentation search failed", error=str(e))
+        logger.error("Documentation search failed", error=str(e), user_id=current_user.id if current_user else None)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Documentation search failed"
+            detail="An error occurred while searching documentation. Please try again."
         )
 
 
 @router.get("/models")
-async def get_available_models():
+@limiter.limit("60/minute")
+async def get_available_models(request: Request):
     """Get available AI models"""
     try:
         models_config = config_loader.load_models()
@@ -145,12 +160,13 @@ async def get_available_models():
         logger.error("Failed to get available models", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve available models"
+            detail="Unable to retrieve available models. Please try again later."
         )
 
 
 @router.get("/health")
-async def health_check():
+@limiter.limit("120/minute")
+async def health_check(request: Request):
     """Service health check"""
     try:
         available_providers = ai_service.get_available_providers()
@@ -177,12 +193,14 @@ async def health_check():
         logger.error("Health check failed", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Service health check failed"
+            detail="Service temporarily unavailable. Please try again later."
         )
 
 
 @router.patch("/conversations/{conversation_id}/workflow")
+@limiter.limit("20/minute")
 async def update_conversation_workflow(
+    request: Request,
     conversation_id: str,
     workflow_id: str = Body(..., embed=True),
     current_user: CurrentUser = Depends(get_current_user)

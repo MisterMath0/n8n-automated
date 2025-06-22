@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Optional, Union, Dict
 from enum import Enum
+import secrets
 
 
 class Environment(str, Enum):
@@ -52,12 +53,14 @@ class Settings(BaseSettings):
     api_port: int = 8000
     api_reload: bool = True
     
+    # CORS Settings - NO DEFAULTS in production for security
     cors_origins: Union[str, List[str]] = Field(
-        default=["http://localhost:3000", "http://localhost:3001"]
+        default=[] if Environment.PRODUCTION else ["http://localhost:3000", "http://localhost:3001"],
+        description="Allowed CORS origins - MUST be explicitly set in production"
     )
     cors_allow_credentials: bool = True
-    cors_allow_methods: List[str] = ["*"]
-    cors_allow_headers: List[str] = ["*"]
+    cors_allow_methods: List[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    cors_allow_headers: List[str] = ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"]
     
     anthropic_api_key: Optional[str] = Field(default=None, alias="ANTHROPIC_API_KEY")
     openai_api_key: Optional[str] = Field(default=None, alias="OPENAI_API_KEY")
@@ -70,25 +73,58 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_format: str = "json"
     
+    # Security - NO DEFAULTS in production
     secret_key: str = Field(
-        default="change-in-production",
-        description="Secret key for JWT tokens"
+        description="JWT secret key - MUST be explicitly set in production"
     )
     
-    supabase_url: Optional[str] = Field(default=None, alias="SUPABASE_URL")
-    supabase_service_role_key: Optional[str] = Field(default=None, alias="SUPABASE_SERVICE_ROLE_KEY")
-    supabase_jwt_secret: Optional[str] = Field(default=None, alias="SUPABASE_JWT_SECRET")
+    @field_validator('secret_key')
+    @classmethod
+    def validate_secret_key_in_production(cls, v, info):
+        """Ensure secret key is explicitly set in production"""
+        if hasattr(info, 'data') and info.data.get('environment') == Environment.PRODUCTION:
+            if not v or v == 'change-in-production':
+                raise ValueError("SECRET_KEY must be explicitly set in production environment")
+        return v or secrets.token_urlsafe(32)  # Generate for development
+    
+    # Supabase Configuration - NO DEFAULTS in production
+    supabase_url: Optional[str] = Field(
+        default=None, 
+        alias="SUPABASE_URL",
+        description="Supabase project URL - REQUIRED in production"
+    )
+    supabase_service_role_key: Optional[str] = Field(
+        default=None, 
+        alias="SUPABASE_SERVICE_ROLE_KEY",
+        description="Supabase service role key - REQUIRED in production"
+    )
+    supabase_jwt_secret: Optional[str] = Field(
+        default=None, 
+        alias="SUPABASE_JWT_SECRET",
+        description="Supabase JWT secret - REQUIRED in production"
+    )
     
     # Documentation scraping
     apify_api_token: Optional[str] = Field(default=None, alias="APIFY_API_TOKEN")
     
     @field_validator('cors_origins')
     @classmethod
-    def parse_cors_origins(cls, v):
+    def parse_cors_origins(cls, v, info):
+        """Parse and validate CORS origins"""
         if isinstance(v, str):
             # Handle comma-separated string from .env
-            return [origin.strip() for origin in v.split(',') if origin.strip()]
-        return v
+            v = [origin.strip() for origin in v.split(',') if origin.strip()]
+        
+        # In production, CORS origins must be explicitly set and not be empty
+        if hasattr(info, 'data') and info.data.get('environment') == Environment.PRODUCTION:
+            if not v or len(v) == 0:
+                raise ValueError("CORS_ORIGINS must be explicitly set in production environment")
+            # Check for wildcard origins in production
+            for origin in v:
+                if '*' in origin:
+                    raise ValueError("Wildcard CORS origins are not allowed in production")
+        
+        return v or ["http://localhost:3000", "http://localhost:3001"]  # Default for development
     
     @property
     def is_development(self) -> bool:

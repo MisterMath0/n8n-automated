@@ -1,7 +1,9 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
+import bleach
+import re
 
 from .workflow import AIModel, N8NWorkflow
 
@@ -55,12 +57,54 @@ class SearchResult(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    user_message: str = Field(..., description="The user's latest message.")
-    conversation_id: str = Field(..., description="Conversation ID")
-    workflow_id: Optional[str] = Field(None, description="Current workflow ID for context")
+    user_message: str = Field(..., min_length=1, max_length=5000, description="The user's latest message.")
+    conversation_id: str = Field(..., min_length=1, max_length=100, description="Conversation ID")
+    workflow_id: Optional[str] = Field(None, min_length=1, max_length=100, description="Current workflow ID for context")
     model: AIModel = Field(default=AIModel.GEMINI_2_5_FLASH)  # Default to free Gemini model
     temperature: float = Field(default=0.3, ge=0.0, le=2.0)
     max_tokens: int = Field(default=4000, ge=1, le=200000)
+    
+    @field_validator('user_message')
+    @classmethod
+    def sanitize_user_message(cls, v: str) -> str:
+        """Sanitize user message to prevent XSS and injection attacks"""
+        if not v or not v.strip():
+            raise ValueError("Message cannot be empty")
+        
+        # Remove HTML tags and suspicious content
+        sanitized = bleach.clean(v, tags=[], strip=True)
+        
+        # Remove excessive whitespace
+        sanitized = re.sub(r'\s+', ' ', sanitized).strip()
+        
+        # Check for suspicious patterns
+        suspicious_patterns = [
+            r'<script[^>]*>.*?</script>',
+            r'javascript:',
+            r'data:text/html',
+            r'vbscript:',
+            r'onload\s*=',
+            r'onerror\s*='
+        ]
+        
+        for pattern in suspicious_patterns:
+            if re.search(pattern, sanitized, re.IGNORECASE):
+                raise ValueError("Message contains potentially malicious content")
+        
+        return sanitized
+    
+    @field_validator('conversation_id', 'workflow_id')
+    @classmethod
+    def validate_ids(cls, v: Optional[str]) -> Optional[str]:
+        """Validate ID fields contain only safe characters"""
+        if v is None:
+            return v
+        
+        # Allow only alphanumeric, hyphens, and underscores
+        if not re.match(r'^[a-zA-Z0-9_-]+$', v):
+            raise ValueError("ID contains invalid characters")
+        
+        return v
 
 
 class ChatResponse(BaseModel):
@@ -78,7 +122,35 @@ class ChatResponse(BaseModel):
 class DocumentationSearchRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=500, description="Search query")
     top_k: Optional[int] = Field(5, ge=1, le=20, description="Number of results to return")
-    section_type: Optional[str] = Field(None, description="Filter by section type")
+    section_type: Optional[str] = Field(None, max_length=50, description="Filter by section type")
+    
+    @field_validator('query')
+    @classmethod
+    def sanitize_query(cls, v: str) -> str:
+        """Sanitize search query"""
+        if not v or not v.strip():
+            raise ValueError("Query cannot be empty")
+        
+        # Remove HTML tags and sanitize
+        sanitized = bleach.clean(v, tags=[], strip=True)
+        
+        # Remove excessive whitespace
+        sanitized = re.sub(r'\s+', ' ', sanitized).strip()
+        
+        return sanitized
+    
+    @field_validator('section_type')
+    @classmethod
+    def validate_section_type(cls, v: Optional[str]) -> Optional[str]:
+        """Validate section type contains only safe characters"""
+        if v is None:
+            return v
+        
+        # Allow only alphanumeric, hyphens, underscores, and spaces
+        if not re.match(r'^[a-zA-Z0-9_\- ]+$', v):
+            raise ValueError("Section type contains invalid characters")
+        
+        return v
     
     
 class DocumentationSearchResponse(BaseModel):

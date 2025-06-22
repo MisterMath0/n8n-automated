@@ -22,6 +22,8 @@ structlog==25.1.0
 
 # Additional utilities
 python-multipart==0.0.20
+slowapi==0.1.9
+bleach==6.2.0
 
 # Search and indexing
 bm25s>=0.2.0
