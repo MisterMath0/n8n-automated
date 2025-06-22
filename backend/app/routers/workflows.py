@@ -22,7 +22,7 @@ router = APIRouter(prefix="/v1/workflows", tags=["workflows"])
 
 
 @router.post("/chat", response_model=ChatResponse)
-@limiter.limit("60/minute")  # 1 request per second average
+@limiter.limit("200/minute")  # 3+ requests per second for testing
 async def chat_with_ai(
     http_request: Request,
     request: ChatRequest,
@@ -70,7 +70,7 @@ async def chat_with_ai(
 
 
 @router.post("/search-docs", response_model=DocumentationSearchResponse)
-@limiter.limit("120/minute")  # 2 requests per second average
+@limiter.limit("500/minute")  # 8+ requests per second for testing
 async def search_documentation(
     http_request: Request,
     request: DocumentationSearchRequest,
