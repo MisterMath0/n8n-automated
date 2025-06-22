@@ -4,7 +4,7 @@ const AboutPage = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
         <div className="text-center">
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
-            About N8N.AI
+            About Autokraft
           </h1>
           <p className="mt-4 text-lg text-gray-400 max-w-3xl mx-auto">
             Streamlining workflow automation for developers worldwide.
@@ -14,12 +14,12 @@ const AboutPage = () => {
         <div className="mt-20 max-w-4xl mx-auto text-left">
             <h2 className="text-3xl font-bold text-white mb-6">Our Mission</h2>
             <p className="text-lg text-gray-300 leading-relaxed mb-8">
-                At N8N.AI, our mission is to build the AI-powered N8N workflow generator that actually works. We are a team of developers who grew frustrated with the limitations of existing automation tools—the buggy interfaces, the unreliable outputs, and the valuable time wasted on manual configurations. We knew there had to be a better way.
+                At Autokraft, our mission is to build the AI-powered N8N workflow generator that actually works. We are a team of developers who grew frustrated with the limitations of existing automation tools—the buggy interfaces, the unreliable outputs, and the valuable time wasted on manual configurations. We knew there had to be a better way.
             </p>
 
             <h2 className="text-3xl font-bold text-white mb-6">Built for Developers, by Developers</h2>
             <p className="text-lg text-gray-300 leading-relaxed mb-8">
-                We designed N8N.AI with the professional developer in mind. Our platform is engineered to understand complex requirements and generate robust, production-ready N8N workflows in seconds. We focus on reliability, efficiency, and precision, so you can focus on building great products instead of debugging automation scripts.
+                We designed Autokraft with the professional developer in mind. Our platform is engineered to understand complex requirements and generate robust, production-ready N8N workflows in seconds. We focus on reliability, efficiency, and precision, so you can focus on building great products instead of debugging automation scripts.
             </p>
 
             <h2 className="text-3xl font-bold text-white mb-6">Why Choose Us?</h2>

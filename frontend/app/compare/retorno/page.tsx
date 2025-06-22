@@ -4,10 +4,10 @@ const CompareRetornoPage = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
         <div className="text-center">
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
-            N8N.AI vs. Retorno.io
+            Autokraft vs. Retorno.io
           </h1>
           <p className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">
-            Discover the advantages of using N8N.AI for developer-focused workflow generation.
+            Discover the advantages of using Autokraft for developer-focused workflow generation.
           </p>
         </div>
 

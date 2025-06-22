@@ -7,7 +7,7 @@ const MigratePage = () => {
             Migration Guide
           </h1>
           <p className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">
-            Learn how to easily migrate your existing workflows and processes to N8N.AI.
+            Learn how to easily migrate your existing workflows and processes to Autokraft.
           </p>
         </div>
 

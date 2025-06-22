@@ -25,7 +25,7 @@ const TermsPage = () => {
 
         <div className="prose prose-invert max-w-none">
           <p className="text-lg text-gray-300 mb-10">
-            Welcome to N8N.AI ("N8N.AI", "we", "us", or "our"). We provide an
+            Welcome to Autokraft ("Autokraft", "we", "us", or "our"). We provide an
             AI-powered N8N workflow generator. These Terms of Service ("Terms")
             govern your use of our website, products, and services
             (collectively, the "Services"). Please read them carefully. By
@@ -122,7 +122,7 @@ const TermsPage = () => {
 
           <Section title="7. Limitation of Liability">
             <p>
-              IN NO EVENT SHALL N8N.AI BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
+              IN NO EVENT SHALL Autokraft BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
               SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF
               PROFITS OR REVENUES, WHETHER INCURRED DIRECTLY OR INDIRECTLY, OR
               ANY LOSS OF DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES,

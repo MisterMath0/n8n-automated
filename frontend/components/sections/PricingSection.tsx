@@ -8,7 +8,7 @@ const plans = [
   {
     name: "Starter",
     price: "Free",
-    description: "Perfect for trying out N8N.AI",
+    description: "Perfect for trying out Autokraft",
     features: [
       "5 workflows per month",
       "Basic visual preview", 
@@ -211,7 +211,7 @@ export function PricingSection() {
             <div className="relative bg-black/80 backdrop-blur-sm border border-gray-700/50 rounded-3xl p-12">
               <div className="text-center mb-8">
                 <h3 className="text-3xl font-bold text-white mb-4">ROI Calculator</h3>
-                <p className="text-gray-300 text-lg">See how much N8N.AI saves you</p>
+                <p className="text-gray-300 text-lg">See how much Autokraft saves you</p>
               </div>
 
               <div className="grid md:grid-cols-3 gap-8 text-center">

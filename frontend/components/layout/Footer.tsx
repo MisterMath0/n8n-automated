@@ -57,7 +57,7 @@ export function Footer() {
                 </div>
                 <div className="absolute -inset-1 bg-gradient-to-br from-white/20 to-white/10 rounded-xl blur opacity-30"></div>
               </div>
-              <span className="text-2xl font-bold text-white">N8N.AI</span>
+              <span className="text-2xl font-bold text-white">Autokraft</span>
             </div>
             
             <p className="text-gray-300 mb-6 leading-relaxed">
@@ -148,7 +148,7 @@ export function Footer() {
           className="border-t border-gray-800/50 pt-8 flex flex-col md:flex-row justify-between items-center gap-4"
         >
           <div className="text-gray-500 text-sm">
-            © 2025 N8N.AI. Streamlining workflow automation for developers worldwide.
+            © 2025 Autokraft. Streamlining workflow automation for developers worldwide.
           </div>
           
           <div className="flex items-center gap-6 text-sm text-gray-500">

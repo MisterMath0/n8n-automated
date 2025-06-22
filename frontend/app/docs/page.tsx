@@ -7,7 +7,7 @@ const DocsPage = () => {
             Documentation
           </h1>
           <p className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">
-            Find everything you need to know about using N8N.AI, from basic setup to advanced features.
+            Find everything you need to know about using Autokraft, from basic setup to advanced features.
           </p>
         </div>
 

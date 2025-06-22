@@ -116,7 +116,7 @@ export default function SignupPage() {
             >
               <CheckCircle className="w-10 h-10 text-green-400" />
             </motion.div>
-            <h1 className="text-2xl font-bold text-white mb-4">Welcome to N8N.AI!</h1>
+            <h1 className="text-2xl font-bold text-white mb-4">Welcome to Autokraft!</h1>
             <p className="text-gray-300 mb-6">
               Your account has been created successfully! Please check your email to confirm your account.
             </p>
@@ -145,7 +145,7 @@ export default function SignupPage() {
             <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
-            N8N.AI
+            Autokraft
           </Link>
         </motion.div>
 

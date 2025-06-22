@@ -4,10 +4,10 @@ const CompareN8nChatPage = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
         <div className="text-center">
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
-            N8N.AI vs. n8n-chat
+            Autokraft vs. n8n-chat
           </h1>
           <p className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">
-            See how N8N.AI provides a more robust and reliable solution for generating N8N workflows.
+            See how Autokraft provides a more robust and reliable solution for generating N8N workflows.
           </p>
         </div>
 

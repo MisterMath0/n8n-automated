@@ -202,7 +202,7 @@ export function ProblemSolutionSection() {
           </h2>
 
           <p className="text-base text-gray-300 max-w-3xl mx-auto leading-relaxed mb-12">
-            That's exactly what N8N.AI does. Spend your time on high-value strategy 
+            That's exactly what Autokraft does. Spend your time on high-value strategy 
             and client relationships, <span className="text-white font-semibold">not technical busy work</span>.
           </p>
 

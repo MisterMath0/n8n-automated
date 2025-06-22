@@ -25,7 +25,7 @@ const PrivacyPage = () => {
 
         <div className="prose prose-invert max-w-none">
           <p className="text-lg text-gray-300 mb-10">
-            N8N.AI ("we," "our," or "us") is committed to protecting your
+            Autokraft ("we," "our," or "us") is committed to protecting your
             privacy. This Privacy Policy explains how we collect, use,
             disclose, and safeguard your information when you use our
             Services.

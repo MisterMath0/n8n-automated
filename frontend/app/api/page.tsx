@@ -7,7 +7,7 @@ const ApiPage = () => {
             API Reference
           </h1>
           <p className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">
-            Integrate N8N.AI into your own applications with our powerful and easy-to-use API.
+            Integrate Autokraft into your own applications with our powerful and easy-to-use API.
           </p>
         </div>
 

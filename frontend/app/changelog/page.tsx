@@ -7,7 +7,7 @@ const ChangelogPage = () => {
             Changelog
           </h1>
           <p className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">
-            We're constantly improving N8N.AI. Here you'll find a log of all the new features, bug fixes, and improvements.
+            We're constantly improving Autokraft. Here you'll find a log of all the new features, bug fixes, and improvements.
           </p>
         </div>
 

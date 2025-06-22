@@ -25,7 +25,7 @@ const processes = [
   },
   {
     id: "ai",
-    title: "N8N.AI Generation",
+    title: "Autokraft Generation",
     subtitle: "The smart way",
     time: "30 seconds",
     color: "from-white/30 to-white/10",
@@ -108,7 +108,7 @@ export function DemoSection() {
           </h2>
 
           <p className="text-lg text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            Watch how N8N.AI transforms simple descriptions into working workflows with visual previews.
+            Watch how Autokraft transforms simple descriptions into working workflows with visual previews.
           </p>
         </motion.div>
 
@@ -265,7 +265,7 @@ export function DemoSection() {
                                 whileTap={{ scale: 0.95 }}
                                 className="px-8 py-4 bg-gradient-to-r from-white/20 to-white/10 text-white rounded-xl font-semibold text-lg shadow-lg flex items-center gap-3 mx-auto border border-white/20 backdrop-blur-sm"
                               >
-                                Try N8N.AI Now
+                                Try Autokraft Now
                                 <ArrowRight className="w-5 h-5" />
                               </motion.button>
                             </Link>

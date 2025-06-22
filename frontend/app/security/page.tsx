@@ -28,7 +28,7 @@ const SecurityPage = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
         <div className="text-center mb-16">
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
-            Security at N8N.AI
+            Security at Autokraft
           </h1>
           <p className="mt-4 text-lg text-gray-400 max-w-3xl mx-auto">
             We take the security of your data seriously. Our systems are designed to protect your information with multiple layers of security.
@@ -38,7 +38,7 @@ const SecurityPage = () => {
         <div className="mx-auto mt-16 max-w-4xl lg:max-w-none">
           <Section title="Our Commitment to Security">
             <p className="text-lg">
-              At N8N.AI, we are committed to ensuring the confidentiality, integrity, and availability of your data. We implement and maintain industry-standard security practices to create a secure environment for our users.
+              At Autokraft, we are committed to ensuring the confidentiality, integrity, and availability of your data. We implement and maintain industry-standard security practices to create a secure environment for our users.
             </p>
           </Section>
 
