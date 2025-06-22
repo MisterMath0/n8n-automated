@@ -194,13 +194,6 @@ export function SimpleChat({
         // CRITICAL: Ensure the conversation is selected in the UI
         onConversationChange(activeConversationId);
         
-        // Show user feedback about successful workflow association
-        if (workflowId) {
-          toast.success('New conversation created and linked to workflow');
-        } else {
-          toast.success('New conversation created for workflow generation');
-        }
-        
         // Small delay to ensure the cache update from conversation creation completes
         // This ensures the conversation appears in the conversation list
         await new Promise(resolve => setTimeout(resolve, 100));
