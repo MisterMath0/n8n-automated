@@ -14,6 +14,7 @@ class AIProvider(str, Enum):
 class AIModel(str, Enum):
     # Gemini models (Google AI) - Free tier with high context
     GEMINI_2_5_FLASH = "gemini-2-5-flash"
+    GEMINI_2_5_FLASH_FAST = "gemini-2-5-flash-fast"
     GEMINI_1_5_FLASH = "gemini-1-5-flash"
     GEMINI_1_5_PRO = "gemini-1-5-pro"
     

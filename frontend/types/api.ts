@@ -11,7 +11,7 @@ export enum AIProvider {
 export enum AIModel {
   // Gemini models (Google AI) - Free tier with high context
   GEMINI_2_5_FLASH = "gemini-2-5-flash",
-  GEMINI_2_5__FLASH_FAST = "gemini-2-5-flash-fast",
+  GEMINI_2_5_FLASH_FAST = "gemini-2-5-flash-fast",
   GEMINI_1_5_PRO = "gemini-1-5-pro",
   
   // Anthropic Claude models
