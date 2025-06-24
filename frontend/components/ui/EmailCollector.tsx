@@ -10,6 +10,8 @@ interface EmailCollectorProps {
 }
 
 export function EmailCollector({ isOpen, onClose }: EmailCollectorProps) {
+  if (!isOpen) return null;
+
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -3,13 +3,9 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, DollarSign, Clock, CheckCircle, TrendingUp } from "lucide-react";
 import { ReactFlowDemo } from "@/components/animations/ReactFlowDemo";
-import { EmailCollector } from "@/components/ui/EmailCollector";
 import Link from 'next/link';
-import { useState } from "react";
 
 export function HeroSection() {
-  const [showEmailCollector, setShowEmailCollector] = useState(false);
-
   return (
     <section className="relative min-h-screen flex items-center justify-center px-4 pt-20">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
@@ -81,7 +77,6 @@ export function HeroSection() {
             className="flex flex-col sm:flex-row gap-4"
           >
             <motion.button
-              onClick={() => setShowEmailCollector(true)}
               whileHover={{ 
                 scale: 1.05, 
                 boxShadow: "0 20px 40px rgba(34, 197, 94, 0.3)" 
@@ -92,7 +87,7 @@ export function HeroSection() {
               <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <div className="relative flex items-center justify-center gap-3">
                 <Sparkles className="w-5 h-5" />
-                Join The Beta (FREE)
+                <Link href="/auth/signup">Join The Beta (FREE)</Link>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </div>
             </motion.button>
@@ -155,12 +150,6 @@ export function HeroSection() {
           </div>
         </motion.div>
       </div>
-
-      {/* Email Collector Modal */}
-      <EmailCollector 
-        isOpen={showEmailCollector}
-        onClose={() => setShowEmailCollector(false)}
-      />
 
       {/* Scroll indicator */}
       <motion.div

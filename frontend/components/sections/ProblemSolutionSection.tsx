@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { DollarSign, Clock, AlertTriangle, TrendingUp, CheckCircle, ArrowRight } from "lucide-react";
 import { EmailCollector } from "@/components/ui/EmailCollector";
 import { useState } from "react";
+import Link from 'next/link';
 
 const problems = [
   {
@@ -238,7 +239,7 @@ export function ProblemSolutionSection() {
               whileTap={{ scale: 0.95 }}
               className="px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold text-base shadow-2xl hover:shadow-green-500/25 transition-all duration-300 border border-green-400/30"
             >
-              Stop Losing Money - Join Beta FREE
+              <Link href="/auth/signup">Stop Losing Money - Join Beta FREE</Link>
             </motion.button>
             <p className="text-gray-400 mt-4 text-sm">
               Limited spots • No payment required • Lifetime discount for beta users

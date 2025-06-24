@@ -1,10 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Eye, Zap, Shield, Rocket, Code, Globe } from "lucide-react";
-import { EmailCollector } from "@/components/ui/EmailCollector";
+import { Eye, Zap, Shield, Rocket, Code, Globe, CheckCircle, Lightbulb, TrendingUp } from "lucide-react";
 import Link from 'next/link';
-import { useState } from "react";
 
 const features = [
   {
@@ -52,7 +50,6 @@ const features = [
 ];
 
 export function FeaturesSection() {
-  const [showEmailCollector, setShowEmailCollector] = useState(false);
   return (
     <section id="features" className="py-20 px-4">
       <div className="max-w-7xl mx-auto">
@@ -161,23 +158,16 @@ export function FeaturesSection() {
               Stop competing on hours and start competing on <span className="text-white font-semibold">results</span>.
               </p>
               <motion.button
-                onClick={() => setShowEmailCollector(true)}
                 whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(34, 197, 94, 0.3)" }}
                 whileTap={{ scale: 0.95 }}
                 className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold text-base shadow-2xl hover:shadow-green-500/25 transition-all duration-300 border border-green-400/30"
               >
-                Join The Beta (FREE)
+                <Link href="/auth/signup">Join The Beta (FREE)</Link>
               </motion.button>
             </div>
           </div>
         </motion.div>
       </div>
-
-      {/* Email Collector Modal */}
-      <EmailCollector 
-        isOpen={showEmailCollector}
-        onClose={() => setShowEmailCollector(false)}
-      />
     </section>
   );
 }
