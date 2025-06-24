@@ -31,7 +31,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         <MarkdownFormatter 
           content={message.content}
           isUser={isUser}
-          className="text-sm"
+          className="text-xs"
         />
       </div>
     </motion.div>

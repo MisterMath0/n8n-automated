@@ -2,7 +2,7 @@ import { AIModel } from "@/types/api";
 // Welcome message removed - now served from backend via messagesAPI
 
 // Default model (Gemini 2.5 Flash)
-export const DEFAULT_MODEL = AIModel.GPT_4_1_MINI;
+export const DEFAULT_MODEL = AIModel.GEMINI_2_5__FLASH_FAST;
 
 // Local storage key for selected model
 export const SELECTED_MODEL_KEY = 'n8n_selected_model';
@@ -10,8 +10,8 @@ export const SELECTED_MODEL_KEY = 'n8n_selected_model';
 // Map model IDs to display names
 export const MODEL_ENUM_TO_NAME: Record<AIModel, string> = {
   // Gemini Models (Free Tier)
-  [AIModel.GEMINI_2_5_FLASH]: "Gemini 2.5 Flash",
-  [AIModel.GEMINI_1_5_FLASH]: "Gemini 1.5 Flash",
+  [AIModel.GEMINI_2_5_FLASH]: "Gemini 2.5 Flash (Reasoning)",
+  [AIModel.GEMINI_2_5__FLASH_FAST]: "Gemini 2.5 Flash (Fast)",
   [AIModel.GEMINI_1_5_PRO]: "Gemini 1.5 Pro",
   // Anthropic Models
   [AIModel.CLAUDE_4_SONNET]: "Claude 4 Sonnet",
