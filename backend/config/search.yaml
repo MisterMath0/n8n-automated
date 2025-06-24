@@ -77,10 +77,10 @@ search:
     # Weight different section types differently
     # Higher weights mean these sections will rank higher in results
     section_type_weights:
-      integration: 1.2    # N8N node integrations (most important for users)
+      integration: 2.0    # N8N node integrations (HIGHEST priority for workflow generation)
       concept: 1.0        # Core concepts and explanations
-      example: 0.9        # Examples and tutorials
-      general: 0.8        # General documentation
+      example: 0.8        # Examples and tutorials
+      general: 0.6        # General documentation
     
     # Boost scores for sections with specific node types
     # When user searches for a specific integration, boost those results

@@ -344,12 +344,12 @@ class AIService:
             
             # Generate workflow JSON using the appropriate provider
             if config.provider == "google":
-                # Use function calling for Google GenAI (more reliable than response_schema)
+                # Use function calling for Google GenAI
                 workflow_tool = {
                     "function_declarations": [{
                         "name": "generate_workflow",
-                        "description": "Generate an N8N workflow JSON structure",
-                        "parameters": create_n8n_workflow_schema()  # Use existing OpenAI schema
+                        "description": "Generate an N8N workflow JSON structure from user description",
+                        "parameters": create_n8n_workflow_schema()
                     }]
                 }
                 
@@ -357,16 +357,16 @@ class AIService:
                 
                 response = client.models.generate_content(
                     model=config.model_id,
-                    contents=full_prompt,
-                    generation_config=types.GenerationConfig(
+                    contents=[{"role": "user", "parts": [{"text": full_prompt}]}],
+                    config=types.GenerateContentConfig(
                         temperature=temperature,
-                        max_output_tokens=max_tokens
-                    ),
-                    tools=[workflow_tool],
-                    tool_config=types.ToolConfig(
-                        function_calling_config=types.FunctionCallingConfig(
-                            mode=types.FunctionCallingConfig.Mode.ANY,
-                            allowed_function_names=["workflow_generator"]
+                        max_output_tokens=max_tokens,
+                        tools=[workflow_tool],
+                        tool_config=types.ToolConfig(
+                            function_calling_config=types.FunctionCallingConfig(
+                                mode="ANY",
+                                allowed_function_names=["generate_workflow"]
+                            )
                         )
                     )
                 )
@@ -506,27 +506,27 @@ class AIService:
             
             # Generate edited workflow
             if config.provider == "google":
-                # Use function calling for Google GenAI (more reliable than response_schema)
+                # Use function calling for Google GenAI
                 workflow_tool = {
                     "function_declarations": [{
                         "name": "edit_workflow",
-                        "description": "Edit an N8N workflow JSON structure",
+                        "description": "Edit an N8N workflow JSON structure based on user description",
                         "parameters": create_n8n_workflow_schema()
                     }]
                 }
                 
                 response = client.models.generate_content(
                     model=config.model_id,
-                    contents=edit_prompt,
-                    generation_config=types.GenerationConfig(
+                    contents=[{"role": "user", "parts": [{"text": edit_prompt}]}],
+                    config=types.GenerateContentConfig(
                         temperature=temperature,
-                        max_output_tokens=max_tokens
-                    ),
-                    tools=[workflow_tool],
-                    tool_config=types.ToolConfig(
-                        function_calling_config=types.FunctionCallingConfig(
-                            mode=types.FunctionCallingConfig.Mode.ANY,
-                            allowed_function_names=["edit_workflow"]
+                        max_output_tokens=max_tokens,
+                        tools=[workflow_tool],
+                        tool_config=types.ToolConfig(
+                            function_calling_config=types.FunctionCallingConfig(
+                                mode="ANY",
+                                allowed_function_names=["edit_workflow"]
+                            )
                         )
                     )
                 )

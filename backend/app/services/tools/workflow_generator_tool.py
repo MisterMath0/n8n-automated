@@ -1,10 +1,11 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 import structlog
 
 from .base_tool import BaseTool
 from ...models.conversation import ToolCall, ToolResult, ToolType
 from ...models.workflow import N8NWorkflow, AIModel
 from ..doc_search_service import get_search_service
+from ...core.config_loader import config_loader
 
 logger = structlog.get_logger()
 
@@ -28,7 +29,6 @@ class WorkflowGeneratorTool(BaseTool):
     
     @property
     def description(self) -> str:
-        from ...core.config_loader import config_loader
         prompts_config = config_loader.load_config("prompts")
         return prompts_config["tools"]["workflow_generator"]["description"]
     
@@ -103,25 +103,27 @@ class WorkflowGeneratorTool(BaseTool):
             return self._create_error_result(tool_call, f"Workflow generation failed: {str(e)}")
     
     async def _enhance_with_docs(self, description: str, search_docs_first: bool = True) -> str:
-        """Dynamic context based on model capabilities"""
+        """LLM-driven smart documentation search"""
         if not search_docs_first:
             return description
         
-        # Get ALL relevant results
         search_results, stats = self.search_service.search(
-            f"{description} nodes integrations parameters examples",
+            description,
+            filters={"section_type": "integration"},
+            top_k=10,
             include_highlights=True
         )
         
-        # Build comprehensive context
-        context = f"\n\n=== N8N DOCUMENTATION ({stats.total_results} total results) ===\n"
+        # Build focused context from integration docs only
+        if search_results:
+            context = f"\n\n=== RELEVANT N8N INTEGRATIONS ===\n"
+            for result in search_results[:8]:  # Limit context
+                context += f"\n## {result.title}\n{result.content[:500]}...\n"
+                if result.node_type:
+                    context += f"Node: {result.node_type}\n"
+                context += "---\n"
+            
+            logger.info(f"Enhanced with {len(search_results)} integration docs")
+            return description + context
         
-        for result in search_results:
-            context += f"\n## {result.title} (Score: {result.score:.2f})\n"
-            context += f"{result.content}\n"
-            if result.node_type:
-                context += f"Node Type: {result.node_type}\n"
-            context += "---\n"
-        
-        logger.info(f"Enhanced with {len(search_results)} documentation results")
-        return description + context
+        return description

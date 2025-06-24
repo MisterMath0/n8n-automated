@@ -131,9 +131,18 @@ class DocumentationScraper:
 
     def _extract_node_type(self, url: str, title: str, content: str) -> Optional[str]:
         """Extract N8N node type from URL, title, or content"""
-        # Check URL patterns
+        # Check URL patterns with enhanced regex for trailing paths
         if '/integrations/' in url:
-            # Extract node name from URL like /integrations/slack/ -> Slack
+            # Enhanced pattern to handle /integrations/builtin/{category}/n8n-nodes-base.{service}/trailing/paths/
+            url_pattern = r'/integrations/builtin/([^/]+)/n8n-nodes-base\.([^/]+?)(?:/.*)?/?$'
+            match = re.search(url_pattern, url)
+            if match:
+                service_suffix = match.group(2)  # e.g., "facebooktrigger", "telegram"
+                # Extract base service name (remove common suffixes)
+                service_name = re.sub(r'(trigger|node)$', '', service_suffix).lower()
+                return service_name.title()
+            
+            # Fallback for simple integration URLs
             match = re.search(r'/integrations/([^/]+)/', url)
             if match:
                 return match.group(1).title()

@@ -1,8 +1,10 @@
 """
 Enhanced utilities for structured output and JSON schema validation for AI models.
 
-This module provides provider-specific schema definitions and validation utilities 
-for ensuring AI models generate valid JSON that conforms to our Pydantic models.
+This module provides a unified schema definition that works across all AI providers
+(OpenAI, Google GenAI, Anthropic) using function calling. The schema emphasizes
+proper workflow structure and includes automatic connection generation for better
+workflow quality when AI models fail to create proper node connections.
 """
 
 import uuid
@@ -28,11 +30,12 @@ def create_n8n_workflow_schema() -> Dict[str, Any]:
         "properties": {
             "name": {
                 "type": "string",
-                "description": "Human-readable name for the workflow"
+                "description": "Descriptive workflow name that clearly indicates its purpose and function (e.g., 'Gmail to Slack Notification', 'Customer Data Processing Pipeline', 'Daily Sales Report Generator')"
             },
             "nodes": {
                 "type": "array",
-                "description": "Array of N8N nodes in the workflow",
+                "description": "Array of N8N nodes in logical execution order. Start with trigger nodes (webhook, cron, manual), then processing nodes (set, code, http), then action nodes (email, slack, database). Each node will be connected to the next in sequence.",
+                "minItems": 1,
                 "items": {
                     "type": "object",
                     "properties": {
@@ -42,7 +45,7 @@ def create_n8n_workflow_schema() -> Dict[str, Any]:
                         },
                         "name": {
                             "type": "string", 
-                            "description": "Unique name for the node"
+                            "description": "Unique descriptive name indicating the node's function (e.g., 'Gmail Trigger', 'Process Email Data', 'Send Slack Alert'). Use clear, functional names that describe what the node does."
                         },
                         "type": {
                             "type": "string",
@@ -81,9 +84,38 @@ def create_n8n_workflow_schema() -> Dict[str, Any]:
             },
             "connections": {
                 "type": "object",
-                "description": "Node connections mapping",
+                "description": "CRITICAL: Node connections define workflow execution flow. Each source node MUST connect to subsequent nodes. Format: {sourceNodeName: {main: [[{node: targetNodeName, type: main, index: 0}]]}. Every workflow needs connections to function - nodes without connections create broken workflows. Always connect nodes in logical execution order.",
                 "additionalProperties": {
                     "type": "object",
+                    "description": "Output connections from source node - use 'main' for standard flow",
+                    "properties": {
+                        "main": {
+                            "type": "array",
+                            "description": "Main output connection groups - typically one group per output",
+                            "items": {
+                                "type": "array",
+                                "description": "Group of target nodes for this output",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "node": {
+                                            "type": "string",
+                                            "description": "Name of the target node to connect to (must match exact node name)"
+                                        },
+                                        "type": {
+                                            "type": "string",
+                                            "description": "Connection type - use 'main' for standard connections"
+                                        },
+                                        "index": {
+                                            "type": "integer",
+                                            "description": "Input index on target node - use 0 for primary input"
+                                        }
+                                    },
+                                    "required": ["node", "type", "index"]
+                                }
+                            }
+                        }
+                    },
                     "additionalProperties": {
                         "type": "array",
                         "items": {
@@ -126,136 +158,6 @@ def create_n8n_workflow_schema() -> Dict[str, Any]:
         },
         "required": ["name", "nodes", "connections", "active", "versionId", "id", "tags"]
     }
-
-
-def create_gemini_n8n_workflow_schema() -> Dict[str, Any]:
-    """
-    Create schema specifically optimized for Google Gemini structured output.
-    
-    This schema addresses Gemini's specific handling of nested structures and
-    provides better compatibility with response_schema parameter.
-    
-    Returns:
-        Dict containing the Gemini-optimized schema for N8N workflows
-    """
-    return {
-        "type": "object",
-        "properties": {
-            "name": {
-                "type": "string",
-                "description": "Human-readable name for the workflow"
-            },
-            "nodes": {
-                "type": "array",
-                "description": "Array of N8N nodes in the workflow",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "id": {
-                            "type": "string",
-                            "description": "UUID v4 format like 'a1b2c3d4-e5f6-4789-9012-34567890abcd'"
-                        },
-                        "name": {
-                            "type": "string", 
-                            "description": "Unique descriptive name for the node"
-                        },
-                        "type": {
-                            "type": "string",
-                            "description": "N8N node type like 'n8n-nodes-base.gmail' or 'n8n-nodes-base.slack'"
-                        },
-                        "typeVersion": {
-                            "type": "number",
-                            "description": "Version of the node type, usually 1 or 2"
-                        },
-                        "position": {
-                            "type": "array",
-                            "description": "Visual position as [x, y] coordinates",
-                            "items": {"type": "integer"},
-                            "minItems": 2,
-                            "maxItems": 2
-                        },
-                        "parameters": {
-                            "type": "object",
-                            "description": "Node configuration parameters as key-value pairs",
-                            "additionalProperties": True
-                        },
-                        "credentials": {
-                            "type": "object", 
-                            "description": "Credential mappings for authentication",
-                            "additionalProperties": True
-                        }
-                    },
-                    "required": ["id", "name", "type", "position"]
-                }
-            },
-            "connections": {
-                "type": "object",
-                "description": "Node connections - each key is a source node name",
-                "additionalProperties": {
-                    "type": "object",
-                    "description": "Output connections from the source node",
-                    "properties": {
-                        "main": {
-                            "type": "array",
-                            "description": "Main output connections (array of output groups)",
-                            "items": {
-                                "type": "array",
-                                "description": "Group of connections from this output",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "node": {
-                                            "type": "string",
-                                            "description": "Name of the target node to connect to"
-                                        },
-                                        "type": {
-                                            "type": "string",
-                                            "description": "Connection type, usually 'main'"
-                                        },
-                                        "index": {
-                                            "type": "integer",
-                                            "description": "Input index on target node, usually 0"
-                                        }
-                                    },
-                                    "required": ["node", "type", "index"]
-                                }
-                            }
-                        }
-                    },
-                    "required": ["main"]
-                }
-            },
-            "active": {
-                "type": "boolean",
-                "description": "Whether the workflow is active"
-            },
-            "settings": {
-                "type": "object",
-                "description": "Workflow settings like execution order",
-                "properties": {
-                    "executionOrder": {
-                        "type": "string",
-                        "description": "Execution order version, usually 'v1'"
-                    }
-                }
-            },
-            "id": {
-                "type": "string", 
-                "description": "Workflow UUID in format 'a1b2c3d4-e5f6-4789-9012-34567890abcd'"
-            },
-            "versionId": {
-                "type": "string",
-                "description": "Version UUID in format 'a1b2c3d4-e5f6-4789-9012-34567890abcd'"
-            },
-            "tags": {
-                "type": "array",
-                "description": "Array of tag strings for categorization",
-                "items": {"type": "string"}
-            }
-        },
-        "required": ["name", "nodes", "connections", "active", "versionId", "id", "tags"]
-    }
-
 
 def validate_and_fix_connections(connections: Any) -> Dict[str, Dict[str, Any]]:
     """
@@ -327,6 +229,46 @@ def validate_and_fix_connections(connections: Any) -> Dict[str, Dict[str, Any]]:
     return fixed_connections
 
 
+def generate_missing_connections(nodes: list) -> Dict[str, Dict[str, Any]]:
+    """
+    Generate basic sequential connections when AI fails to create them.
+    
+    Creates a linear flow: node1 -> node2 -> node3 -> etc.
+    This ensures workflows are functional even if AI doesn't generate connections.
+    
+    Args:
+        nodes: List of workflow nodes
+        
+    Returns:
+        Dict containing basic sequential connections
+    """
+    if len(nodes) < 2:
+        return {}
+    
+    connections = {}
+    
+    # Connect each node to the next one sequentially
+    for i in range(len(nodes) - 1):
+        source_node = nodes[i]
+        target_node = nodes[i + 1]
+        
+        source_name = source_node.get("name", f"Node {i}")
+        target_name = target_node.get("name", f"Node {i + 1}")
+        
+        connections[source_name] = {
+            "main": [[
+                {
+                    "node": target_name,
+                    "type": "main",
+                    "index": 0
+                }
+            ]]
+        }
+    
+    logger.info(f"Generated {len(connections)} sequential connections for workflow")
+    return connections
+
+
 def validate_and_fix_workflow_data(workflow_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Validate workflow data and fix common issues.
@@ -359,11 +301,21 @@ def validate_and_fix_workflow_data(workflow_data: Dict[str, Any]) -> Dict[str, A
     if "settings" not in workflow_data:
         workflow_data["settings"] = {"executionOrder": "v1"}
 
-    # Fix connections format
-    if "connections" in workflow_data:
+    # Fix connections format and generate missing connections
+    if "connections" in workflow_data and workflow_data["connections"]:
         workflow_data["connections"] = validate_and_fix_connections(workflow_data["connections"])
+        
+        # Check if connections are still empty after validation
+        if not workflow_data["connections"] and len(workflow_data.get("nodes", [])) > 1:
+            logger.warning("Connections were invalid and removed - generating sequential connections")
+            workflow_data["connections"] = generate_missing_connections(workflow_data["nodes"])
     else:
-        workflow_data["connections"] = {}
+        # No connections provided - generate basic sequential connections
+        if len(workflow_data.get("nodes", [])) > 1:
+            logger.warning("No connections provided - generating sequential connections")
+            workflow_data["connections"] = generate_missing_connections(workflow_data["nodes"])
+        else:
+            workflow_data["connections"] = {}
     
     # Ensure all nodes have required fields
     for i, node in enumerate(workflow_data.get("nodes", [])):
