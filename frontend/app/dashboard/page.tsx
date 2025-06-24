@@ -37,10 +37,6 @@ function DashboardContent() {
   const selectedWorkflow = workflows.find(w => w.id === selectedWorkflowId) || null;
   const conversations = selectedWorkflowId ? workflowConversations : orphanConversations;
 
-  // REMOVED: Auto-select first conversation when conversations load
-  // This caused random conversation loading which was confusing for users.
-  // Now users start with a clean state and manually select conversations or create new ones.
-  // The welcome message will be shown when no conversation is selected.
 
   const handleWorkflowGenerated = useCallback((workflow: Workflow) => {
     // Handle both new workflow generation and updates
