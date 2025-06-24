@@ -35,13 +35,7 @@ export function Navbar() {
               >
               <Link href="/" className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center border border-white/10">
-            <Image 
-              src="/logo.png"
-              alt="Autokraft Logo"
-              width={24}
-              height={24}
-              className="drop-shadow-lg"
-            />
+          <Bot className="w-5 h-5 text-white" />
           </div>
           <span className="text-xl font-bold text-white">Autokraft</span>
         </Link>
