@@ -7,7 +7,7 @@ from typing import Dict, Any
 
 
 def create_workflow_plan_schema() -> Dict[str, Any]:
-    """Simple workflow planning schema"""
+    """Enhanced workflow planning schema with flexible pattern recognition"""
     return {
         "type": "object",
         "properties": {
@@ -21,8 +21,7 @@ def create_workflow_plan_schema() -> Dict[str, Any]:
             },
             "trigger_type": {
                 "type": "string",
-                "enum": ["webhook", "schedule", "manual", "email", "slack", "telegram"],
-                "description": "Type of trigger that starts the workflow"
+                "description": "Type of trigger that starts the workflow (webhook, schedule, manual, email, etc.)"
             },
             "node_sequence": {
                 "type": "array",
@@ -37,9 +36,45 @@ def create_workflow_plan_schema() -> Dict[str, Any]:
                 "type": "array", 
                 "items": {"type": "string"},
                 "description": "List of services/integrations needed (e.g., gmail, slack, webhook)"
+            },
+            "processing_pattern": {
+                "type": "string",
+                "description": "Describe the data flow pattern (e.g., 'parallel API calls with merge by index', 'nested split in batches', 'sequential with conditional branching', 'sub-workflow execution', etc.)"
+            },
+            "batching_requirements": {
+                "type": "object",
+                "description": "Batching details if needed",
+                "properties": {
+                    "needs_batching": {"type": "boolean"},
+                    "batch_size": {"type": "integer"},
+                    "reason": {"type": "string"}
+                }
+            },
+            "parallel_operations": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "List of operations that should run in parallel based on N8N capabilities"
+            },
+            "merge_configuration": {
+                "type": "object", 
+                "description": "How to merge data streams using N8N merge node options",
+                "properties": {
+                    "merge_mode": {"type": "string"},
+                    "merge_reasoning": {"type": "string"}
+                }
+            },
+            "complexity_indicators": {
+                "type": "object",
+                "description": "Workflow complexity markers",
+                "properties": {
+                    "has_loops": {"type": "boolean"},
+                    "has_parallel_branches": {"type": "boolean"},
+                    "has_data_merging": {"type": "boolean"},
+                    "estimated_node_count": {"type": "integer"}
+                }
             }
         },
-        "required": ["workflow_name", "trigger_type", "node_sequence", "required_integrations"]
+        "required": ["workflow_name", "trigger_type", "node_sequence", "required_integrations", "processing_pattern"]
     }
 
 
@@ -63,8 +98,7 @@ def create_workflow_nodes_schema() -> Dict[str, Any]:
                             "maxItems": 2
                         },
                         "parameters": {
-                            "type": "object",
-                            "description": "Node-specific configuration parameters based on N8N node type documentation"
+                            "description": "Node-specific configuration parameters based on N8N node type documentation (can be any structure)"
                         },
                         "credentials": {
                             "description": "Credential references for the node (leave empty if none needed)"
