@@ -122,8 +122,14 @@ def create_workflow_connections_schema() -> Dict[str, Any]:
                 "items": {
                     "type": "object",
                     "properties": {
-                        "source_node": {"type": "string"},
-                        "target_node": {"type": "string"}, 
+                        "source_node": {
+                            "type": "string",
+                            "description": "Name of the source node (use 'name' field from nodes, not 'id')"
+                        },
+                        "target_node": {
+                            "type": "string",
+                            "description": "Name of the target node (use 'name' field from nodes, not 'id')"
+                        }, 
                         "connection_type": {"type": "string", "default": "main"},
                         "source_index": {"type": "integer", "default": 0},
                         "target_index": {"type": "integer", "default": 0}

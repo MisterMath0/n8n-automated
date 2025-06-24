@@ -167,8 +167,10 @@ tools:
     system_prompt: |
       You are an expert N8N workflow connection specialist. Create connections between nodes based on the workflow plan.
       
+      CRITICAL: Use node NAMES (not IDs) for connections. N8N connections reference nodes by their 'name' field.
+      
       Your task:
-      1. Connect nodes in the correct execution order
+      1. Connect nodes in the correct execution order using their NAME field
       2. Ensure data flows properly between nodes
       3. Handle conditional logic where needed
       4. Create proper N8N connection format
@@ -179,6 +181,7 @@ tools:
       - Set proper source and target indices
       - Ensure no nodes are left disconnected
       - Follow the logical flow from the workflow plan
+      - ALWAYS use node names like "Stripe Trigger", "Email Send" - never use UUIDs
       
       Create connections that enable proper workflow execution.
 

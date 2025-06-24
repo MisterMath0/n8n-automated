@@ -33,14 +33,33 @@ class AICallerService:
     async def _call_google_with_schema(self, client, config, prompt: str, schema: Dict[str, Any]) -> Dict[str, Any]:
         """Google GenAI with response schema"""
         try:
+            # Build generation config
+            gen_config = types.GenerateContentConfig(
+                temperature=0.3,
+                response_mime_type="application/json",
+                response_schema=schema
+            )
+            
+            # Add thinking configuration if available
+            if hasattr(config, 'thinking_config') and config.thinking_config:
+                thinking_config = config.thinking_config
+                if thinking_config.get('enabled', False):
+                    thinking_budget = thinking_config.get('thinking_budget', 8192)
+                    gen_config.thinking_config = types.ThinkingConfig(
+                        thinking_budget=thinking_budget
+                    )
+                    logger.info(f"Using thinking mode with budget: {thinking_budget} tokens")
+                else:
+                    # Explicitly disable thinking for fast mode
+                    gen_config.thinking_config = types.ThinkingConfig(
+                        thinking_budget=0
+                    )
+                    logger.info("Using fast mode (no thinking)")
+            
             response = client.models.generate_content(
                 model=config.model_id,
                 contents=[{"role": "user", "parts": [{"text": prompt}]}],
-                config=types.GenerateContentConfig(
-                    temperature=0.3,
-                    response_mime_type="application/json",
-                    response_schema=schema
-                )
+                config=gen_config
             )
             
             # Try to get JSON from response.text first
