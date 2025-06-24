@@ -71,7 +71,7 @@ class AIService:
     async def _generate_conversation_title(self, user_message: str) -> str:
         """Generates a conversation title from the first user message."""
         try:
-            title_model = AIModel.GEMINI_2_5_FLASH
+            title_model = AIModel.GEMINI_2_5_FLASH_FAST
             if not self.tool_chat_service.client_manager.is_model_available(title_model):
                 return (user_message[:75] + '...') if len(user_message) > 75 else user_message
 
@@ -264,6 +264,121 @@ class AIService:
             # Continue anyway - user still gets the response
 
         return response
+
+    async def chat_with_tools_streaming(
+        self,
+        user_message: str,
+        conversation_id: str,
+        user: CurrentUser,
+        workflow_id: Optional[str] = None,
+        model: AIModel = AIModel.GEMINI_2_5_FLASH,
+        temperature: float = 0.3,
+        max_tokens: int = 4000
+    ):
+        """Streaming version of chat_with_tools"""
+        # 1. Get workflow context if workflow_id is provided
+        workflow_context = None
+        if workflow_id:
+            try:
+                workflow_context = await supabase_service.get_workflow(workflow_id, user.id)
+                logger.info("Retrieved workflow context", 
+                           workflow_id=workflow_id, 
+                           workflow_found=workflow_context is not None)
+            except Exception as e:
+                logger.error("Failed to retrieve workflow context", workflow_id=workflow_id, error=str(e))
+                workflow_context = None
+        
+        # 2. Get conversation history
+        history_messages = await supabase_service.get_conversation_messages(
+            conversation_id=conversation_id,
+            user_id=user.id,
+            model_key=model.value
+        )
+
+        # 3. If no history exists, create the conversation first
+        if not history_messages:
+            try:
+                await supabase_service.create_conversation(
+                    user_id=user.id,
+                    conversation_id=conversation_id,
+                    workflow_id=workflow_id,
+                    title=None
+                )
+                logger.info("Created new conversation", conversation_id=conversation_id)
+            except Exception as e:
+                logger.warning("Failed to create conversation", error=str(e))
+            
+            # Generate and set title
+            title = await self._generate_conversation_title(user_message)
+            try:
+                await supabase_service.update_conversation_title(conversation_id, user.id, title)
+            except Exception as e:
+                logger.error("Failed to set conversation title", error=str(e))
+        
+        # 4. Add workflow context to message history if available
+        if workflow_context:
+            workflow_system_message = {
+                "role": "system", 
+                "content": f"""CURRENT WORKFLOW CONTEXT:
+                Name: {workflow_context.get('name', 'Untitled')}
+                Description: {workflow_context.get('description', 'No description')}
+                Nodes: {len(workflow_context.get('workflow_data', {}).get('nodes', []))} nodes
+                Last Updated: {workflow_context.get('updated_at')}
+
+                Workflow Structure:
+                {json.dumps(workflow_context.get('workflow_data'), indent=2)}
+
+                You are helping the user modify, understand, or extend this specific n8n workflow."""
+            }
+            all_messages = [workflow_system_message] + history_messages + [{"role": "user", "content": user_message}]
+        else:
+            all_messages = history_messages + [{"role": "user", "content": user_message}]
+
+        # 5. Save user message to database BEFORE processing
+        try:
+            user_token_count = len(user_message.split())
+            await supabase_service.add_message(
+                conversation_id=conversation_id,
+                content=user_message,
+                role="user",
+                message_type="text",
+                workflow_data=None,
+                token_count=user_token_count
+            )
+        except Exception as e:
+            logger.error("Failed to save user message", error=str(e))
+
+        # 6. Stream the tool-based chat response
+        final_response = None
+        async for event in self.tool_chat_service.chat_streaming(
+            messages=[ChatMessage(**msg) for msg in all_messages],
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            conversation_id=conversation_id
+        ):
+            if event.get("type") == "final_response":
+                final_response = event.get("response")
+            yield event
+
+        # 7. Save AI response to database AFTER processing completes
+        if final_response:
+            try:
+                ai_token_count = final_response.tokens_used or len(final_response.message.split())
+                workflow_data = None
+                if final_response.workflow:
+                    workflow_data = final_response.workflow.model_dump()
+                    
+                await supabase_service.add_message(
+                    conversation_id=conversation_id,
+                    content=final_response.message,
+                    role="assistant",
+                    message_type="workflow" if final_response.workflow else "text",
+                    workflow_data=workflow_data,
+                    token_count=ai_token_count
+                )
+            except Exception as e:
+                logger.error("Failed to save AI response", error=str(e))
 
     def get_available_providers(self) -> Dict[str, bool]:
         models_config = config_loader.load_models()

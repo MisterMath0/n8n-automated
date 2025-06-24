@@ -61,7 +61,22 @@ class ConfigLoader:
         models = self.load_models()
         if model_key not in models:
             raise ValueError(f"Unknown model: {model_key}")
-        return models[model_key]
+        
+        model_config = models[model_key]
+        
+        # Log thinking config for debugging
+        thinking_config = getattr(model_config, 'thinking_config', {})
+        if thinking_config:
+            import structlog
+            logger = structlog.get_logger()
+            logger.info(
+                "Model thinking configuration loaded",
+                model=model_key,
+                thinking_enabled=thinking_config.get('enabled', False),
+                thinking_budget=thinking_config.get('thinking_budget', 0)
+            )
+        
+        return model_config
 
     def load_search_config(self) -> Dict[str, Any]:
         """Load search configuration from search.yaml"""

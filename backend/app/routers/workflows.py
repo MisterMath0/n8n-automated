@@ -1,15 +1,14 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Body, Request
+from fastapi.responses import StreamingResponse
 from typing import List
 import structlog
+import json
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from ..models.workflow import AIModel, AIProvider
 from ..models.conversation import (
     ChatRequest,
-    ChatResponse,
-    DocumentationSearchRequest,
-    DocumentationSearchResponse
 )
 from ..services.ai_service import ai_service
 from ..services.doc_search_service import get_search_service
@@ -21,116 +20,56 @@ limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/v1/workflows", tags=["workflows"])
 
 
-@router.post("/chat", response_model=ChatResponse)
+@router.post("/chat")
 @limiter.limit("200/minute")  # 3+ requests per second for testing
 async def chat_with_ai(
     request: Request,
     chat_request: ChatRequest,
     current_user: CurrentUser = Depends(get_current_user)
 ):
-    """Chat with AI using tool-based system for workflows and documentation search"""
-    try:
-        response = await ai_service.chat_with_tools(
-            user_message=chat_request.user_message,
-            conversation_id=chat_request.conversation_id,
-            user=current_user,
-            workflow_id=chat_request.workflow_id,  # Pass workflow context!
-            model=chat_request.model,
-            temperature=chat_request.temperature,
-            max_tokens=chat_request.max_tokens
-        )
-        
-        logger.info(
-            "Chat completed",
-            model=chat_request.model.value,
-            tools_used=response.tools_used,
-            generation_time=response.generation_time,
-            workflow_generated=response.workflow is not None,
-            search_results_count=len(response.search_results) if response.search_results else 0,
-            user_id=current_user.id if current_user else None
-        )
-        
-        return response
-    except Exception as e:
-        logger.error(
-            "Chat failed", 
-            error=str(e), 
-            user_id=current_user.id, 
-            conversation_id=chat_request.conversation_id,
-            user_message_length=len(chat_request.user_message)  # Log length, not content
-        )
-        return ChatResponse(
-            success=False, 
-            error="An internal error occurred while processing your request. Please try again.",
-            conversation_id=chat_request.conversation_id,
-            generation_time=0.0,
-            model_used=chat_request.model,
-            message=""
-        )
-
-
-@router.post("/search-docs", response_model=DocumentationSearchResponse)
-@limiter.limit("500/minute")  # 8+ requests per second for testing
-async def search_documentation(
-    http_request: Request,
-    request: DocumentationSearchRequest,
-    current_user: CurrentUser = Depends(get_current_user)
-):
-    """Search N8N documentation directly"""
-    try:
-        search_service = get_search_service()
-        
-        filters = {}
-        if search_request.section_type:
-            filters["section_type"] = search_request.section_type
-        
-        results, stats = search_service.search(
-            query=search_request.query,
-            top_k=search_request.top_k,
-            filters=filters if filters else None,
-            include_highlights=True
-        )
-        
-        search_results = []
-        for result in results:
-            search_results.append({
-                "title": result.title,
-                "content": result.content,
-                "url": result.url,
-                "score": result.score,
-                "section_type": result.section_type,
-                "node_type": result.node_type,
-                "highlight": result.highlight
-            })
-        
-        logger.info(
-            "Documentation search completed",
-            query=search_request.query,
-            results_found=len(results),
-            search_time_ms=stats.search_time_ms,
-            user_id=current_user.id if current_user else None
-        )
-        
-        return DocumentationSearchResponse(
-            success=True,
-            results=search_results,
-            query=search_request.query,
-            total_results=stats.total_results,
-            search_time_ms=stats.search_time_ms
-        )
-        
-    except ValueError as e:
-        logger.error("Invalid search request", error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except Exception as e:
-        logger.error("Documentation search failed", error=str(e), user_id=current_user.id if current_user else None)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred while searching documentation. Please try again."
-        )
+    """Chat with AI using streaming tool-based system"""
+    async def generate_stream():
+        try:
+            async for event in ai_service.chat_with_tools_streaming(
+                user_message=chat_request.user_message,
+                conversation_id=chat_request.conversation_id,
+                user=current_user,
+                workflow_id=chat_request.workflow_id,
+                model=chat_request.model,
+                temperature=chat_request.temperature,
+                max_tokens=chat_request.max_tokens
+            ):
+                # Handle ChatResponse serialization
+                if event.get("type") == "final_response" and "response" in event:
+                    response_obj = event["response"]
+                    if hasattr(response_obj, 'model_dump'):
+                        event["response"] = response_obj.model_dump()
+                
+                yield f"data: {json.dumps(event)}\n\n"
+        except Exception as e:
+            logger.error(
+                "Chat streaming failed", 
+                error=str(e), 
+                user_id=current_user.id, 
+                conversation_id=chat_request.conversation_id
+            )
+            error_event = {
+                "type": "error",
+                "error": "An internal error occurred while processing your request.",
+                "conversation_id": chat_request.conversation_id
+            }
+            yield f"data: {json.dumps(error_event)}\n\n"
+    
+    return StreamingResponse(
+        generate_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "*"
+        }
+    )
 
 
 @router.get("/models")

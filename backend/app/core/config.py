@@ -22,7 +22,10 @@ class AIModelConfig(BaseModel):
     cost_per_1k_output_tokens: float
     supports_json_mode: bool = True
     supports_streaming: bool = True
+    supports_tools: bool = True
     context_window: int = 128000
+    default_temperature: float = 0.3
+    thinking_config: Optional[Dict[str, Union[bool, int]]] = Field(default_factory=dict)
 
 
 class ChatSettingsConfig(BaseModel):

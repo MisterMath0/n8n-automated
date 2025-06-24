@@ -119,6 +119,77 @@ class ToolBasedChatService:
                 model
             )
     
+    async def chat_streaming(
+        self,
+        messages: List[ChatMessage],
+        model: AIModel = AIModel.CLAUDE_4_SONNET,
+        temperature: float = 0.3,
+        max_tokens: int = 4000,
+        conversation_id: Optional[str] = None
+    ):
+        """Streaming version of chat method with tool support"""
+        conv_id = conversation_id or str(uuid.uuid4())
+        
+        try:
+            # Validate model availability
+            if not self.client_manager.is_model_available(model):
+                error_event = {
+                    "type": "error",
+                    "error": f"Model {model} is not available",
+                    "conversation_id": conv_id
+                }
+                yield error_event
+                return
+            
+            # Get model configuration
+            _, model_config = self.client_manager.get_client_and_config(model)
+            
+            # Route to appropriate handler based on provider
+            if model_config.provider == "google":
+                async for event in self.google_handler.handle_chat_streaming(
+                    messages, model, temperature, max_tokens, conv_id
+                ):
+                    yield event
+            elif model_config.provider == "anthropic":
+                # Anthropic non-streaming fallback with progress updates
+                yield {"type": "progress", "message": "🔄 Processing with Claude..."}
+                response = await self.anthropic_handler.handle_chat(
+                    messages, model, temperature, max_tokens, conv_id
+                )
+                yield {"type": "message", "content": response.message}
+                if response.workflow:
+                    yield {"type": "workflow", "data": response.workflow.model_dump()}
+                yield {"type": "final_response", "response": response}
+                yield {"type": "done"}
+            elif model_config.provider in ["openai", "groq"]:
+                # OpenAI/Groq non-streaming fallback with progress updates
+                provider_name = "OpenAI" if model_config.provider == "openai" else "Groq"
+                yield {"type": "progress", "message": f"🔄 Processing with {provider_name}..."}
+                response = await self.openai_handler.handle_chat(
+                    messages, model, temperature, max_tokens, conv_id
+                )
+                yield {"type": "message", "content": response.message}
+                if response.workflow:
+                    yield {"type": "workflow", "data": response.workflow.model_dump()}
+                yield {"type": "final_response", "response": response}
+                yield {"type": "done"}
+            else:
+                error_event = {
+                    "type": "error",
+                    "error": f"Unsupported provider: {model_config.provider}",
+                    "conversation_id": conv_id
+                }
+                yield error_event
+                
+        except Exception as e:
+            logger.error("Streaming chat service failed", error=str(e), model=model)
+            error_event = {
+                "type": "error",
+                "error": str(e),
+                "conversation_id": conv_id
+            }
+            yield error_event
+    
     def get_available_models(self) -> List[str]:
         """Get list of available models"""
         return self.client_manager.get_available_models()
