@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL('https://n8n-automated.com'),
   title: {
-    default: "N8N AI Workflow Generator - Automate with Intelligence",
-    template: "%s | N8N AI Workflow Generator",
+    default: "Autokraft",
+    template: "%s | Autokraft",
   },
   description: "Generate, customize, and optimize n8n workflows with the power of AI. Streamline your automation, save time, and build complex integrations effortlessly.",
   applicationName: "N8N AI Workflow Generator",

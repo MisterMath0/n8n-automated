@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { Menu, Sparkles, X, Zap } from "lucide-react";
 import Link from 'next/link';
+import Image from 'next/image';
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -33,8 +34,14 @@ export function Navbar() {
                 className="flex items-center gap-3"
               >
               <Link href="/" className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
+          <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center border border-white/10">
+            <Image 
+              src="/logo.png"
+              alt="Autokraft Logo"
+              width={24}
+              height={24}
+              className="drop-shadow-lg"
+            />
           </div>
           <span className="text-xl font-bold text-white">Autokraft</span>
         </Link>
