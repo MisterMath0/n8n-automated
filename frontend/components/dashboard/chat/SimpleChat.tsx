@@ -9,6 +9,7 @@ import { ModelsError } from "./ModelsError";
 import { ChatInput } from "./ChatInput";
 import { MessagesArea } from "./MessagesArea";
 import { Message } from "./types";
+import { ThinkingDisplay } from "./components";
 import { DEFAULT_MODEL, SELECTED_MODEL_KEY } from "../../../types/constants";
 import { useReadyWelcomeMessage } from "@/hooks/data";
 import { ConversationHistoryAccordion } from "./ConversationHistoryAccordion";
@@ -36,7 +37,7 @@ export function SimpleChat({
   const toast = useToast();
   
   // Chat functionality
-  const { availableModels, modelsLoading, modelsError, sendMessage, isSending } = useChat();
+  const { availableModels, modelsLoading, modelsError, sendMessage, isSending, streamingState, stopStreaming } = useChat();
   const createConversation = useCreateConversation();
   const linkToWorkflow = useLinkConversationToWorkflow();
   const createWorkflow = useCreateWorkflow();
@@ -73,7 +74,7 @@ export function SimpleChat({
     }
   }, [workflowId, conversations, conversationId, onConversationChange]);
   
-  // Build messages array with backend welcome message
+  // Build messages array with backend welcome message and streaming content
   const messages = React.useMemo(() => {
     const conversationMessages = currentConversation?.messages
       ?.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) // ✅ BACKUP: Ensure chronological order
@@ -85,13 +86,27 @@ export function SimpleChat({
         workflowData: msg.workflow_data
       })) || [];
     
+    // Add streaming message if currently streaming (only main message content, not thinking)
+    if (isSending && streamingState && streamingState.message) {
+      const streamingMessage = {
+        id: 'streaming',
+        content: streamingState.message,
+        sender: 'assistant' as const,
+        type: 'text' as const,
+        isStreaming: true,
+        progress: streamingState.progress,
+        tools: streamingState.tools
+      };
+      conversationMessages.push(streamingMessage);
+    }
+    
     // Always include welcome message at the beginning if we have one
     if (welcomeMessage) {
       return [welcomeMessage, ...conversationMessages];
     }
     
     return conversationMessages;
-  }, [currentConversation, welcomeMessage]);
+  }, [currentConversation, welcomeMessage, isSending, streamingState]);
 
   // Auto-focus input
   useEffect(() => {
@@ -196,7 +211,6 @@ export function SimpleChat({
         onConversationChange(activeConversationId);
         
         // Small delay to ensure the cache update from conversation creation completes
-        // This ensures the conversation appears in the conversation list
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
         console.error('🔍 DEBUG - Failed to create conversation:', error);
@@ -205,48 +219,43 @@ export function SimpleChat({
       }
     }
 
-    // Clear input immediately - optimistic update will show the message
+    // Clear input immediately
     setInputValue("");
     
-    try {
-      const request: ChatRequest = {
-        user_message: message,
-        conversation_id: activeConversationId,
-        workflow_id: workflowId,
-        model: selectedModel,
-        temperature: 0.3,
-        max_tokens: 4000,
-      };
+    // Start streaming
+    const request: ChatRequest = {
+      user_message: message,
+      conversation_id: activeConversationId,
+      workflow_id: workflowId,
+      model: selectedModel,
+      temperature: 0.3,
+      max_tokens: 4000,
+    };
 
-      // Send message - React Query optimistic updates handle UI
-      const response = await new Promise<any>((resolve, reject) => {
-        sendMessage(request, {
-          onSuccess: resolve,
-          onError: reject,
-        });
-      });
+    // Send message with streaming
+    sendMessage(request);
+    
+    // Handle workflow saving when workflow is generated (this will be triggered by streaming events)
+    // We can listen to streamingState.workflow changes to save workflows
+  }, [inputValue, user, isSending, conversationId, workflowId, selectedModel, createConversation, sendMessage, onConversationChange, toast]);
 
-      // Handle workflow generation/updates in separate try-catch to prevent breaking chat
-      if (response.workflow) {
+  // Handle workflow saving when generated during streaming
+  useEffect(() => {
+    if (streamingState?.workflow && !isSending) {
+      const handleWorkflowSave = async () => {
         try {
           if (!workflowId) {
             // NEW WORKFLOW: Create new workflow in database
             const savedWorkflow = await createWorkflow.mutateAsync({
-              id: response.workflow.id,
-              name: response.workflow.name,
-              description: `Generated workflow with ${response.workflow.nodes.length} nodes`,
-              workflow_data: response.workflow,
-              owner_id: user.id,
+              id: streamingState.workflow.id,
+              name: streamingState.workflow.name,
+              description: `Generated workflow with ${streamingState.workflow.nodes.length} nodes`,
+              workflow_data: streamingState.workflow,
+              owner_id: user?.id,
               status: 'active',
             });
 
-            // Link conversation to new workflow
-            await linkToWorkflow.mutateAsync({
-              conversationId: activeConversationId,
-              workflowId: savedWorkflow.id,
-            });
-
-            // Call workflow generated callback safely
+            // Call workflow generated callback
             try {
               onWorkflowGenerated?.(savedWorkflow);
               toast.success(`New workflow "${savedWorkflow.name}" created successfully!`);
@@ -259,16 +268,12 @@ export function SimpleChat({
             const updatedWorkflow = await updateWorkflow.mutateAsync({
               workflowId: workflowId,
               updates: {
-                workflow_data: response.workflow,
+                workflow_data: streamingState.workflow,
                 updated_at: new Date().toISOString(),
-                // Create version history entry if version control system exists
-                ...(response.changes_made && {
-                  description: `Updated: ${response.changes_made.join(', ')}`,
-                }),
               },
             });
 
-            // Call workflow generated callback safely
+            // Call workflow generated callback
             try {
               onWorkflowGenerated?.(updatedWorkflow);
               toast.success(`Workflow "${updatedWorkflow.name}" updated successfully!`);
@@ -278,21 +283,17 @@ export function SimpleChat({
             }
           }
         } catch (workflowError) {
-          // Don't let workflow save errors break the chat - just show warning
           console.error('Failed to save/update workflow:', workflowError);
           const errorMsg = workflowId 
             ? 'Workflow updated but failed to save changes to database' 
             : 'Workflow generated but failed to save to database';
           toast.error(errorMsg);
-          // Chat should still work for subsequent messages
         }
-      }
-    } catch (error) {
-      // On error, restore the input (optimistic update already rolled back by React Query)
-      setInputValue(message);
-      toast.error('Failed to send message');
+      };
+
+      handleWorkflowSave();
     }
-  }, [inputValue, user, isSending, conversationId, workflowId, selectedModel, createConversation, sendMessage, createWorkflow, updateWorkflow, linkToWorkflow, onConversationChange, onWorkflowGenerated, toast]);
+  }, [streamingState?.workflow, isSending, workflowId, createWorkflow, updateWorkflow, onWorkflowGenerated, toast, user]);
 
   // Show auth required if no user
   if (!user) {
@@ -313,12 +314,22 @@ export function SimpleChat({
 
       {modelsError && <ModelsError error={modelsError.message || String(modelsError)} />}
 
-      <div className="flex-1 overflow-hidden">
-        <MessagesArea 
-          messages={messages}
-          isGenerating={isSending}
-          messagesEndRef={messagesEndRef}
-          workflowProgress={isSending ? 'Processing your request...' : ''}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-hidden">
+          <MessagesArea 
+            messages={messages}
+            isGenerating={isSending}
+            messagesEndRef={messagesEndRef}
+            workflowProgress={isSending ? streamingState?.progress : ''}
+          />
+        </div>
+        
+        {/* Thinking Display - positioned at bottom, separate from main messages */}
+        <ThinkingDisplay 
+          thinking={streamingState?.thinking || ''}
+          isVisible={isSending && !!streamingState?.thinking}
+          isComplete={streamingState?.thinkingComplete || false}
+          className="mx-4 mb-2"
         />
       </div>
 

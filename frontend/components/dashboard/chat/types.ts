@@ -4,4 +4,8 @@ export interface Message {
     sender: 'user' | 'assistant';
     type?: 'text' | 'workflow' | 'error';
     workflowData?: any;
+    isStreaming?: boolean;
+    thinking?: string;
+    progress?: string;
+    tools?: string[];
 }

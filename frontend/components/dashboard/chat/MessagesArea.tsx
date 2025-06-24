@@ -22,14 +22,6 @@ export function MessagesArea({ messages, isGenerating, messagesEndRef, workflowP
         ))}
       </AnimatePresence>
 
-      {isGenerating && (
-        workflowProgress ? (
-          <ProgressIndicator message={workflowProgress} />
-        ) : (
-          <LoadingMessage />
-        )
-      )}
-
       <div ref={messagesEndRef} />
     </div>
   );

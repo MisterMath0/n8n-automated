@@ -236,26 +236,101 @@ export const chatAPI = {
     return {};
   },
 
-  // Send message to AI (direct fetch to backend)
-  sendMessage: async (request: ChatRequest): Promise<ChatResponse> => {
-    const authHeaders = await chatAPI.getAuthHeaders();
+  // Send message to AI (streaming)
+  sendMessage: (request: ChatRequest, onEvent: (event: any) => void): EventSource => {
+    return chatAPI.sendMessageStreaming(request, onEvent);
+  },
+
+  sendMessageStreaming: (request: ChatRequest, onEvent: (event: any) => void): EventSource => {
     const url = `${API_CONFIG.BASE_URL}/v1/workflows/chat`;
     
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders,  // Add authentication!
-      },
-      body: JSON.stringify(request),
+    let abortController = new AbortController();
+    
+    // Use fetch streaming instead of EventSource for POST requests
+    chatAPI.getAuthHeaders().then(async (authHeaders) => {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders,
+          },
+          body: JSON.stringify(request),
+          signal: abortController.signal
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+
+        if (!reader) {
+          throw new Error('No response body reader available');
+        }
+
+        let buffer = '';
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          // Decode the chunk and add to buffer
+          const chunk = decoder.decode(value, { stream: true });
+          buffer += chunk;
+          
+          // Process complete SSE messages from buffer
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const jsonData = line.slice(6).trim(); // Remove 'data: ' prefix
+                if (jsonData) {
+                  const data = JSON.parse(jsonData);
+                  onEvent(data);
+                }
+              } catch (error) {
+                console.error('Failed to parse streaming event:', error, 'Line:', line);
+              }
+            }
+          }
+        }
+        
+        // Process any remaining data in buffer
+        if (buffer.trim() && buffer.startsWith('data: ')) {
+          try {
+            const jsonData = buffer.slice(6).trim();
+            if (jsonData) {
+              const data = JSON.parse(jsonData);
+              onEvent(data);
+            }
+          } catch (error) {
+            console.error('Failed to parse final streaming event:', error);
+          }
+        }
+        
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Failed to send chat request:', error);
+          onEvent({ type: 'error', error: error.message });
+        }
+      }
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to send message: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
+    // Return a proper EventSource-like object for compatibility
+    return {
+      close: () => {
+        abortController.abort();
+      },
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      readyState: 1,
+      url: url,
+      withCredentials: false
+    } as EventSource;
   },
 
   // Get available models

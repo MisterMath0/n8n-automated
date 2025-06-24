@@ -52,9 +52,6 @@ export const WorkflowCard = React.memo<WorkflowCardProps>(({
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <h4 className="text-white font-medium text-sm truncate">{workflow.name}</h4>
-          <p className="text-gray-400 text-xs mt-1 line-clamp-2">
-            {workflow.description || `${workflow.nodes?.length || 0} nodes`}
-          </p>
           <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
             <Clock className="w-3 h-3" />
             <span>{formatTimeAgo(workflow.lastUpdated)}</span>
