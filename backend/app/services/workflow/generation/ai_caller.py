@@ -1,0 +1,159 @@
+"""
+Unified AI calling service for all providers with simple schemas.
+Handles function/tool calling across Google, OpenAI, and Anthropic.
+"""
+
+import json
+from typing import Dict, Any, Optional
+import structlog
+from google.genai import types
+
+logger = structlog.get_logger()
+
+
+class AICallerService:
+    """Unified AI calling service for all providers with simple schemas"""
+    
+    def __init__(self, client_manager):
+        self.client_manager = client_manager
+    
+    async def call_with_schema(self, prompt: str, schema: Dict[str, Any], model) -> Dict[str, Any]:
+        """Call AI model with schema - works for all providers"""
+        client, model_config = self.client_manager.get_client_and_config(model)
+        
+        if model_config.provider == "google":
+            return await self._call_google_with_schema(client, model_config, prompt, schema)
+        elif model_config.provider == "anthropic":
+            return await self._call_anthropic_with_schema(client, model_config, prompt, schema)
+        elif model_config.provider in ["openai", "groq"]:
+            return await self._call_openai_with_schema(client, model_config, prompt, schema)
+        else:
+            raise ValueError(f"Unsupported provider: {model_config.provider}")
+    
+    async def _call_google_with_schema(self, client, config, prompt: str, schema: Dict[str, Any]) -> Dict[str, Any]:
+        """Google GenAI with function calling"""
+        function_tool = {
+            "function_declarations": [{
+                "name": "generate_result",
+                "description": "Generate structured result based on prompt",
+                "parameters": schema
+            }]
+        }
+        
+        try:
+            response = client.models.generate_content(
+                model=config.model_id,
+                contents=[{"role": "user", "parts": [{"text": prompt}]}],
+                config=types.GenerateContentConfig(
+                    temperature=0.3,
+                    max_output_tokens=4000,
+                    tools=[function_tool],
+                    tool_config=types.ToolConfig(
+                        function_calling_config=types.FunctionCallingConfig(
+                            mode="AUTO"
+                        )
+                    )
+                )
+            )
+            
+            if (response.candidates and 
+                response.candidates[0].content.parts and 
+                response.candidates[0].content.parts[0].function_call):
+                function_call = response.candidates[0].content.parts[0].function_call
+                return dict(function_call.args)
+            else:
+                # Fallback: try to extract from text response
+                text_response = response.text if hasattr(response, 'text') else ""
+                logger.warning("Google did not return expected function call, trying text extraction", 
+                              response_text=text_response[:200])
+                return self._extract_json_from_text(text_response)
+                
+        except Exception as e:
+            logger.error("Google AI call failed", error=str(e))
+            raise ValueError(f"Google AI call failed: {str(e)}")
+    
+    async def _call_anthropic_with_schema(self, client, config, prompt: str, schema: Dict[str, Any]) -> Dict[str, Any]:
+        """Anthropic with tool calling"""
+        tool = {
+            "name": "generate_result",
+            "description": "Generate structured result based on prompt",
+            "input_schema": schema
+        }
+        
+        try:
+            response = client.messages.create(
+                model=config.model_id,
+                max_tokens=4000,
+                temperature=0.3,
+                messages=[{"role": "user", "content": prompt}],
+                tools=[tool],
+                tool_choice={"type": "tool", "name": "generate_result"}
+            )
+            
+            tool_call = next((block for block in response.content if block.type == 'tool_use' and block.name == 'generate_result'), None)
+            if not tool_call:
+                # Fallback: try to extract from text response
+                text_content = ""
+                for block in response.content:
+                    if hasattr(block, 'text'):
+                        text_content += block.text
+                logger.warning("Anthropic did not return expected tool call, trying text extraction",
+                              response_text=text_content[:200])
+                return self._extract_json_from_text(text_content)
+            
+            return tool_call.input
+            
+        except Exception as e:
+            logger.error("Anthropic call failed", error=str(e))
+            raise ValueError(f"Anthropic call failed: {str(e)}")
+    
+    async def _call_openai_with_schema(self, client, config, prompt: str, schema: Dict[str, Any]) -> Dict[str, Any]:
+        """OpenAI with function calling"""
+        tool = {
+            "type": "function",
+            "function": {
+                "name": "generate_result",
+                "description": "Generate structured result based on prompt",
+                "parameters": schema
+            }
+        }
+        
+        try:
+            response = client.chat.completions.create(
+                model=config.model_id,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=4000,
+                temperature=0.3,
+                tools=[tool],
+                tool_choice={"type": "function", "function": {"name": "generate_result"}}
+            )
+            
+            if response.choices[0].message.tool_calls:
+                tool_call = response.choices[0].message.tool_calls[0]
+                return json.loads(tool_call.function.arguments)
+            else:
+                # Fallback: try to extract from message content
+                text_response = response.choices[0].message.content or ""
+                logger.warning("OpenAI did not return expected tool call, trying text extraction",
+                              response_text=text_response[:200])
+                return self._extract_json_from_text(text_response)
+                
+        except Exception as e:
+            logger.error("OpenAI call failed", error=str(e))
+            raise ValueError(f"OpenAI call failed: {str(e)}")
+    
+    def _extract_json_from_text(self, text: str) -> Dict[str, Any]:
+        """Extract JSON from text response as fallback"""
+        import re
+        
+        # Try to find JSON in the text
+        json_match = re.search(r'\{.*\}', text, re.DOTALL)
+        if json_match:
+            try:
+                return json.loads(json_match.group(0))
+            except json.JSONDecodeError:
+                pass
+        
+        # If no valid JSON found, return a basic structure
+        logger.error("Could not extract valid JSON from text response", text=text[:200])
+        raise ValueError("AI did not return valid structured output")
