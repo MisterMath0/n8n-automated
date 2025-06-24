@@ -62,8 +62,13 @@ def create_workflow_nodes_schema() -> Dict[str, Any]:
                             "minItems": 2,
                             "maxItems": 2
                         },
-                        "parameters": {"type": "object"},
-                        "credentials": {"type": "object"}
+                        "parameters": {
+                            "type": "object",
+                            "description": "Node-specific configuration parameters based on N8N node type documentation"
+                        },
+                        "credentials": {
+                            "description": "Credential references for the node (leave empty if none needed)"
+                        }
                     },
                     "required": ["id", "name", "type", "position"]
                 }
