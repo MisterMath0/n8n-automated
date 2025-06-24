@@ -15,11 +15,6 @@ from ..core.config_loader import config_loader
 from .tools import ToolBasedChatService
 from .supabase_service import supabase_service
 from ..core.auth import CurrentUser
-from ..utils.structured_output import (
-    create_n8n_workflow_schema,
-    parse_workflow_with_recovery,
-    validate_and_fix_workflow_data,
-)
 
 logger = structlog.get_logger()
 
