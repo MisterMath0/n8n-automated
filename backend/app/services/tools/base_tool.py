@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from ...models.conversation import ToolCall, ToolResult
+from ...models.workflow import AIModel
 
 
 class BaseTool(ABC):
@@ -13,6 +14,13 @@ class BaseTool(ABC):
     - Input schema definition  
     - Execution logic
     """
+    
+    def __init__(self):
+        self._ai_caller = None
+    
+    def set_ai_caller(self, ai_caller):
+        """Set AI caller service"""
+        self._ai_caller = ai_caller
     
     @property
     @abstractmethod
@@ -36,6 +44,17 @@ class BaseTool(ABC):
     async def execute(self, tool_call: ToolCall) -> ToolResult:
         """Execute the tool with given parameters"""
         pass
+    
+    async def execute_with_model(self, tool_call: ToolCall, model: AIModel) -> ToolResult:
+        """Execute the tool with specific model (for multi-step tools)"""
+        # Default implementation delegates to execute()
+        return await self.execute(tool_call)
+    
+    async def _call_ai_with_schema(self, prompt: str, schema: Dict[str, Any], model: AIModel) -> Dict[str, Any]:
+        """Call AI with schema using unified service"""
+        if not self._ai_caller:
+            raise ValueError("AI caller service not set")
+        return await self._ai_caller.call_with_schema(prompt, schema, model)
     
     def get_definition(self) -> Dict[str, Any]:
         """Get complete tool definition for AI model"""

@@ -1,6 +1,9 @@
 from typing import List, Dict, Any
 
-from .workflow_generator_tool import WorkflowGeneratorTool
+from ..workflow.generation import (
+    WorkflowOrchestratorTool,
+    AICallerService
+)
 from .documentation_search_tool import DocumentationSearchTool
 from ...core.config_loader import config_loader
 
@@ -13,17 +16,27 @@ class ToolDefinitions:
     in the format expected by different AI providers.
     """
     
-    def __init__(self, ai_service_legacy=None):
+    def __init__(self, ai_service_legacy=None, client_manager=None):
         """Initialize with available tools"""
         self.tools = {}
+        self.ai_caller = None
         
         # Load prompts configuration
         self.prompts_config = config_loader.load_config("prompts")
         
-        # Register available tools
-        if ai_service_legacy:
-            self.tools["workflow_generator"] = WorkflowGeneratorTool(ai_service_legacy)
+        # Create AI caller service if client manager is available
+        if client_manager:
+            self.ai_caller = AICallerService(client_manager)
+        
+        # Register new multi-step workflow generation
+        self.tools["workflow_generator"] = WorkflowOrchestratorTool()
         self.tools["documentation_search"] = DocumentationSearchTool()
+        
+        # Set AI caller for all tools
+        if self.ai_caller:
+            for tool in self.tools.values():
+                if hasattr(tool, 'set_ai_caller'):
+                    tool.set_ai_caller(self.ai_caller)
     
     def get_anthropic_tools(self) -> List[Dict[str, Any]]:
         """Get tool definitions in Anthropic format"""

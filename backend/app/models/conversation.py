@@ -23,6 +23,9 @@ class MessageType(str, Enum):
 
 class ToolType(str, Enum):
     WORKFLOW_GENERATOR = "workflow_generator"
+    WORKFLOW_PLANNER = "workflow_planner"
+    NODE_GENERATOR = "node_generator"
+    CONNECTION_BUILDER = "connection_builder"
     DOCUMENTATION_SEARCH = "documentation_search"
 
 

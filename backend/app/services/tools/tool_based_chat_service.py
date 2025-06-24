@@ -31,7 +31,7 @@ class ToolBasedChatService:
         """Initialize with all components"""
         self.client_manager = AIClientManager()
             
-        self.tool_definitions = ToolDefinitions(legacy_ai_service)
+        self.tool_definitions = ToolDefinitions(legacy_ai_service, self.client_manager)
         self.tool_executor = ToolExecutor(self.tool_definitions)
         self.response_processor = ResponseProcessor()
         
