@@ -38,7 +38,7 @@ export function useSendMessage() {
     thinkingComplete: false
   });
   
-  // Alternative: Micro-batching approach (production pattern)
+  // Real-time streaming with flushSync to prevent React batching
   const sendMessage = useCallback((request: ChatRequest) => {
     // Cancel any existing stream
     if (streamingState.eventSource) {
@@ -56,29 +56,6 @@ export function useSendMessage() {
       eventSource: null,
       thinkingComplete: false
     });
-
-    // Micro-batching buffers for smoother updates
-    let thinkingBuffer = '';
-    let messageBuffer = '';
-    let lastThinkingUpdate = 0;
-    let lastMessageUpdate = 0;
-    const UPDATE_INTERVAL = 50; // 20 FPS - smooth but not overwhelming
-
-    const flushThinkingBuffer = () => {
-      if (thinkingBuffer) {
-        setStreamingState(prev => ({ ...prev, thinking: prev.thinking + thinkingBuffer }));
-        thinkingBuffer = '';
-        lastThinkingUpdate = Date.now();
-      }
-    };
-
-    const flushMessageBuffer = () => {
-      if (messageBuffer) {
-        setStreamingState(prev => ({ ...prev, message: prev.message + messageBuffer }));
-        messageBuffer = '';
-        lastMessageUpdate = Date.now();
-      }
-    };
 
     // Add optimistic user message immediately
     const queryKey = request.workflow_id 
@@ -134,26 +111,21 @@ export function useSendMessage() {
       });
     });
 
-    // Start streaming with micro-batching (production pattern)
+    // Start streaming with flushSync for real-time updates
     const eventSource = chatAPI.sendMessage(request, (event) => {
+      // Use flushSync for real-time streaming updates to prevent React batching
       switch (event.type) {
         case 'thinking':
           console.log('💭 Thinking token received:', event.content.length, 'chars');
-          thinkingBuffer += event.content;
-          
-          // Throttled updates for smooth streaming without overwhelming React
-          const now = Date.now();
-          if (now - lastThinkingUpdate >= UPDATE_INTERVAL) {
-            flushThinkingBuffer();
-          } else {
-            // Defer update to next interval
-            setTimeout(flushThinkingBuffer, UPDATE_INTERVAL - (now - lastThinkingUpdate));
-          }
+          flushSync(() => {
+            setStreamingState(prev => ({ ...prev, thinking: prev.thinking + event.content }));
+          });
           break;
         case 'thinking_complete':
           console.log('✅ Thinking phase completed');
-          flushThinkingBuffer(); // Flush any remaining
-          setStreamingState(prev => ({ ...prev, thinkingComplete: true }));
+          flushSync(() => {
+            setStreamingState(prev => ({ ...prev, thinkingComplete: true }));
+          });
           break;
         case 'progress':
           console.log('⏳ Progress update:', event.message);
@@ -167,15 +139,9 @@ export function useSendMessage() {
           break;
         case 'message':
           console.log('💬 Message token received:', event.content.length, 'chars');
-          messageBuffer += event.content;
-          
-          // Throttled updates for smooth streaming
-          const msgNow = Date.now();
-          if (msgNow - lastMessageUpdate >= UPDATE_INTERVAL) {
-            flushMessageBuffer();
-          } else {
-            setTimeout(flushMessageBuffer, UPDATE_INTERVAL - (msgNow - lastMessageUpdate));
-          }
+          flushSync(() => {
+            setStreamingState(prev => ({ ...prev, message: prev.message + event.content }));
+          });
           break;
         case 'workflow':
           console.log('🔄 Workflow generated:', event.data?.id);
@@ -183,9 +149,6 @@ export function useSendMessage() {
           break;
         case 'done':
           console.log('✅ Streaming completed');
-          // Flush any remaining buffers
-          flushThinkingBuffer();
-          flushMessageBuffer();
           setStreamingState(prev => ({ ...prev, isStreaming: false, eventSource: null }));
           break;
         case 'error':
@@ -196,6 +159,7 @@ export function useSendMessage() {
         case 'final_response':
           console.log('🏁 Final response received, updating conversation data');
           // Only add the AI response to conversation if we have actual content
+          // This prevents duplicates since we already stream message content
           if (event.response.message && event.response.message.trim()) {
             const aiMessage = {
               id: `ai-${Date.now()}`,
@@ -212,6 +176,7 @@ export function useSendMessage() {
               
               return old.map((conversation: any) => {
                 if (conversation.id === request.conversation_id) {
+                  // Check if we already have this message to prevent duplicates
                   const existingMessage = conversation.messages?.find(
                     (msg: any) => msg.content === event.response.message && msg.role === 'assistant'
                   );
