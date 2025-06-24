@@ -42,12 +42,6 @@ export function testNodeStyling() {
     const color = getNodeColor(nodeType);
     const category = getNodeCategory(nodeType);
     const isTrigger = isTriggerNode(nodeType);
-    
-    console.log(`\n📦 ${nodeType}:`);
-    console.log(`  Icon: ${icon.name || 'Component'}`);
-    console.log(`  Color: ${color}`);
-    console.log(`  Category: ${category}`);
-    console.log(`  Is Trigger: ${isTrigger}`);
   });
   
   console.groupEnd();
@@ -57,9 +51,7 @@ export function testNodeStyling() {
   const hasUndefinedColors = testCases.some(nodeType => !getNodeColor(nodeType));
   
   if (hasUndefinedIcons || hasUndefinedColors) {
-    console.error('❌ Some node types are returning undefined icons or colors');
   } else {
-    console.log('✅ All node types have valid icons and colors');
   }
 
   return {
@@ -81,7 +73,6 @@ export function debugNodeMapping(nodeType: string) {
   console.group(`🔍 Debug: ${nodeType}`);
   
   const lowerNodeType = nodeType.toLowerCase();
-  console.log(`Lowercase: ${lowerNodeType}`);
   
   // Show which patterns it matches
   const patterns = [
@@ -90,17 +81,11 @@ export function debugNodeMapping(nodeType: string) {
   ];
   
   const matches = patterns.filter(pattern => lowerNodeType.includes(pattern));
-  console.log(`Matches patterns: ${matches.join(', ') || 'none'}`);
   
   // Extract service name if N8N format
   const serviceMatch = lowerNodeType.match(/n8n-nodes-base\.(.+)/);
   if (serviceMatch) {
-    console.log(`Service name: ${serviceMatch[1]}`);
   }
-  
-  console.log(`Final category: ${getNodeCategory(nodeType)}`);
-  console.log(`Final icon: ${getNodeIcon(nodeType).name || 'Component'}`);
-  console.log(`Final color: ${getNodeColor(nodeType)}`);
   
   console.groupEnd();
 }

@@ -266,10 +266,6 @@ function WorkflowCanvasContent({ workflow, isLoading, onWorkflowUpdate, onOpenCh
     }
   };
 
-  const handleSaveWorkflow = async () => {
-    // Auto-save is handled automatically
-    console.log('Workflows are auto-saved automatically');
-  };
 
   // Enhanced ReactFlow props for better left-right flow performance
   const reactFlowProps = useMemo(() => ({

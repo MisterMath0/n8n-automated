@@ -1,6 +1,6 @@
 import {
   // Core & Basic
-  Zap, Code, Function, GitMerge, Filter, Clock, Play, Square, Settings,
+  Zap, Code, GitMerge, Filter, Clock, Play, Square, Settings,
   // Communication & Messaging
   Mail, MessageSquare, MessageCircle, Phone, Video, Send,
   // Web & APIs
@@ -39,7 +39,7 @@ const N8N_NODE_ICONS: Record<string, LucideIcon> = {
 
   // === CORE NODES ===
   'n8n-nodes-base.function': Code,
-  'n8n-nodes-base.functionItem': Function,
+  'n8n-nodes-base.functionItem': Code,
   'n8n-nodes-base.code': Terminal,
   'n8n-nodes-base.if': GitMerge,
   'n8n-nodes-base.switch': GitMerge,

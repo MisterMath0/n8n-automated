@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 export function BackgroundEffects() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [particlePositions, setParticlePositions] = useState<{ left: string; top: string }[]>([]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -13,6 +14,15 @@ export function BackgroundEffects() {
 
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+
+  useEffect(() => {
+    // Generate particle positions only once on the client side after mount
+    const positions = Array.from({ length: 15 }).map(() => ({
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+    }));
+    setParticlePositions(positions);
   }, []);
 
   return (
@@ -72,13 +82,13 @@ export function BackgroundEffects() {
       />
 
       {/* Floating particles - reduced from 50 to 15 for performance */}
-      {Array.from({ length: 15 }).map((_, i) => (
+      {particlePositions.map((pos, i) => (
         <motion.div
           key={i}
           className="absolute w-1 h-1 bg-white/20 rounded-full"
           style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
+            left: pos.left,
+            top: pos.top,
           }}
           animate={{
             y: [0, -100, 0],

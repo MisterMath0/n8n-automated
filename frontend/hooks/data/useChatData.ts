@@ -116,50 +116,39 @@ export function useSendMessage() {
       // Use flushSync for real-time streaming updates to prevent React batching
       switch (event.type) {
         case 'thinking':
-          console.log('💭 Thinking token received:', event.content.length, 'chars');
           flushSync(() => {
             setStreamingState(prev => ({ ...prev, thinking: prev.thinking + event.content }));
           });
           break;
         case 'thinking_complete':
-          console.log('✅ Thinking phase completed');
           flushSync(() => {
             setStreamingState(prev => ({ ...prev, thinkingComplete: true }));
           });
           break;
         case 'progress':
-          console.log('⏳ Progress update:', event.message);
           setStreamingState(prev => ({ ...prev, progress: event.message }));
           break;
         case 'tool':
           if (event.status === 'running') {
-            console.log('🔧 Tool execution started:', event.name);
             setStreamingState(prev => ({ ...prev, tools: [...prev.tools, event.name] }));
           }
           break;
         case 'message':
-          console.log('💬 Message token received:', event.content.length, 'chars');
           flushSync(() => {
             setStreamingState(prev => ({ ...prev, message: prev.message + event.content }));
           });
           break;
         case 'workflow':
-          console.log('🔄 Workflow generated:', event.data?.id);
           setStreamingState(prev => ({ ...prev, workflow: event.data }));
           break;
         case 'done':
-          console.log('✅ Streaming completed');
           setStreamingState(prev => ({ ...prev, isStreaming: false, eventSource: null }));
           break;
         case 'error':
-          console.error('❌ Streaming error:', event.error);
           toast.error(event.error || 'Streaming failed');
           setStreamingState(prev => ({ ...prev, isStreaming: false, eventSource: null }));
           break;
         case 'final_response':
-          console.log('🏁 Final response received, updating conversation data');
-          // Only add the AI response to conversation if we have actual content
-          // This prevents duplicates since we already stream message content
           if (event.response.message && event.response.message.trim()) {
             const aiMessage = {
               id: `ai-${Date.now()}`,

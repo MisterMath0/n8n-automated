@@ -41,13 +41,9 @@ function DashboardContent() {
   const handleWorkflowGenerated = useCallback((workflow: Workflow) => {
     // Handle both new workflow generation and updates
     if (workflow.id === selectedWorkflowId) {
-      // If this is an update to the currently selected workflow,
-      // React Query will automatically invalidate and refetch
-      console.log('Current workflow updated:', workflow.name);
     } else {
       // If this is a new workflow, select it
       selectWorkflow(workflow.id);
-      console.log('New workflow generated and selected:', workflow.name);
     }
   }, [selectedWorkflowId, selectWorkflow]);
 
@@ -134,6 +130,7 @@ function DashboardContent() {
               
               {isChatOpen && (
                 <SimpleChat 
+                  key={`${selectedWorkflowId || 'no-workflow'}-${activeConversationId || 'no-conversation'}`}
                   workflowId={selectedWorkflowId}
                   conversationId={activeConversationId}
                   conversations={conversations}

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, CheckCircle, Bot } from "lucide-react";
 import Link from "next/link";
 import { BackgroundEffects } from "@/components/ui/BackgroundEffects";
@@ -27,10 +27,11 @@ export default function SignupPage() {
   const router = useRouter();
 
   // Redirect if already logged in
-  if (user) {
-    router.push('/dashboard');
-    return null;
-  }
+  useEffect(() => {
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
