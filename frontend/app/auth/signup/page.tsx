@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, CheckCircle, Bot } from "lucide-react";
 import Link from "next/link";
 import { BackgroundEffects } from "@/components/ui/BackgroundEffects";
 import { supabase } from '@/lib/supabase';
@@ -143,7 +143,7 @@ export default function SignupPage() {
         >
           <Link href="/" className="inline-flex items-center gap-3 text-2xl font-bold text-white">
             <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
+              <Bot className="w-6 h-6 text-white" />
             </div>
             Autokraft
           </Link>

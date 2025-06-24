@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Clock, Users, Shield, TrendingUp, AlertTriangle } from "lucide-react";
+import { ArrowRight, Sparkles, Clock, Users, Shield, TrendingUp, AlertTriangle, Bot } from "lucide-react";
 import Link from "next/link";
 
 export function CTASection() {
@@ -121,7 +121,7 @@ export function CTASection() {
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       <div className="relative flex items-center justify-center gap-3">
-                        <Sparkles className="w-6 h-6" />
+                        <Bot className="w-6 h-6" />
                         Secure My Beta Access (FREE)
                         <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                       </div>
