@@ -130,7 +130,6 @@ function DashboardContent() {
               
               {isChatOpen && (
                 <SimpleChat 
-                  key={`${selectedWorkflowId || 'no-workflow'}-${activeConversationId || 'no-conversation'}`}
                   workflowId={selectedWorkflowId}
                   conversationId={activeConversationId}
                   conversations={conversations}
