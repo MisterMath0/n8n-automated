@@ -5,16 +5,13 @@ import { WorkflowCanvas } from "@/components/dashboard/workflow/WorkflowCanvas";
 import { SimpleChat } from "@/components/dashboard/chat/SimpleChat";
 import { WorkflowSidebar } from "@/components/dashboard/workflow/WorkflowSidebar";
 import { UserMenu } from "@/components/UserMenu";
+import { ExtensionWarning } from "@/components/dashboard/ExtensionWarning";
 import { useWorkflows, useWorkflowConversations, useOrphanConversations, useDeleteWorkflow } from "@/hooks/data";
 import { useWorkflowUI, WorkflowUIProvider } from "@/stores/WorkflowUIContext";
 import { useToast } from "@/components/providers";
 import { Workflow } from "@/types/workflow";
 import { Bot } from "lucide-react";
 import Link from "next/link";
-
-// Disable all caching for dashboard
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
 
 function DashboardContent() {
   const {
@@ -37,13 +34,10 @@ function DashboardContent() {
   const selectedWorkflow = workflows.find(w => w.id === selectedWorkflowId) || null;
   const conversations = selectedWorkflowId ? workflowConversations : orphanConversations;
 
-  // FIXED: Stable workflow generated handler - doesn't change conversation
   const handleWorkflowGenerated = useCallback((workflow: Workflow) => {
-    // Only switch to new workflow if we're not already working on one
     if (!selectedWorkflowId && workflow.id !== selectedWorkflowId) {
       selectWorkflow(workflow.id);
     }
-    // Don't change conversation - let it stay attached to current workflow context
   }, [selectedWorkflowId, selectWorkflow]);
 
   const handleOpenChat = useCallback(() => {
