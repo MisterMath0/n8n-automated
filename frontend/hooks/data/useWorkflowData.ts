@@ -45,7 +45,6 @@ export function useCreateWorkflow() {
     onSuccess: (data) => {
       // Invalidate workflows list to refetch
       queryClient.invalidateQueries({ queryKey: workflowKeys.list(user?.id || '') });
-      toast.success(`Workflow "${data.name}" created successfully!`);
     },
     onError: (error: Error) => {
       toast.error(`Failed to create workflow: ${error.message}`);
@@ -66,7 +65,6 @@ export function useUpdateWorkflow() {
       // Update both list and detail queries
       queryClient.invalidateQueries({ queryKey: workflowKeys.list(user?.id || '') });
       queryClient.invalidateQueries({ queryKey: workflowKeys.detail(data.id, user?.id || '') });
-      toast.success('Workflow updated successfully!');
     },
     onError: (error: Error) => {
       toast.error(`Failed to update workflow: ${error.message}`);
@@ -85,7 +83,6 @@ export function useDeleteWorkflow() {
     onSuccess: () => {
       // Invalidate workflows list
       queryClient.invalidateQueries({ queryKey: workflowKeys.list(user?.id || '') });
-      toast.success('Workflow deleted successfully!');
     },
     onError: (error: Error) => {
       toast.error(`Failed to delete workflow: ${error.message}`);

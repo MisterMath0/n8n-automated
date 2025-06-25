@@ -155,7 +155,6 @@ function SimpleChatContent(props: SimpleChatProps) {
             });
 
             onWorkflowGenerated?.(savedWorkflow);
-            toast.success(`New workflow "${savedWorkflow.name}" created successfully`);
           } else {
             const updatedWorkflow = await updateWorkflow.mutateAsync({
               workflowId: workflowId,
@@ -166,7 +165,6 @@ function SimpleChatContent(props: SimpleChatProps) {
             });
 
             onWorkflowGenerated?.(updatedWorkflow);
-            toast.success(`Workflow "${updatedWorkflow.name}" updated successfully`);
           }
         } catch (error) {
           const errorMsg = workflowId 
