@@ -34,11 +34,15 @@ export const workflowAPI = {
     return transformWorkflowForUI(data);
   },
 
-  // Create workflow
+  // Create workflow with race condition handling
   create: async (workflowData: any): Promise<Workflow> => {
+    // Use upsert to handle potential race conditions during workflow creation
     const { data, error } = await supabase
       .from('workflows')
-      .insert(workflowData)
+      .upsert(workflowData, {
+        onConflict: 'id',
+        ignoreDuplicates: false  // Update if exists
+      })
       .select()
       .single();
     
@@ -184,9 +188,10 @@ export const conversationAPI = {
     return sortedData;
   },
 
-  // Create conversation
+  // Create conversation (let database generate UUID)
   create: async (userId: string, workflowId?: string) => {
     
+    // Simple insert - let database generate UUID to avoid race conditions
     const { data, error } = await supabase
       .from('conversations')
       .insert({
