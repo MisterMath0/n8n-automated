@@ -167,8 +167,10 @@ export function FeaturesSection() {
                 whileTap={{ scale: 0.95 }}
                 className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold text-base shadow-2xl hover:shadow-green-500/25 transition-all duration-300 border border-green-400/30"
               >
-                <Lock className="w-5 h-5" />
-                Get Access
+                <div className="flex items-center gap-2">
+                  <Lock className="w-5 h-5" />
+                  <span>Get Access</span>
+                </div>
               </motion.button>
             </div>
           </div>

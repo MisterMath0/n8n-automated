@@ -94,7 +94,7 @@ export function HeroSection() {
               <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <div className="relative flex items-center justify-center gap-3">
                 <Lock className="w-5 h-5" />
-                Get Access
+                <span>Get Access</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </div>
             </motion.button>
