@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { X, Mail, Sparkles, CheckCircle, Clock, Users, Shield } from "lucide-react";
+import { supabase } from '@/lib/supabase';
 
 interface EmailCollectorProps {
   isOpen: boolean;
@@ -31,8 +32,8 @@ export function EmailCollector({ isOpen, onClose }: EmailCollectorProps) {
     }
 
     try {
-      // TODO: Replace with your actual API endpoint
-      const response = await fetch("/v1/beta-signup", {
+      // First, submit to your beta_signups table
+      const response = await fetch("/api/beta-signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -41,6 +42,21 @@ export function EmailCollector({ isOpen, onClose }: EmailCollectorProps) {
       });
 
       if (response.ok) {
+        // Now, initiate magic link sign-in via Supabase Auth
+        const { error: authError } = await supabase.auth.signInWithOtp({
+          email: email,
+          options: {
+            emailRedirectTo: window.location.origin + '/dashboard',
+          },
+        });
+
+        if (authError) {
+          console.error('Supabase Auth error:', authError);
+          setError('Failed to send magic link. Please try again.');
+          setIsSubmitting(false);
+          return;
+        }
+
         setIsSuccess(true);
         // Reset form after delay
         setTimeout(() => {
@@ -50,7 +66,9 @@ export function EmailCollector({ isOpen, onClose }: EmailCollectorProps) {
           onClose();
         }, 3000);
       } else {
-        throw new Error("Failed to submit");
+        // Handle errors from your custom beta-signup API endpoint
+        const errorData = await response.json();
+        setError(errorData.error || "Failed to submit. Please try again.");
       }
     } catch (err) {
       setError("Something went wrong. Please try again.");

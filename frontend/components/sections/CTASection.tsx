@@ -3,8 +3,12 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, Clock, Users, Shield, TrendingUp, AlertTriangle, Bot } from "lucide-react";
 import Link from "next/link";
+import { EmailCollector } from "../ui/EmailCollector";
+import { useState } from "react";
 
 export function CTASection() {
+  const [showEmailCollector, setShowEmailCollector] = useState(false);
+
   return (
     <section className="py-20 px-4">
       <div className="max-w-7xl mx-auto">
@@ -110,23 +114,22 @@ export function CTASection() {
                   transition={{ delay: 1.2 }}
                   className="mb-8"
                 >
-                  <Link href="/auth/signup">
-                    <motion.button
-                      whileHover={{
-                        scale: 1.05,
-                        boxShadow: "0 20px 40px rgba(34, 197, 94, 0.4)"
-                      }}
-                      whileTap={{ scale: 0.95 }}
-                      className="group relative px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold text-base shadow-2xl overflow-hidden border border-green-400/30"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      <div className="relative flex items-center justify-center gap-3">
-                        <Bot className="w-6 h-6" />
-                        Secure My Beta Access (FREE)
-                        <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </motion.button>
-                  </Link>
+                  <motion.button
+                    onClick={() => setShowEmailCollector(true)}
+                    whileHover={{
+                      scale: 1.05,
+                      boxShadow: "0 20px 40px rgba(34, 197, 94, 0.4)"
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    className="group relative px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold text-base shadow-2xl overflow-hidden border border-green-400/30"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative flex items-center justify-center gap-3">
+                      <Bot className="w-6 h-6" />
+                      Get Access
+                      <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </motion.button>
                   <p className="text-gray-400 text-sm mt-4">
                     Beta spots are filling fast. Secure yours before your competition does.
                   </p>
@@ -176,6 +179,10 @@ export function CTASection() {
           </motion.div>
         </motion.div>
       </div>
+      <EmailCollector
+        isOpen={showEmailCollector}
+        onClose={() => setShowEmailCollector(false)}
+      />
     </section>
   );
 }

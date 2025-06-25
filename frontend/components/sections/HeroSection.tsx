@@ -2,10 +2,16 @@
 
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, DollarSign, Clock, CheckCircle, TrendingUp } from "lucide-react";
-import { ReactFlowDemo } from "@/components/animations/ReactFlowDemo";
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { EmailCollector } from "../ui/EmailCollector";
+import { useState } from "react";
+
+const DynamicReactFlowDemo = dynamic(() => import("@/components/animations/ReactFlowDemo").then(mod => mod.ReactFlowDemo), { ssr: false });
 
 export function HeroSection() {
+  const [showEmailCollector, setShowEmailCollector] = useState(false);
+
   return (
     <section className="relative min-h-screen flex items-center justify-center px-4 pt-20">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
@@ -77,9 +83,10 @@ export function HeroSection() {
             className="flex flex-col sm:flex-row gap-4"
           >
             <motion.button
-              whileHover={{ 
-                scale: 1.05, 
-                boxShadow: "0 20px 40px rgba(34, 197, 94, 0.3)" 
+              onClick={() => setShowEmailCollector(true)}
+              whileHover={{
+                scale: 1.05,
+                boxShadow: "0 20px 40px rgba(34, 197, 94, 0.3)"
               }}
               whileTap={{ scale: 0.95 }}
               className="group relative px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold text-base shadow-2xl overflow-hidden border border-green-400/30"
@@ -87,7 +94,7 @@ export function HeroSection() {
               <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <div className="relative flex items-center justify-center gap-3">
                 <Sparkles className="w-5 h-5" />
-                <Link href="/auth/signup">Join The Beta (FREE)</Link>
+                Get Access
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </div>
             </motion.button>
@@ -145,7 +152,7 @@ export function HeroSection() {
             
             {/* Container */}
             <div className="relative bg-black/40 backdrop-blur-sm border border-white/10 rounded-3xl p-6 shadow-2xl">
-              <ReactFlowDemo />
+              <DynamicReactFlowDemo />
             </div>
           </div>
         </motion.div>
@@ -170,6 +177,11 @@ export function HeroSection() {
           />
         </motion.div>
       </motion.div>
+
+      <EmailCollector
+        isOpen={showEmailCollector}
+        onClose={() => setShowEmailCollector(false)}
+      />
     </section>
   );
 }

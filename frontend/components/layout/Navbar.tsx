@@ -5,9 +5,11 @@ import { useState } from "react";
 import { Bot, Menu, Sparkles, X, Zap } from "lucide-react";
 import Link from 'next/link';
 import Image from 'next/image';
+import { EmailCollector } from "../ui/EmailCollector";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [showEmailCollector, setShowEmailCollector] = useState(false);
 
   const navItems = [
     { name: "Features", href: "#features" },
@@ -66,15 +68,14 @@ export function Navbar() {
                 transition={{ delay: 0.8 }}
                 className="hidden md:block"
               >
-                <Link href="/auth/signup">
-                  <motion.button
-                    whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(34, 197, 94, 0.3)" }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-2xl font-medium shadow-lg hover:shadow-green-500/25 transition-all duration-300 border border-green-400/30"
-                  >
-                    Join Beta FREE
-                  </motion.button>
-                </Link>
+                <motion.button
+                  onClick={() => setShowEmailCollector(true)}
+                  whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(34, 197, 94, 0.3)" }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-2xl font-medium shadow-lg hover:shadow-green-500/25 transition-all duration-300 border border-green-400/30"
+                >
+                  Get Access
+                </motion.button>
               </motion.div>
 
               {/* Mobile menu button */}
@@ -111,24 +112,30 @@ export function Navbar() {
                       {item.name}
                     </motion.a>
                   ))}
-                  <Link href="/auth/signup">
-                    <motion.button
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="mt-4 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-medium shadow-lg border border-green-400/30 text-center"
-                    >
-                      Join Beta FREE
-                    </motion.button>
-                  </Link>
+                  <motion.button
+                    onClick={() => {
+                      setIsOpen(false);
+                      setShowEmailCollector(true);
+                    }}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="mt-4 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-medium shadow-lg border border-green-400/30 text-center"
+                  >
+                    Get Access
+                  </motion.button>
                 </div>
               </div>
             </motion.div>
           )}
         </div>
       </div>
+      <EmailCollector
+        isOpen={showEmailCollector}
+        onClose={() => setShowEmailCollector(false)}
+      />
     </motion.nav>
   );
 }
