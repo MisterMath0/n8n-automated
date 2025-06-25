@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import dynamic from 'next/dynamic';
 import { useAuth } from "@/hooks/useAuth";
 import { useChat, useCreateConversation, useCreateWorkflow, useUpdateWorkflow } from "@/hooks/data";
 import { useReadyWelcomeMessage } from "@/hooks/data";
@@ -14,6 +15,7 @@ import { ThinkingDisplay } from "./components";
 import { ConversationHistoryAccordion } from "./ConversationHistoryAccordion";
 import { AuthRequired } from "./components/AuthRequired";
 import { useModelSelection, useMessages, useConversationManagement } from "./hooks";
+import { Loader2 } from "lucide-react";
 
 interface SimpleChatProps {
   workflowId: string | null;
@@ -24,14 +26,16 @@ interface SimpleChatProps {
   onWorkflowGenerated?: (workflow: any) => void;
 }
 
-export function SimpleChat({ 
-  workflowId, 
-  conversationId, 
-  conversations, 
-  onConversationChange, 
-  onClose, 
-  onWorkflowGenerated 
-}: SimpleChatProps) {
+function SimpleChatContent(props: SimpleChatProps) {
+  const { 
+    workflowId, 
+    conversationId, 
+    conversations, 
+    onConversationChange, 
+    onClose, 
+    onWorkflowGenerated 
+  } = props;
+  
   const { user } = useAuth();
   const toast = useToast();
   
@@ -39,9 +43,10 @@ export function SimpleChat({
   const createConversation = useCreateConversation();
   const createWorkflow = useCreateWorkflow();
   const updateWorkflow = useUpdateWorkflow();
-  const { message: welcomeMessage } = useReadyWelcomeMessage();
+  const { message: welcomeMessage, isLoading: isLoadingWelcome } = useReadyWelcomeMessage();
   
   const [inputValue, setInputValue] = useState("");
+  const [isWaitingForFirstMessage, setIsWaitingForFirstMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -90,6 +95,8 @@ export function SimpleChat({
     const message = inputValue.trim();
     if (!message || !user || isSending) return;
 
+    setIsWaitingForFirstMessage(true);
+
     let activeConversationId = conversationId;
 
     if (activeConversationId && workflowId && currentConversation) {
@@ -108,6 +115,7 @@ export function SimpleChat({
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
         toast.error('Failed to create conversation');
+        setIsWaitingForFirstMessage(false);
         return;
       }
     }
@@ -125,6 +133,12 @@ export function SimpleChat({
 
     sendMessage(request);
   }, [inputValue, user, isSending, conversationId, workflowId, selectedModel, createConversation, sendMessage, onConversationChange, toast, currentConversation]);
+
+  useEffect(() => {
+    if (!isSending && isWaitingForFirstMessage) {
+      setIsWaitingForFirstMessage(false);
+    }
+  }, [isSending, isWaitingForFirstMessage]);
 
   useEffect(() => {
     if (streamingState?.workflow && !isSending) {
@@ -172,6 +186,21 @@ export function SimpleChat({
 
   const selectedModelInfo = availableModels.find(m => m.model_id === selectedModel);
 
+  if (modelsLoading || isLoadingWelcome) {
+    return (
+      <div className="w-96 h-full bg-black/80 border-l border-white/10 flex items-center justify-center">
+        <div className="text-center p-6">
+          <Loader2 className="w-8 h-8 text-green-400 animate-spin mx-auto mb-3" />
+          <div className="text-white text-sm">Loading chat...</div>
+          <div className="text-gray-400 text-xs mt-1">
+            {modelsLoading && "Loading AI models..."}
+            {isLoadingWelcome && "Preparing assistant..."}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-96 h-full bg-black/80 border-l border-white/10 flex flex-col overflow-hidden">
       <ChatHeader 
@@ -188,9 +217,9 @@ export function SimpleChat({
         <div className="flex-1 overflow-hidden">
           <MessagesArea 
             messages={messages}
-            isGenerating={isSending}
+            isGenerating={isSending || isWaitingForFirstMessage}
             messagesEndRef={messagesEndRef}
-            workflowProgress={isSending ? streamingState?.progress : ''}
+            workflowProgress={streamingState?.progress}
           />
         </div>
         
@@ -224,3 +253,15 @@ export function SimpleChat({
     </div>
   );
 }
+
+export const SimpleChat = dynamic(() => Promise.resolve(SimpleChatContent), {
+  ssr: false,
+  loading: () => (
+    <div className="w-96 h-full bg-black/80 border-l border-white/10 flex items-center justify-center">
+      <div className="text-center p-6">
+        <Loader2 className="w-8 h-8 text-green-400 animate-spin mx-auto mb-3" />
+        <div className="text-white text-sm">Loading chat...</div>
+      </div>
+    </div>
+  )
+});
