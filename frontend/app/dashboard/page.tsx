@@ -5,7 +5,6 @@ import { WorkflowCanvas } from "@/components/dashboard/workflow/WorkflowCanvas";
 import { SimpleChat } from "@/components/dashboard/chat/SimpleChat";
 import { WorkflowSidebar } from "@/components/dashboard/workflow/WorkflowSidebar";
 import { UserMenu } from "@/components/UserMenu";
-import { ExtensionWarning } from "@/components/dashboard/ExtensionWarning";
 import { useWorkflows, useWorkflowConversations, useOrphanConversations, useDeleteWorkflow } from "@/hooks/data";
 import { useWorkflowUI, WorkflowUIProvider } from "@/stores/WorkflowUIContext";
 import { useToast } from "@/components/providers";
