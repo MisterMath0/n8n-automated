@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, DollarSign, , CheckCircle, TrendingUp, Lock } from "lucide-react";
+import { ArrowRight, Sparkles, DollarSign, CheckCircle, TrendingUp, Lock } from "lucide-react";
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { EmailCollector } from "../ui/EmailCollector";

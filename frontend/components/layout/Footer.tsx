@@ -52,9 +52,9 @@ export function Footer() {
           >
             <div className="flex items-center gap-3 mb-6">
               <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-br from-white/30 to-white/10 rounded-xl flex items-center justify-center border border-white/20">
-                  <Zap className="w-6 h-6 text-white" />
-                </div>
+              <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                    <Bot className="w-5 h-5 text-white" />
+                  </div>
                 <div className="absolute -inset-1 bg-gradient-to-br from-white/20 to-white/10 rounded-xl blur opacity-30"></div>
               </div>
               <span className="text-2xl font-bold text-white">Autokraft</span>

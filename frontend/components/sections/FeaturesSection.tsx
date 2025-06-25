@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Eye, Zap, Shield, Rocket, Code, Globe, CheckCircle, Lightbulb, TrendingUp } from "lucide-react";
+import { Eye, Zap, Shield, Rocket, Code, Globe, Lock} from "lucide-react";
 import Link from 'next/link';
 import { EmailCollector } from "../ui/EmailCollector";
 import { useState } from "react";
