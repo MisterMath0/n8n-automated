@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { WorkflowCanvas } from "@/components/dashboard/workflow/WorkflowCanvas";
 import { SimpleChat } from "@/components/dashboard/chat/SimpleChat";
 import { WorkflowSidebar } from "@/components/dashboard/workflow/WorkflowSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { useWorkflows, useWorkflowConversations, useOrphanConversations, useDeleteWorkflow } from "@/hooks/data";
+import { useAuth } from "@/hooks/useAuth";
 import { useWorkflowUI, WorkflowUIProvider } from "@/stores/WorkflowUIContext";
 import { useToast } from "@/components/providers";
 import { N8NWorkflow } from "@/types/api";
@@ -32,6 +33,29 @@ function DashboardContent() {
   const { data: orphanConversations = [] } = useOrphanConversations();
   const deleteWorkflow = useDeleteWorkflow();
   const toast = useToast();
+  
+  // DEBUG: Auth state tracking
+  const { user } = useAuth();
+  const userIdRef = useRef(user?.id);
+  if (userIdRef.current !== user?.id) {
+    console.log('🔍 DEBUG - User ID changed:', userIdRef.current, '→', user?.id);
+    userIdRef.current = user?.id;
+  }
+  
+  // DEBUG: React Query cache inspection
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (typeof window !== 'undefined' && window.__REACT_QUERY_CLIENT__) {
+        const queries = window.__REACT_QUERY_CLIENT__.getQueryCache().getAll();
+        const activeQueries = queries.filter(q => q.state.fetchStatus === 'fetching');
+        if (activeQueries.length > 5) {
+          console.log('🔍 DEBUG - Many active queries:', activeQueries.length);
+          activeQueries.forEach(q => console.log('  -', q.queryKey, q.state.fetchStatus));
+        }
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Get selected workflow and conversations based on UI state
   const selectedWorkflow = workflows.find(w => w.id === selectedWorkflowId) || null;

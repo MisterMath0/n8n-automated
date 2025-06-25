@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 // UI state only - not server data
 interface WorkflowUIState {
@@ -25,17 +25,17 @@ export function WorkflowUIProvider({ children }: { children: ReactNode }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
 
-  const selectWorkflow = (workflowId: string) => {
+  const selectWorkflow = useCallback((workflowId: string) => {
     setSelectedWorkflowId(workflowId);
     setIsChatOpen(true); // Auto-open chat when selecting workflow
     setActiveConversationId(null); // Reset conversation (will be set by conversations hook)
-  };
+  }, []);
 
-  const createNewWorkflow = () => {
+  const createNewWorkflow = useCallback(() => {
     setSelectedWorkflowId(null);
     setIsChatOpen(true);
     setActiveConversationId(null);
-  };
+  }, []);
 
   return (
     <WorkflowUIContext.Provider value={{

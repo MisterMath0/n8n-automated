@@ -61,8 +61,34 @@ export function SimpleChat({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Get current conversation and messages
-  const currentConversation = conversations.find(c => c.id === conversationId);
+  // Get current conversation and messages - MEMOIZED to prevent infinite renders
+  const currentConversation = React.useMemo(() => {
+    return conversations.find(c => c.id === conversationId) || null;
+  }, [conversations, conversationId]);
+  
+  // Extract only the streaming message content to prevent object reference changes
+  const streamingMessage = streamingState?.message || '';
+  const isCurrentlyStreaming = isSending && streamingMessage.length > 0;
+  
+  // DEBUG: Track what's causing re-renders
+  const renderCount = React.useRef(0);
+  const prevProps = React.useRef({ isSending, streamingLength: streamingState?.message?.length || 0, conversationsLength: conversations.length, selectedWorkflowId: workflowId, activeConversationId: conversationId });
+  
+  renderCount.current += 1;
+  const currentProps = { isSending, streamingLength: streamingState?.message?.length || 0, conversationsLength: conversations.length, selectedWorkflowId: workflowId, activeConversationId: conversationId };
+  
+  // Check what changed
+  const changes = Object.keys(currentProps).filter(key => 
+    prevProps.current[key] !== currentProps[key]
+  );
+  
+  if (changes.length > 0) {
+    console.log('🔄 SimpleChat render #', renderCount.current, '- CHANGES:', changes, currentProps);
+  } else if (renderCount.current > 50) {
+    console.log('⚠️ SimpleChat render #', renderCount.current, '- NO CHANGES - INFINITE LOOP!');
+  }
+  
+  prevProps.current = currentProps;
   
   
   // Auto-select first conversation for workflow if none is selected
@@ -76,6 +102,15 @@ export function SimpleChat({
   
   // Build messages array with backend welcome message and streaming content
   const messages = React.useMemo(() => {
+    // DEBUG: Log when messages array is recalculated
+    console.log('🔄 Messages array recalculating:', {
+      hasConversation: !!currentConversation,
+      hasWelcome: !!welcomeMessage,
+      isSending,
+      streamingMessage: streamingMessage ? 'present' : 'none',
+      streamingLength: streamingMessage.length
+    });
+    
     const conversationMessages = currentConversation?.messages
       ?.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) // ✅ BACKUP: Ensure chronological order
       ?.map((msg: any) => ({
@@ -87,17 +122,18 @@ export function SimpleChat({
       })) || [];
     
     // Add streaming message if currently streaming (only main message content, not thinking)
-    if (isSending && streamingState && streamingState.message) {
-      const streamingMessage = {
+    if (isCurrentlyStreaming) {
+      console.log('➕ Adding streaming message to UI:', streamingMessage.length, 'chars');
+      const streamingMessageObj = {
         id: 'streaming',
-        content: streamingState.message,
+        content: streamingMessage,
         sender: 'assistant' as const,
         type: 'text' as const,
         isStreaming: true,
-        progress: streamingState.progress,
-        tools: streamingState.tools
+        progress: streamingState?.progress,
+        tools: streamingState?.tools
       };
-      conversationMessages.push(streamingMessage);
+      conversationMessages.push(streamingMessageObj);
     }
     
     // Always include welcome message at the beginning if we have one
@@ -105,8 +141,9 @@ export function SimpleChat({
       return [welcomeMessage, ...conversationMessages];
     }
     
+    console.log('📝 Final messages array length:', conversationMessages.length);
     return conversationMessages;
-  }, [currentConversation, welcomeMessage, isSending, streamingState]);
+  }, [currentConversation, welcomeMessage, isSending, streamingMessage, isCurrentlyStreaming]);
 
   // Auto-focus input
   useEffect(() => {

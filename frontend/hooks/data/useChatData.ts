@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useCallback } from 'react';
-import { flushSync } from 'react-dom';
 import { chatAPI } from '@/api';
 import { ChatRequest } from '@/types/api';
 import { useToast } from '@/components/providers';
@@ -57,7 +56,7 @@ export function useSendMessage() {
       thinkingComplete: false
     });
 
-    // Add optimistic user message immediately
+    // Add optimistic user message immediately - ONLY ONCE before streaming starts
     const queryKey = request.workflow_id 
       ? conversationKeys.byWorkflow(request.workflow_id)
       : conversationKeys.orphan(user?.id || '');
@@ -111,19 +110,16 @@ export function useSendMessage() {
       });
     });
 
-    // Start streaming with flushSync for real-time updates
+    // Start streaming - NO REACT QUERY INTERFERENCE during streaming
     const eventSource = chatAPI.sendMessage(request, (event) => {
-      // Use flushSync for real-time streaming updates to prevent React batching
+      // ONLY update local state during streaming - NO queryClient calls
       switch (event.type) {
         case 'thinking':
-          flushSync(() => {
-            setStreamingState(prev => ({ ...prev, thinking: prev.thinking + event.content }));
-          });
+          console.log('🧠 STREAMING EVENT - thinking token:', event.content.length, 'chars');
+          setStreamingState(prev => ({ ...prev, thinking: prev.thinking + event.content }));
           break;
         case 'thinking_complete':
-          flushSync(() => {
-            setStreamingState(prev => ({ ...prev, thinkingComplete: true }));
-          });
+          setStreamingState(prev => ({ ...prev, thinkingComplete: true }));
           break;
         case 'progress':
           setStreamingState(prev => ({ ...prev, progress: event.message }));
@@ -134,8 +130,11 @@ export function useSendMessage() {
           }
           break;
         case 'message':
-          flushSync(() => {
-            setStreamingState(prev => ({ ...prev, message: prev.message + event.content }));
+          console.log('🟢 STREAMING EVENT - message token:', event.content.length, 'chars');
+          setStreamingState(prev => {
+            const newMessage = prev.message + event.content;
+            console.log('🔄 SETTING STATE - total length now:', newMessage.length);
+            return { ...prev, message: newMessage };
           });
           break;
         case 'workflow':
@@ -149,6 +148,7 @@ export function useSendMessage() {
           setStreamingState(prev => ({ ...prev, isStreaming: false, eventSource: null }));
           break;
         case 'final_response':
+          // ONLY update React Query cache AFTER streaming completes
           if (event.response.message && event.response.message.trim()) {
             const aiMessage = {
               id: `ai-${Date.now()}`,
@@ -165,7 +165,6 @@ export function useSendMessage() {
               
               return old.map((conversation: any) => {
                 if (conversation.id === request.conversation_id) {
-                  // Check if we already have this message to prevent duplicates
                   const existingMessage = conversation.messages?.find(
                     (msg: any) => msg.content === event.response.message && msg.role === 'assistant'
                   );
