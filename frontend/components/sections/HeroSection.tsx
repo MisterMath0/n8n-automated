@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, DollarSign, Clock, CheckCircle, TrendingUp } from "lucide-react";
+import { ArrowRight, Sparkles, DollarSign, , CheckCircle, TrendingUp, Lock } from "lucide-react";
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { EmailCollector } from "../ui/EmailCollector";
@@ -93,7 +93,7 @@ export function HeroSection() {
             >
               <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <div className="relative flex items-center justify-center gap-3">
-                <Sparkles className="w-5 h-5" />
+                <Lock className="w-5 h-5" />
                 Get Access
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </div>

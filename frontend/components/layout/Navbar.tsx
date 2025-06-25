@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Bot, Menu, Sparkles, X, Zap } from "lucide-react";
+import { Bot, Menu, Sparkles, X, Lock } from "lucide-react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { EmailCollector } from "../ui/EmailCollector";
@@ -74,6 +74,7 @@ export function Navbar() {
                   whileTap={{ scale: 0.95 }}
                   className="px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-2xl font-medium shadow-lg hover:shadow-green-500/25 transition-all duration-300 border border-green-400/30"
                 >
+                  <Lock className="w-5 h-5" /> 
                   Get Access
                 </motion.button>
               </motion.div>
@@ -124,6 +125,7 @@ export function Navbar() {
                     whileTap={{ scale: 0.98 }}
                     className="mt-4 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-medium shadow-lg border border-green-400/30 text-center"
                   >
+                    <Lock className="w-5 h-5" />
                     Get Access
                   </motion.button>
                 </div>

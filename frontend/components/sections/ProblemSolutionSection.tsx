@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { DollarSign, Clock, AlertTriangle, TrendingUp, CheckCircle, ArrowRight, Sparkles } from "lucide-react";
+import { DollarSign, Clock, AlertTriangle, TrendingUp, CheckCircle, ArrowRight, Lock } from "lucide-react";
 import { EmailCollector } from "@/components/ui/EmailCollector";
 import { useState } from "react";
 import Link from 'next/link';
@@ -239,6 +239,7 @@ export function ProblemSolutionSection() {
               whileTap={{ scale: 0.95 }}
               className="px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold text-base shadow-2xl hover:shadow-green-500/25 transition-all duration-300 border border-green-400/30"
             >
+              <Lock className="w-5 h-5" />
               Get Access Now
             </motion.button>
             <p className="text-gray-400 mt-4 text-sm">
