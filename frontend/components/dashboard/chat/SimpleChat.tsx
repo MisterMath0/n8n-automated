@@ -1,20 +1,19 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useChat, useCreateConversation, useLinkConversationToWorkflow, useCreateWorkflow, useUpdateWorkflow } from "@/hooks/data";
-import { AIModel, ChatRequest } from "@/types/api";
+import { useChat, useCreateConversation, useCreateWorkflow, useUpdateWorkflow } from "@/hooks/data";
+import { useReadyWelcomeMessage } from "@/hooks/data";
+import { useToast } from "@/components/providers";
+import { ChatRequest } from "@/types/api";
 import { ChatHeader } from "./ChatHeader";
 import { ModelsError } from "./ModelsError";
 import { ChatInput } from "./ChatInput";
 import { MessagesArea } from "./MessagesArea";
-import { Message } from "./types";
 import { ThinkingDisplay } from "./components";
-import { DEFAULT_MODEL, SELECTED_MODEL_KEY } from "../../../types/constants";
-import { useReadyWelcomeMessage } from "@/hooks/data";
 import { ConversationHistoryAccordion } from "./ConversationHistoryAccordion";
 import { AuthRequired } from "./components/AuthRequired";
-import { useToast } from "@/components/providers";
+import { useModelSelection, useMessages, useConversationManagement } from "./hooks";
 
 interface SimpleChatProps {
   workflowId: string | null;
@@ -36,116 +35,32 @@ export function SimpleChat({
   const { user } = useAuth();
   const toast = useToast();
   
-  // Chat functionality
-  const { availableModels, modelsLoading, modelsError, sendMessage, isSending, streamingState, stopStreaming } = useChat();
+  const { availableModels, modelsLoading, modelsError, sendMessage, isSending, streamingState } = useChat();
   const createConversation = useCreateConversation();
-  const linkToWorkflow = useLinkConversationToWorkflow();
   const createWorkflow = useCreateWorkflow();
   const updateWorkflow = useUpdateWorkflow();
+  const { message: welcomeMessage } = useReadyWelcomeMessage();
   
-  // Messages from backend
-  const { message: welcomeMessage, isLoading: isLoadingWelcome, error: welcomeError } = useReadyWelcomeMessage();
-  
-  // Local UI state
   const [inputValue, setInputValue] = useState("");
-  const [selectedModel, setSelectedModel] = useState<AIModel>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(SELECTED_MODEL_KEY);
-      return stored && Object.values(AIModel).includes(stored as AIModel) 
-        ? (stored as AIModel) 
-        : DEFAULT_MODEL;
-    }
-    return DEFAULT_MODEL;
-  });
-  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Get current conversation and messages - MEMOIZED to prevent infinite renders
-  const currentConversation = React.useMemo(() => {
-    return conversations.find(c => c.id === conversationId) || null;
-  }, [conversations, conversationId]);
-  
-  // Extract only the streaming message content to prevent object reference changes
-  const streamingMessage = streamingState?.message || '';
-  const isCurrentlyStreaming = isSending && streamingMessage.length > 0;
-  
-  // DEBUG: Track what's causing re-renders
-  const renderCount = React.useRef(0);
-  const prevProps = React.useRef({ isSending, streamingLength: streamingState?.message?.length || 0, conversationsLength: conversations.length, selectedWorkflowId: workflowId, activeConversationId: conversationId });
-  
-  renderCount.current += 1;
-  const currentProps = { isSending, streamingLength: streamingState?.message?.length || 0, conversationsLength: conversations.length, selectedWorkflowId: workflowId, activeConversationId: conversationId };
-  
-  // Check what changed
-  const changes = Object.keys(currentProps).filter(key => 
-    prevProps.current[key] !== currentProps[key]
-  );
-  
-  if (changes.length > 0) {
-    console.log('🔄 SimpleChat render #', renderCount.current, '- CHANGES:', changes, currentProps);
-  } else if (renderCount.current > 50) {
-    console.log('⚠️ SimpleChat render #', renderCount.current, '- NO CHANGES - INFINITE LOOP!');
-  }
-  
-  prevProps.current = currentProps;
-  
-  
-  // Auto-select first conversation for workflow if none is selected
-  // This ensures users don't lose workflow association
-  useEffect(() => {
-    if (workflowId && conversations.length > 0 && !conversationId) {
-      const firstConversation = conversations[0];
-      onConversationChange(firstConversation.id);
-    }
-  }, [workflowId, conversations, conversationId, onConversationChange]);
-  
-  // Build messages array with backend welcome message and streaming content
-  const messages = React.useMemo(() => {
-    // DEBUG: Log when messages array is recalculated
-    console.log('🔄 Messages array recalculating:', {
-      hasConversation: !!currentConversation,
-      hasWelcome: !!welcomeMessage,
-      isSending,
-      streamingMessage: streamingMessage ? 'present' : 'none',
-      streamingLength: streamingMessage.length
-    });
-    
-    const conversationMessages = currentConversation?.messages
-      ?.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) // ✅ BACKUP: Ensure chronological order
-      ?.map((msg: any) => ({
-        id: msg.id,
-        content: msg.content,
-        sender: msg.role === 'user' ? 'user' : 'assistant' as 'user' | 'assistant',
-        type: (msg.message_type || 'text') as 'text' | 'workflow' | 'error',
-        workflowData: msg.workflow_data
-      })) || [];
-    
-    // Add streaming message if currently streaming (only main message content, not thinking)
-    if (isCurrentlyStreaming) {
-      console.log('➕ Adding streaming message to UI:', streamingMessage.length, 'chars');
-      const streamingMessageObj = {
-        id: 'streaming',
-        content: streamingMessage,
-        sender: 'assistant' as const,
-        type: 'text' as const,
-        isStreaming: true,
-        progress: streamingState?.progress,
-        tools: streamingState?.tools
-      };
-      conversationMessages.push(streamingMessageObj);
-    }
-    
-    // Always include welcome message at the beginning if we have one
-    if (welcomeMessage) {
-      return [welcomeMessage, ...conversationMessages];
-    }
-    
-    console.log('📝 Final messages array length:', conversationMessages.length);
-    return conversationMessages;
-  }, [currentConversation, welcomeMessage, isSending, streamingMessage, isCurrentlyStreaming]);
+  const { selectedModel, setSelectedModel } = useModelSelection(availableModels);
+  const { currentConversation, createNewConversation } = useConversationManagement({
+    workflowId,
+    conversationId,
+    conversations,
+    onConversationChange,
+  });
 
-  // Auto-focus input
+  const messages = useMessages({
+    currentConversation,
+    welcomeMessage,
+    isSending,
+    streamingMessage: streamingState?.message || '',
+    streamingState,
+  });
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!isSending) {
@@ -155,7 +70,6 @@ export function SimpleChat({
     return () => clearTimeout(timer);
   }, [isSending, conversationId]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     const timer = setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -163,7 +77,6 @@ export function SimpleChat({
     return () => clearTimeout(timer);
   }, [messages]);
 
-  // Auto-resize textarea
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -172,94 +85,35 @@ export function SimpleChat({
       textarea.style.height = `${newHeight}px`;
     }
   }, [inputValue]);
-  
-  // HANDLE WORKFLOW CHANGES DURING MESSAGE PROCESSING (Issue #2 Fix)
-  const [previousWorkflowId, setPreviousWorkflowId] = useState(workflowId);
-  useEffect(() => {
-    if (workflowId !== previousWorkflowId) {
-      // ✅ FIX: Only handle workflow changes when NOT sending messages
-      // Prevent breaking the message flow during active sending
-      if (!isSending) {
-        // Safe to switch workflows when not actively sending
-        toast.info(`Switched to ${workflowId ? 'workflow' : 'new workflow'} context`);
-      }
-      // Note: If switching during send, let the message complete normally
-      // The conversation will be properly associated with the correct workflow
-      
-      setPreviousWorkflowId(workflowId);
-    }
-  }, [workflowId, previousWorkflowId, isSending, toast]);
 
-  // Handle model change
-  const handleModelChange = useCallback((model: AIModel) => {
-    setSelectedModel(model);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(SELECTED_MODEL_KEY, model);
-    }
-  }, []);
-
-  // Handle create new conversation - just clear UI, don't create in DB yet
-  const handleCreateNewConversation = useCallback(() => {
-    // Just clear the conversation selection to show welcome state
-    onConversationChange('');
-    toast.success('Ready for new conversation');
-  }, [onConversationChange, toast]);
-
-  // Auto-select model when models load
-  useEffect(() => {
-    if (availableModels.length > 0) {
-      const currentModelAvailable = availableModels.some(m => m.model_id === selectedModel);
-      if (!currentModelAvailable) {
-        const defaultModel = availableModels.find(m => m.model_id === AIModel.GEMINI_2_5_FLASH) || availableModels[0];
-        handleModelChange(defaultModel.model_id);
-      }
-    }
-  }, [availableModels, selectedModel, handleModelChange]);
-
-  // Handle send message
   const handleSendMessage = useCallback(async () => {
     const message = inputValue.trim();
     if (!message || !user || isSending) return;
 
     let activeConversationId = conversationId;
 
-    // VALIDATION: Ensure conversation and workflow context are consistent
     if (activeConversationId && workflowId && currentConversation) {
       const conversationWorkflowId = currentConversation.workflow_id;
       if (conversationWorkflowId !== workflowId) {
-        console.warn('📝 DEBUG - Conversation/workflow mismatch detected:', {
-          conversationWorkflowId,
-          currentWorkflowId: workflowId,
-          conversationId: activeConversationId
-        });
-        // Clear conversation to force creation of new one for current workflow
         activeConversationId = null;
         onConversationChange('');
       }
     }
 
-    // Create conversation if none exists
     if (!activeConversationId) {
       try {
         const newConversation = await createConversation.mutateAsync({ workflowId: workflowId || undefined });
         activeConversationId = newConversation.id;
-        
-        // CRITICAL: Ensure the conversation is selected in the UI
         onConversationChange(activeConversationId);
-        
-        // Small delay to ensure the cache update from conversation creation completes
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
-        console.error('🔍 DEBUG - Failed to create conversation:', error);
         toast.error('Failed to create conversation');
         return;
       }
     }
 
-    // Clear input immediately
     setInputValue("");
     
-    // Start streaming
     const request: ChatRequest = {
       user_message: message,
       conversation_id: activeConversationId,
@@ -269,20 +123,14 @@ export function SimpleChat({
       max_tokens: 4000,
     };
 
-    // Send message with streaming
     sendMessage(request);
-    
-    // Handle workflow saving when workflow is generated (this will be triggered by streaming events)
-    // We can listen to streamingState.workflow changes to save workflows
-  }, [inputValue, user, isSending, conversationId, workflowId, selectedModel, createConversation, sendMessage, onConversationChange, toast]);
+  }, [inputValue, user, isSending, conversationId, workflowId, selectedModel, createConversation, sendMessage, onConversationChange, toast, currentConversation]);
 
-  // Handle workflow saving when generated during streaming
   useEffect(() => {
     if (streamingState?.workflow && !isSending) {
       const handleWorkflowSave = async () => {
         try {
           if (!workflowId) {
-            // NEW WORKFLOW: Create new workflow in database
             const savedWorkflow = await createWorkflow.mutateAsync({
               id: streamingState.workflow.id,
               name: streamingState.workflow.name,
@@ -292,16 +140,9 @@ export function SimpleChat({
               status: 'active',
             });
 
-            // Call workflow generated callback
-            try {
-              onWorkflowGenerated?.(savedWorkflow);
-              toast.success(`New workflow "${savedWorkflow.name}" created successfully!`);
-            } catch (callbackError) {
-              console.warn('Workflow generated callback failed:', callbackError);
-              toast.success(`New workflow "${savedWorkflow.name}" created!`);
-            }
+            onWorkflowGenerated?.(savedWorkflow);
+            toast.success(`New workflow "${savedWorkflow.name}" created successfully`);
           } else {
-            // EXISTING WORKFLOW: Update existing workflow in database
             const updatedWorkflow = await updateWorkflow.mutateAsync({
               workflowId: workflowId,
               updates: {
@@ -310,17 +151,10 @@ export function SimpleChat({
               },
             });
 
-            // Call workflow generated callback
-            try {
-              onWorkflowGenerated?.(updatedWorkflow);
-              toast.success(`Workflow "${updatedWorkflow.name}" updated successfully!`);
-            } catch (callbackError) {
-              console.warn('Workflow updated callback failed:', callbackError);
-              toast.success(`Workflow "${updatedWorkflow.name}" updated!`);
-            }
+            onWorkflowGenerated?.(updatedWorkflow);
+            toast.success(`Workflow "${updatedWorkflow.name}" updated successfully`);
           }
-        } catch (workflowError) {
-          console.error('Failed to save/update workflow:', workflowError);
+        } catch (error) {
           const errorMsg = workflowId 
             ? 'Workflow updated but failed to save changes to database' 
             : 'Workflow generated but failed to save to database';
@@ -332,7 +166,6 @@ export function SimpleChat({
     }
   }, [streamingState?.workflow, isSending, workflowId, createWorkflow, updateWorkflow, onWorkflowGenerated, toast, user]);
 
-  // Show auth required if no user
   if (!user) {
     return <AuthRequired onClose={onClose} />;
   }
@@ -344,7 +177,7 @@ export function SimpleChat({
       <ChatHeader 
         selectedModelName={selectedModelInfo?.name}
         onClose={onClose}
-        onModelChange={handleModelChange}
+        onModelChange={setSelectedModel}
         selectedModel={selectedModel}
         isGenerating={isSending}
       />
@@ -361,7 +194,6 @@ export function SimpleChat({
           />
         </div>
         
-        {/* Thinking Display - positioned at bottom, separate from main messages */}
         <ThinkingDisplay 
           thinking={streamingState?.thinking || ''}
           isVisible={isSending && !!streamingState?.thinking}
@@ -379,7 +211,7 @@ export function SimpleChat({
         availableModels={availableModels}
         selectedModel={selectedModel}
         modelsLoading={modelsLoading}
-        onModelChange={handleModelChange}
+        onModelChange={setSelectedModel}
       />
       
       <ConversationHistoryAccordion
@@ -387,7 +219,7 @@ export function SimpleChat({
         activeConversationId={conversationId}
         workflowId={workflowId}
         onConversationSelect={onConversationChange}
-        onCreateNew={handleCreateNewConversation}
+        onCreateNew={createNewConversation}
       />
     </div>
   );

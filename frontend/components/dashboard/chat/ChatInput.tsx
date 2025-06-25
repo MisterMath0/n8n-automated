@@ -29,6 +29,8 @@ export function ChatInput({
   modelsLoading, 
   onModelChange 
 }: ChatInputProps) {
+  const canSend = inputValue.trim() && !isGenerating && availableModels.length > 0;
+
   return (
     <div className="p-6">
       <div className="relative">
@@ -40,7 +42,7 @@ export function ChatInput({
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                handleSendMessage();
+                if (canSend) handleSendMessage();
               }
             }}
             placeholder="Describe your workflow or ask anything..."
@@ -60,11 +62,11 @@ export function ChatInput({
             
             <Button
               onClick={handleSendMessage}
-              disabled={!inputValue.trim() || isGenerating || availableModels.length === 0}
+              disabled={!canSend}
               variant="ghost"
               size="icon"
               className="h-8 w-8 shrink-0"
-              title={inputValue.trim() ? "Send message or generate workflow" : "Type a message to generate"}
+              title={canSend ? "Send message" : "Type a message to send"}
             >
               {isGenerating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

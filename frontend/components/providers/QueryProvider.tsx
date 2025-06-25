@@ -9,13 +9,18 @@ interface QueryProviderProps {
 }
 
 export function QueryProvider({ children }: QueryProviderProps) {
-  // Create queryClient instance inside the client component
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        retry: 1,
+        staleTime: 0,
+        gcTime: 1000 * 60 * 5,
+        retry: (failureCount, error: any) => {
+          if (error?.status === 401 || error?.status === 403) return false;
+          return failureCount < 2;
+        },
         refetchOnWindowFocus: false,
+        refetchOnMount: true,
+        refetchOnReconnect: true,
       },
       mutations: {
         retry: 1,
@@ -26,7 +31,9 @@ export function QueryProvider({ children }: QueryProviderProps) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <ReactQueryDevtools initialIsOpen={false} />
+      {process.env.NODE_ENV === 'development' && (
+        <ReactQueryDevtools initialIsOpen={false} />
+      )}
     </QueryClientProvider>
   );
 }

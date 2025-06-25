@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import { DashboardErrorBoundary } from '@/components/dashboard/DashboardErrorBoundary'
 
 export default function DashboardLayout({
   children,
@@ -30,5 +31,9 @@ export default function DashboardLayout({
     return null
   }
 
-  return <>{children}</>
+  return (
+    <DashboardErrorBoundary>
+      {children}
+    </DashboardErrorBoundary>
+  )
 }

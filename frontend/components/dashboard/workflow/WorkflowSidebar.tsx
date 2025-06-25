@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Plus, CheckCircle } from "lucide-react";
 import { Workflow } from "@/types/workflow";
 import { WorkflowList } from "./components/WorkflowList";
 import { TabContent } from "./components/TabContent";
+import { usePagination } from "./hooks";
 
 interface WorkflowSidebarProps {
   workflows: Workflow[];
@@ -19,8 +20,6 @@ interface WorkflowSidebarProps {
 
 type TabType = 'workflows' | 'templates' | 'history';
 
-const ITEMS_PER_PAGE = 10;
-
 export const WorkflowSidebar = React.memo(function WorkflowSidebar({ 
   workflows, 
   selectedWorkflow, 
@@ -33,49 +32,13 @@ export const WorkflowSidebar = React.memo(function WorkflowSidebar({
   const [activeTab, setActiveTab] = useState<TabType>('workflows');
   const [showActions, setShowActions] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [displayedCount, setDisplayedCount] = useState(ITEMS_PER_PAGE);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loadingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   
-  // Reset displayed count only when workflows actually change
-  const prevWorkflowsLengthRef = useRef(workflows.length);
-  useEffect(() => {
-    if (prevWorkflowsLengthRef.current !== workflows.length) {
-      prevWorkflowsLengthRef.current = workflows.length;
-      setDisplayedCount(ITEMS_PER_PAGE);
-    }
-  }, [workflows.length]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const hasMore = displayedCount < workflows.length;
-
-  const loadMore = useCallback(() => {
-    if (isLoadingMore || !hasMore) return;
-    
-    setIsLoadingMore(true);
-    loadingTimeoutRef.current = setTimeout(() => {
-      setDisplayedCount(prev => Math.min(prev + ITEMS_PER_PAGE, workflows.length));
-      setIsLoadingMore(false);
-    }, 300);
-  }, [hasMore, isLoadingMore, workflows.length]);
-
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    const threshold = 100;
-    const isNearBottom = scrollTop + clientHeight >= scrollHeight - threshold;
-    
-    if (isNearBottom && hasMore && !isLoadingMore) {
-      loadMore();
-    }
-  }, [hasMore, isLoadingMore, loadMore]);
+  const {
+    displayedCount,
+    hasMore,
+    isLoadingMore,
+    handleScroll,
+  } = usePagination(workflows);
 
   const toggleActions = useCallback((workflowId: string) => {
     setShowActions(prev => prev === workflowId ? null : workflowId);
@@ -94,7 +57,6 @@ export const WorkflowSidebar = React.memo(function WorkflowSidebar({
 
   return (
     <div className="w-80 h-full bg-black/80 border-r border-white/10 flex flex-col">
-      {/* Header */}
       <div className="p-4 border-b border-white/10 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-white font-semibold text-lg">Workflows</h2>
@@ -109,7 +71,6 @@ export const WorkflowSidebar = React.memo(function WorkflowSidebar({
           </motion.button>
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-1">
           {(['workflows', 'templates', 'history'] as const).map((tab) => (
             <button
@@ -127,7 +88,6 @@ export const WorkflowSidebar = React.memo(function WorkflowSidebar({
         </div>
       </div>
 
-      {/* Tab Content */}
       <div className="flex-1 overflow-hidden flex flex-col">
         {activeTab === 'workflows' ? (
           <WorkflowList
@@ -151,7 +111,6 @@ export const WorkflowSidebar = React.memo(function WorkflowSidebar({
         )}
       </div>
 
-      {/* Footer */}
       {activeTab === 'workflows' && workflows.length > 0 && !isLoading && (
         <div className="p-4 border-t border-white/10 flex-shrink-0">
           <div className="flex items-center justify-between text-sm text-gray-400">

@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 
-// UI state only - not server data
 interface WorkflowUIState {
   selectedWorkflowId: string | null;
   isChatOpen: boolean;
@@ -13,102 +12,78 @@ interface WorkflowUIContextType extends WorkflowUIState {
   setSelectedWorkflowId: (id: string | null) => void;
   setIsChatOpen: (open: boolean) => void;
   setActiveConversationId: (id: string | null) => void;
-  // Helper methods
   selectWorkflow: (workflowId: string) => void;
   createNewWorkflow: () => void;
 }
 
 const WorkflowUIContext = createContext<WorkflowUIContextType | null>(null);
 
+function getStoredValue(key: string, defaultValue: any) {
+  if (typeof window === 'undefined') return defaultValue;
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : defaultValue;
+  } catch {
+    return defaultValue;
+  }
+}
+
+function setStoredValue(key: string, value: any) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (value === null || value === undefined) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+  } catch {
+    // Silently fail
+  }
+}
+
 export function WorkflowUIProvider({ children }: { children: ReactNode }) {
-  const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const storedId = localStorage.getItem('workflowUI:selectedWorkflowId');
-        return storedId || null;
-      } catch (e) {
-        console.error('Failed to read selectedWorkflowId from localStorage', e);
-        return null;
-      }
-    }
-    return null;
-  });
-
-  const [isChatOpen, setIsChatOpen] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const storedValue = localStorage.getItem('workflowUI:isChatOpen');
-        return storedValue === 'true';
-      } catch (e) {
-        console.error('Failed to read isChatOpen from localStorage', e);
-        return false;
-      }
-    }
-    return false;
-  });
-
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const storedId = localStorage.getItem('workflowUI:activeConversationId');
-        return storedId || null;
-      } catch (e) {
-        console.error('Failed to read activeConversationId from localStorage', e);
-        return null;
-      }
-    }
-    return null;
-  });
+  const [selectedWorkflowId, setSelectedWorkflowIdState] = useState<string | null>(null);
+  const [isChatOpen, setIsChatOpenState] = useState<boolean>(false);
+  const [activeConversationId, setActiveConversationIdState] = useState<string | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        if (selectedWorkflowId) {
-          localStorage.setItem('workflowUI:selectedWorkflowId', selectedWorkflowId);
-        } else {
-          localStorage.removeItem('workflowUI:selectedWorkflowId');
-        }
-      } catch (e) {
-        console.error('Failed to write selectedWorkflowId to localStorage', e);
-      }
-    }
-  }, [selectedWorkflowId]);
+    setSelectedWorkflowIdState(getStoredValue('workflowUI:selectedWorkflowId', null));
+    setIsChatOpenState(getStoredValue('workflowUI:isChatOpen', false));
+    setActiveConversationIdState(getStoredValue('workflowUI:activeConversationId', null));
+    setIsHydrated(true);
+  }, []);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('workflowUI:isChatOpen', String(isChatOpen));
-      } catch (e) {
-        console.error('Failed to write isChatOpen to localStorage', e);
-      }
-    }
-  }, [isChatOpen]);
+  const setSelectedWorkflowId = useCallback((id: string | null) => {
+    setSelectedWorkflowIdState(id);
+    setStoredValue('workflowUI:selectedWorkflowId', id);
+  }, []);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        if (activeConversationId) {
-          localStorage.setItem('workflowUI:activeConversationId', activeConversationId);
-        } else {
-          localStorage.removeItem('workflowUI:activeConversationId');
-        }
-      } catch (e) {
-        console.error('Failed to write activeConversationId to localStorage', e);
-      }
-    }
-  }, [activeConversationId]);
+  const setIsChatOpen = useCallback((open: boolean) => {
+    setIsChatOpenState(open);
+    setStoredValue('workflowUI:isChatOpen', open);
+  }, []);
+
+  const setActiveConversationId = useCallback((id: string | null) => {
+    setActiveConversationIdState(id);
+    setStoredValue('workflowUI:activeConversationId', id);
+  }, []);
 
   const selectWorkflow = useCallback((workflowId: string) => {
     setSelectedWorkflowId(workflowId);
-    setIsChatOpen(true); // Auto-open chat when selecting workflow
-    setActiveConversationId(null); // Reset conversation (will be set by conversations hook)
-  }, []);
+    setIsChatOpen(true);
+    setActiveConversationId(null);
+  }, [setSelectedWorkflowId, setIsChatOpen, setActiveConversationId]);
 
   const createNewWorkflow = useCallback(() => {
     setSelectedWorkflowId(null);
     setIsChatOpen(true);
     setActiveConversationId(null);
-  }, []);
+  }, [setSelectedWorkflowId, setIsChatOpen, setActiveConversationId]);
+
+  if (!isHydrated) {
+    return null;
+  }
 
   return (
     <WorkflowUIContext.Provider value={{
