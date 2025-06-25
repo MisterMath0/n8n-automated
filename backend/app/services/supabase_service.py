@@ -43,7 +43,12 @@ class SupabaseService:
             "status": "active"
         }
         
-        result = self.client.table("workflows").insert(workflow_data).execute()
+        # Use UPSERT to handle race conditions and concurrent workflow saves
+        result = self.client.table("workflows").upsert(
+            workflow_data, 
+            on_conflict="id",
+            ignore_duplicates=False  # Update if exists
+        ).execute()
         return result.data[0] if result.data else None
 
     async def get_user_workflows(self, user_id: str) -> List[Dict[str, Any]]:
@@ -104,18 +109,22 @@ class SupabaseService:
     async def create_conversation(
         self,
         user_id: str,
-        conversation_id: str,  # Accept specific conversation ID
+        conversation_id: Optional[str] = None,  # Make conversation_id optional
         workflow_id: Optional[str] = None,
         title: Optional[str] = None
     ) -> Dict[str, Any]:
         conversation_data = {
-            "id": conversation_id,  # Use the provided conversation ID
             "user_id": user_id,
             "workflow_id": workflow_id,
             "title": title,
             "total_tokens": 0
         }
         
+        # Only set ID if provided, otherwise let database generate UUID
+        if conversation_id:
+            conversation_data["id"] = conversation_id
+        
+        # Simple insert since we check for existence before calling this method
         result = self.client.table("conversations").insert(conversation_data).execute()
         conversation = result.data[0] if result.data else None
         
@@ -173,6 +182,15 @@ You are helping the user modify, understand, or extend this specific n8n workflo
         workflow_data: Optional[Dict[str, Any]] = None,
         token_count: int = 0
     ) -> Dict[str, Any]:
+        # Truncate content if too long to prevent database issues
+        max_content_length = 50000  # Reasonable limit for message content
+        if len(content) > max_content_length:
+            logger.warning("Message content truncated", 
+                         original_length=len(content), 
+                         truncated_length=max_content_length,
+                         conversation_id=conversation_id)
+            content = content[:max_content_length] + "\n\n[Message truncated due to length]"
+        
         message_data = {
             "conversation_id": conversation_id,
             "content": content,
@@ -182,7 +200,16 @@ You are helping the user modify, understand, or extend this specific n8n workflo
             "token_count": token_count
         }
         
-        result = self.client.table("messages").insert(message_data).execute()
+        try:
+            result = self.client.table("messages").insert(message_data).execute()
+        except Exception as e:
+            logger.error("Failed to insert message", 
+                        error=str(e),
+                        conversation_id=conversation_id,
+                        content_length=len(content),
+                        role=role,
+                        message_type=message_type)
+            raise
         
         # Update conversation total tokens
         conv_result = self.client.table("conversations")\
@@ -255,6 +282,16 @@ You are helping the user modify, understand, or extend this specific n8n workflo
             .order("updated_at", desc=True)\
             .execute()
         return result.data
+
+    async def get_conversation_by_id(self, conversation_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+        """Get a specific conversation by ID and user ID."""
+        result = self.client.table("conversations")\
+            .select("*")\
+            .eq("id", conversation_id)\
+            .eq("user_id", user_id)\
+            .execute()
+        
+        return result.data[0] if result.data else None
 
     async def update_conversation_title(self, conversation_id: str, user_id: str, title: str):
         """Updates the title of a conversation."""

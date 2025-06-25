@@ -21,6 +21,66 @@ logger = structlog.get_logger()
 class AIServiceError(Exception):
     pass
 
+def truncate_workflow_context(workflow_data: Dict[str, Any], max_nodes: int = 50) -> Dict[str, Any]:
+    """Truncate workflow context for very large workflows to prevent token limit issues."""
+    if not workflow_data or not isinstance(workflow_data, dict):
+        return workflow_data
+    
+    # Create a copy to avoid modifying the original
+    truncated_data = workflow_data.copy()
+    
+    # If there are too many nodes, truncate them
+    nodes = truncated_data.get('nodes', [])
+    if len(nodes) > max_nodes:
+        truncated_data['nodes'] = nodes[:max_nodes]
+        truncated_data['_truncated'] = True
+        truncated_data['_original_node_count'] = len(nodes)
+        logger.info("Truncated workflow context", 
+                   original_nodes=len(nodes), 
+                   truncated_nodes=max_nodes)
+    
+    # Also limit connections if present
+    connections = truncated_data.get('connections', [])
+    if len(connections) > max_nodes * 2:  # Reasonable ratio
+        truncated_data['connections'] = connections[:max_nodes * 2]
+    
+    return truncated_data
+
+def format_workflow_context_message(workflow: Dict[str, Any]) -> str:
+    """Create a concise workflow context message for AI."""
+    workflow_data = workflow.get('workflow_data', {})
+    
+    # Truncate if too large
+    truncated_data = truncate_workflow_context(workflow_data)
+    
+    # Create a more concise context message
+    context_parts = [
+        f"CURRENT WORKFLOW CONTEXT:",
+        f"Name: {workflow.get('name', 'Untitled')}",
+        f"Description: {workflow.get('description', 'No description')}",
+        f"Nodes: {len(truncated_data.get('nodes', []))} nodes",
+        f"Last Updated: {workflow.get('updated_at')}"
+    ]
+    
+    if truncated_data.get('_truncated'):
+        context_parts.append(f"Note: Workflow context truncated from {truncated_data.get('_original_node_count')} to {len(truncated_data.get('nodes', []))} nodes for performance")
+    
+    # Add a simplified workflow structure instead of full JSON dump
+    nodes = truncated_data.get('nodes', [])
+    if nodes:
+        context_parts.append("\nWorkflow Structure:")
+        for i, node in enumerate(nodes[:10]):  # Show only first 10 nodes
+            node_type = node.get('type', 'Unknown')
+            node_name = node.get('name', f'Node {i+1}')
+            context_parts.append(f"  {i+1}. {node_name} ({node_type})")
+        
+        if len(nodes) > 10:
+            context_parts.append(f"  ... and {len(nodes) - 10} more nodes")
+    
+    context_parts.append("\nYou are helping the user modify, understand, or extend this specific n8n workflow.")
+    
+    return "\n".join(context_parts)
+
 
 class AIService:
     def __init__(self):
@@ -166,44 +226,48 @@ class AIService:
             model_key=model.value
         )
 
-        # 3. If no history exists, create the conversation first
+        # 3. If no history exists, check if conversation exists, create if needed
         if not history_messages:
             try:
-                # Create the conversation in the database
-                await supabase_service.create_conversation(
-                    user_id=user.id,
-                    conversation_id=conversation_id,  # Pass the conversation ID
-                    workflow_id=workflow_id,  # Link to workflow if provided
-                    title=None  # Will be set below
-                )
-                logger.info("Created new conversation", conversation_id=conversation_id, user_id=user.id, workflow_id=workflow_id)
+                # First check if conversation already exists
+                existing_conversation = await supabase_service.get_conversation_by_id(conversation_id, user.id)
+                
+                if existing_conversation:
+                    logger.info("Conversation already exists", conversation_id=conversation_id, user_id=user.id)
+                    conversation = existing_conversation
+                else:
+                    # Create new conversation only if it doesn't exist
+                    conversation = await supabase_service.create_conversation(
+                        user_id=user.id,
+                        conversation_id=conversation_id,
+                        workflow_id=workflow_id,
+                        title=None
+                    )
+                    if conversation:
+                        logger.info("Created new conversation", conversation_id=conversation_id, user_id=user.id, workflow_id=workflow_id)
+                    else:
+                        logger.warning("No conversation returned from create_conversation", conversation_id=conversation_id)
             except Exception as e:
-                logger.warning("Failed to create conversation (may already exist)", error=str(e), conversation_id=conversation_id)
-                # Continue anyway - the conversation might already exist or there could be a race condition
+                logger.error("Failed to check/create conversation", error=str(e), conversation_id=conversation_id)
+                # Continue anyway - we can still try to save messages
+                conversation = None
             
-            # Generate and set title
-            title = await self._generate_conversation_title(user_message)
-            try:
-                await supabase_service.update_conversation_title(conversation_id, user.id, title)
-                logger.info("Set conversation title", conversation_id=conversation_id, title=title)
-            except Exception as e:
-                logger.error("Failed to set conversation title", error=str(e), conversation_id=conversation_id)
-                # Continue anyway - this is not critical
+            # Generate and set title (only if conversation was successfully created)
+            if conversation:
+                title = await self._generate_conversation_title(user_message)
+                try:
+                    await supabase_service.update_conversation_title(conversation_id, user.id, title)
+                    logger.info("Set conversation title", conversation_id=conversation_id, title=title)
+                except Exception as e:
+                    logger.error("Failed to set conversation title", error=str(e), conversation_id=conversation_id)
+                    # Continue anyway - this is not critical
         
         # 4. Add workflow context to message history if available
         if workflow_context:
+            # Use the new concise workflow context formatter
             workflow_system_message = {
-                                "role": "system", 
-                                "content": f"""CURRENT WORKFLOW CONTEXT:
-                                Name: {workflow_context.get('name', 'Untitled')}
-                                Description: {workflow_context.get('description', 'No description')}
-                                Nodes: {len(workflow_context.get('workflow_data', {}).get('nodes', []))} nodes
-                                Last Updated: {workflow_context.get('updated_at')}
-
-                                Workflow Structure:
-                                {json.dumps(workflow_context.get('workflow_data'), indent=2)}
-
-                                You are helping the user modify, understand, or extend this specific n8n workflow."""
+                "role": "system", 
+                "content": format_workflow_context_message(workflow_context)
             }
             all_messages = [workflow_system_message] + history_messages + [{"role": "user", "content": user_message}]
             logger.info("Added workflow context to messages", 
@@ -295,40 +359,46 @@ class AIService:
             model_key=model.value
         )
 
-        # 3. If no history exists, create the conversation first
+        # 3. If no history exists, check if conversation exists, create if needed
         if not history_messages:
             try:
-                await supabase_service.create_conversation(
-                    user_id=user.id,
-                    conversation_id=conversation_id,
-                    workflow_id=workflow_id,
-                    title=None
-                )
-                logger.info("Created new conversation", conversation_id=conversation_id)
+                # First check if conversation already exists
+                existing_conversation = await supabase_service.get_conversation_by_id(conversation_id, user.id)
+                
+                if existing_conversation:
+                    logger.info("Conversation already exists", conversation_id=conversation_id, user_id=user.id)
+                    conversation = existing_conversation
+                else:
+                    # Create new conversation only if it doesn't exist
+                    conversation = await supabase_service.create_conversation(
+                        user_id=user.id,
+                        conversation_id=conversation_id,
+                        workflow_id=workflow_id,
+                        title=None
+                    )
+                    if conversation:
+                        logger.info("Created new conversation", conversation_id=conversation_id, user_id=user.id)
+                    else:
+                        logger.warning("No conversation returned from create_conversation", conversation_id=conversation_id)
             except Exception as e:
-                logger.warning("Failed to create conversation", error=str(e))
+                logger.error("Failed to check/create conversation", error=str(e), conversation_id=conversation_id)
+                # Continue anyway - we can still try to save messages
+                conversation = None
             
-            # Generate and set title
-            title = await self._generate_conversation_title(user_message)
-            try:
-                await supabase_service.update_conversation_title(conversation_id, user.id, title)
-            except Exception as e:
-                logger.error("Failed to set conversation title", error=str(e))
+            # Generate and set title (only if conversation was successfully created)
+            if conversation:
+                title = await self._generate_conversation_title(user_message)
+                try:
+                    await supabase_service.update_conversation_title(conversation_id, user.id, title)
+                except Exception as e:
+                    logger.error("Failed to set conversation title", error=str(e))
         
         # 4. Add workflow context to message history if available
         if workflow_context:
+            # Use the new concise workflow context formatter
             workflow_system_message = {
                 "role": "system", 
-                "content": f"""CURRENT WORKFLOW CONTEXT:
-                Name: {workflow_context.get('name', 'Untitled')}
-                Description: {workflow_context.get('description', 'No description')}
-                Nodes: {len(workflow_context.get('workflow_data', {}).get('nodes', []))} nodes
-                Last Updated: {workflow_context.get('updated_at')}
-
-                Workflow Structure:
-                {json.dumps(workflow_context.get('workflow_data'), indent=2)}
-
-                You are helping the user modify, understand, or extend this specific n8n workflow."""
+                "content": format_workflow_context_message(workflow_context)
             }
             all_messages = [workflow_system_message] + history_messages + [{"role": "user", "content": user_message}]
         else:
