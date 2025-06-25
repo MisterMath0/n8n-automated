@@ -27,7 +27,8 @@ export function useMessages({
         workflowData: msg.workflow_data
       })) || [];
 
-    if (isSending && streamingMessage) {
+    // Only add streaming message if actively sending and has content
+    if (isSending && streamingMessage && streamingMessage.trim()) {
       conversationMessages.push({
         id: 'streaming',
         content: streamingMessage,
@@ -44,5 +45,12 @@ export function useMessages({
     }
 
     return conversationMessages;
-  }, [currentConversation, welcomeMessage, isSending, streamingMessage, streamingState]);
+  }, [
+    currentConversation?.messages?.length, // Only react to message count changes
+    currentConversation?.id, // React to conversation changes
+    welcomeMessage?.id, // Only react to welcome message ID changes  
+    isSending,
+    streamingMessage,
+    streamingState?.progress
+  ]);
 }

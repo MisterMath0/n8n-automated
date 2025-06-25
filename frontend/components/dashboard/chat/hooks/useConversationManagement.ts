@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 interface UseConversationManagementProps {
   workflowId: string | null;
@@ -13,14 +13,22 @@ export function useConversationManagement({
   conversations,
   onConversationChange,
 }: UseConversationManagementProps) {
-  const currentConversation = conversations.find(c => c.id === conversationId) || null;
+  
+  // Memoize current conversation to prevent unnecessary re-renders
+  const currentConversation = useMemo(() => {
+    return conversations.find(c => c.id === conversationId) || null;
+  }, [conversations, conversationId]);
 
+  // Only auto-select conversation if none is selected and we have conversations
   useEffect(() => {
     if (workflowId && conversations.length > 0 && !conversationId) {
-      const firstConversation = conversations[0];
-      onConversationChange(firstConversation.id);
+      const workflowConversations = conversations.filter(c => c.workflow_id === workflowId);
+      if (workflowConversations.length > 0) {
+        const firstConversation = workflowConversations[0];
+        onConversationChange(firstConversation.id);
+      }
     }
-  }, [workflowId, conversations, conversationId, onConversationChange]);
+  }, [workflowId, conversations.length, conversationId, onConversationChange]);
 
   const createNewConversation = useCallback(() => {
     onConversationChange('');

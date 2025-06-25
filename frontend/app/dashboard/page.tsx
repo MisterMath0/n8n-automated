@@ -5,12 +5,17 @@ import { WorkflowCanvas } from "@/components/dashboard/workflow/WorkflowCanvas";
 import { SimpleChat } from "@/components/dashboard/chat/SimpleChat";
 import { WorkflowSidebar } from "@/components/dashboard/workflow/WorkflowSidebar";
 import { UserMenu } from "@/components/UserMenu";
+import { ExtensionWarning } from "@/components/dashboard/ExtensionWarning";
 import { useWorkflows, useWorkflowConversations, useOrphanConversations, useDeleteWorkflow } from "@/hooks/data";
 import { useWorkflowUI, WorkflowUIProvider } from "@/stores/WorkflowUIContext";
 import { useToast } from "@/components/providers";
 import { Workflow } from "@/types/workflow";
 import { Bot } from "lucide-react";
 import Link from "next/link";
+
+// Disable all caching for dashboard
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 function DashboardContent() {
   const {
@@ -33,10 +38,13 @@ function DashboardContent() {
   const selectedWorkflow = workflows.find(w => w.id === selectedWorkflowId) || null;
   const conversations = selectedWorkflowId ? workflowConversations : orphanConversations;
 
+  // FIXED: Stable workflow generated handler - doesn't change conversation
   const handleWorkflowGenerated = useCallback((workflow: Workflow) => {
-    if (workflow.id !== selectedWorkflowId) {
+    // Only switch to new workflow if we're not already working on one
+    if (!selectedWorkflowId && workflow.id !== selectedWorkflowId) {
       selectWorkflow(workflow.id);
     }
+    // Don't change conversation - let it stay attached to current workflow context
   }, [selectedWorkflowId, selectWorkflow]);
 
   const handleOpenChat = useCallback(() => {
@@ -81,6 +89,8 @@ function DashboardContent() {
 
   return (
     <div className="h-screen bg-black overflow-hidden">
+      <ExtensionWarning />
+      
       <header className="h-16 border-b border-white/10 bg-black/90 backdrop-blur-sm px-6 flex items-center justify-between relative z-40">
         <Link href="/" className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">

@@ -47,6 +47,8 @@ function SimpleChatContent(props: SimpleChatProps) {
   
   const [inputValue, setInputValue] = useState("");
   const [isWaitingForFirstMessage, setIsWaitingForFirstMessage] = useState(false);
+  const [lastProcessedWorkflowId, setLastProcessedWorkflowId] = useState<string | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -140,43 +142,63 @@ function SimpleChatContent(props: SimpleChatProps) {
     }
   }, [isSending, isWaitingForFirstMessage]);
 
+  // FIXED: Prevent infinite renders with proper workflow processing
+  const handleWorkflowSave = useCallback(async (workflow: any) => {
+    if (!workflow || !user) return;
+    
+    // Prevent processing the same workflow multiple times
+    if (lastProcessedWorkflowId === workflow.id) return;
+    setLastProcessedWorkflowId(workflow.id);
+
+    try {
+      if (!workflowId) {
+        // Creating new workflow - keep conversation attached
+        const savedWorkflow = await createWorkflow.mutateAsync({
+          id: workflow.id,
+          name: workflow.name,
+          description: `Generated workflow with ${workflow.nodes.length} nodes`,
+          workflow_data: workflow,
+          owner_id: user.id,
+          status: 'active',
+        });
+
+        // Call callback without changing conversation
+        if (onWorkflowGenerated) {
+          onWorkflowGenerated(savedWorkflow);
+        }
+        
+        toast.success(`New workflow "${savedWorkflow.name}" created successfully`);
+      } else {
+        // Updating existing workflow - preserve conversation
+        const updatedWorkflow = await updateWorkflow.mutateAsync({
+          workflowId: workflowId,
+          updates: {
+            workflow_data: workflow,
+            updated_at: new Date().toISOString(),
+          },
+        });
+
+        // Call callback without changing conversation
+        if (onWorkflowGenerated) {
+          onWorkflowGenerated(updatedWorkflow);
+        }
+        
+        toast.success(`Workflow "${updatedWorkflow.name}" updated successfully`);
+      }
+    } catch (error) {
+      const errorMsg = workflowId 
+        ? 'Workflow updated but failed to save changes to database' 
+        : 'Workflow generated but failed to save to database';
+      toast.error(errorMsg);
+    }
+  }, [workflowId, createWorkflow, updateWorkflow, onWorkflowGenerated, toast, user, lastProcessedWorkflowId]);
+
+  // FIXED: Stable effect with minimal dependencies
   useEffect(() => {
     if (streamingState?.workflow && !isSending) {
-      const handleWorkflowSave = async () => {
-        try {
-          if (!workflowId) {
-            const savedWorkflow = await createWorkflow.mutateAsync({
-              id: streamingState.workflow.id,
-              name: streamingState.workflow.name,
-              description: `Generated workflow with ${streamingState.workflow.nodes.length} nodes`,
-              workflow_data: streamingState.workflow,
-              owner_id: user?.id,
-              status: 'active',
-            });
-
-            onWorkflowGenerated?.(savedWorkflow);
-          } else {
-            const updatedWorkflow = await updateWorkflow.mutateAsync({
-              workflowId: workflowId,
-              updates: {
-                workflow_data: streamingState.workflow,
-                updated_at: new Date().toISOString(),
-              },
-            });
-
-            onWorkflowGenerated?.(updatedWorkflow);
-          }
-        } catch (error) {
-          const errorMsg = workflowId 
-            ? 'Workflow updated but failed to save changes to database' 
-            : 'Workflow generated but failed to save to database';
-          toast.error(errorMsg);
-        }
-      };
-
-      handleWorkflowSave();
+      handleWorkflowSave(streamingState.workflow);
     }
-  }, [streamingState?.workflow, isSending, workflowId, createWorkflow, updateWorkflow, onWorkflowGenerated, toast, user]);
+  }, [streamingState?.workflow?.id, isSending, handleWorkflowSave]); // Only trigger on workflow ID change
 
   if (!user) {
     return <AuthRequired onClose={onClose} />;
